@@ -17,7 +17,8 @@ size_t AudioBuffer::write( const char *data, size_t size ) {
     size_t wrote = 0;
     size_t head, tail, nextHead;
 
-    while( wrote < size ) {
+
+    while ( wrote < size ) {
         head = m_head.load( std::memory_order_relaxed );
         nextHead = next( head );
         tail = m_tail.load( std::memory_order_acquire );
@@ -31,11 +32,19 @@ size_t AudioBuffer::write( const char *data, size_t size ) {
             clear();
         }
 
-        m_buffer[head] = data[wrote++];
+        m_buffer[ head ] = data[ wrote++ ];
         m_head.store( nextHead, std::memory_order_release );
+
     }
 
+    //cur++;
+    //if (cur == 2) {
+      //  cur = 0;
+    //}
 
+    //if ( this->size() >= m_size * 0.9 ) {
+        emit readReady();
+    //}
 
     return wrote;
 }
@@ -52,7 +61,7 @@ size_t AudioBuffer::read( char *data, size_t size ) {
             break;
         }
 
-        data[read++] = m_buffer[tail];
+        data[ read++ ] = m_buffer[ tail ];
         m_tail.store( next( tail ), std::memory_order_release );
     }
 

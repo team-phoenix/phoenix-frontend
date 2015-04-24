@@ -10,6 +10,43 @@ ApplicationWindow {
     height: 1000
     visible: true
 
+    function qstr(str)
+    {
+        return qsTr(str);
+    }
+
+    PathWatcher {
+        id: pathWatcher;
+        Component.onCompleted: pathWatcher.start();
+    }
+
+    Connections {
+        target: pathWatcher;
+        onFileAdded: {
+            if ( pathWatcherModel.get( 0 ).path === "None" )
+                pathWatcherModel.set( 0, { path: file, name: baseName } );
+            else
+                pathWatcherModel.append( { path: file , name: baseName } );
+        }
+
+    }
+
+    ListModel {
+        id: pathWatcherModel;
+        ListElement {path: "None"; name: "None";}
+    }
+
+    FileDialog {
+        id: coreFolderDialog;
+        selectFolder: true;
+        onAccepted: {
+            pathWatcherModel.clear();
+            pathWatcherModel.append( { path: "None", name: "None" } )
+            pathWatcher.clear();
+            pathWatcher.slotSetCorePath(fileUrl);
+        }
+    }
+
     FileDialog {
         id: fileDialog;
         property string type: "";
@@ -25,14 +62,12 @@ ApplicationWindow {
 
     menuBar: MenuBar {
         Menu {
-            title: "File";
-            MenuItem {
-                text: "Load Core";
-                onTriggered: {
-                    fileDialog.type = "core";
-                    fileDialog.open();
-                }
+            title: "Game";
+            MouseArea {
+                anchors.fill: parent;
             }
+
+
             MenuItem {
                 text: "Load Game";
                 onTriggered: {
@@ -41,6 +76,62 @@ ApplicationWindow {
                 }
             }
             MenuItem { text: "Close"; onTriggered: Qt.quit();}
+        }
+
+        Menu {
+            title: "Cores";
+
+            Menu {
+                id: coresAvailable;
+                title: qstr("Available...");
+
+                Instantiator {
+                    model: pathWatcherModel;
+                    MenuItem {
+                        text: name;
+                        onTriggered: {
+                            videoItem.libretroCore = path;
+                        }
+                    }
+
+                    onObjectAdded: coresAvailable.insertItem(index, object);
+                    onObjectRemoved: coresAvailable.removeItem(object);
+                }
+
+                MenuSeparator { }
+
+                MenuItem {
+                    text: "Clear";
+                    visible: pathWatcherModel.count > 0;
+                    onTriggered: {
+                        pathWatcherModel.clear();
+                        pathWatcherModel.append( { path: "None", name: "None" } )
+                        pathWatcher.clear();
+                    }
+                }
+
+
+            }
+
+            MenuItem {
+                text: "Change Path...";
+
+                onTriggered: {
+
+                    coreFolderDialog.open();
+                }
+
+            }
+
+            MenuItem {
+                text: "Load Core...";
+                onTriggered: {
+                    fileDialog.type = "core";
+                    fileDialog.open();
+                }
+            }
+
+
         }
 
     }

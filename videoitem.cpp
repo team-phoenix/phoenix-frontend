@@ -8,15 +8,20 @@
 #include <QOpenGLContext>
 #include <QOpenGLFramebufferObject>
 
+
+
+
 VideoItem::VideoItem() :
-    core( new Core ),
     audio( new Audio ),
+    core( new Core ),
     renderReady( false ),
     gameReady( false ),
-    libretroCoreReady( false )
+    libretroCoreReady( false ),
+    recorder( this )
 {
     Q_CHECK_PTR( audio );
     Q_CHECK_PTR ( core );
+
 
     connect( this, &VideoItem::windowChanged, this, &VideoItem::handleWindowChanged );
     connect( core, &Core::signalVideoRefreshCallback, this, &VideoItem::slotHandleFrameData );
@@ -32,8 +37,10 @@ void VideoItem::refresh()
 {
     if ( gameReady && libretroCoreReady ) {
 
-        renderReady = true;
         core->slotStartCoreThread( QThread::TimeCriticalPriority );
+
+        //core->slotHandleCoreStateChanged( Core::Running );
+        renderReady = true;
         updateAudioFormat();
         audio->startAudioThread();
 
@@ -44,8 +51,8 @@ void VideoItem::componentComplete()
 {
     QQuickItem::componentComplete();
 
-    //setLibretroCore( "/Users/lee/Desktop/vbam_libretro.dylib" );
-    //setGame( "/Users/lee/Desktop/GBA/Golden Sun.gba" );
+    setLibretroCore( "/Users/lee/Desktop/vbam_libretro.dylib" );
+    setGame( "/Users/lee/Desktop/GBA/Golden Sun.gba" );
 
     renderReady = true;
 
@@ -115,16 +122,25 @@ QString VideoItem::libretroCore() const
 void VideoItem::setLibretroCore(QString libretroCore)
 {
     qDebug() << libretroCore;
-    libretroCore = libretroCore.remove("file://");
+    libretroCore = libretroCore.remove( "file://" );
     qmlLibretroCore = libretroCore;
-    libretroCoreReady = core->loadCore(libretroCore.toUtf8().constData());
+
+    if ( core->state() == Core::Running ) {
+        frameDataQueue.clear();
+        renderReady = false;
+        gameReady = false;
+        core->slotHandleCoreStateChanged( Core::Unloaded );
+
+    }
+
+    libretroCoreReady = core->loadCore( libretroCore.toUtf8().constData() );
 
     emit libretroCoreChanged();
 
     refresh();
 }
 
-void VideoItem::setGame(QString game)
+void VideoItem::setGame( QString game )
 {
     game = game.remove( "file://" );
     qmlGame = game;
@@ -149,13 +165,19 @@ void VideoItem::updateAudioFormat()
 
 void VideoItem::slotHandleAudioData( AudioData *audioFrame )
 {
-    audio->getAudioBuf()->write( audioFrame->data, audioFrame->size );
+
+    size_t size = audio->getAudioBuf()->write( std::move(audioFrame->data), std::move(audioFrame->size) );
     delete audioFrame;
+
+    //qDebug() << "Audio Frame: size( " << size << " ) " << size;
 }
 
 void VideoItem::slotHandleFrameData( FrameData *videoFrame )
 {
-    frameDataQueue.enqueue(videoFrame);
+    unsigned size = *videoFrame->data;
+    recorder.slotHandleVideoFrame( *videoFrame );
+    frameDataQueue.enqueue( std::move(videoFrame) );
+    //qDebug() << "Video Frame: size( " << size << " )";
     update();
 }
 
@@ -173,7 +195,21 @@ void VideoItem::simpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTexture
 }
 QSGNode* VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintData )
 {
+    static int frameCount = 0;
+
+    frameCount++;
+
+    if ( frameCount == 1 )
+        frameTimer.start();
+
+    if ( frameCount >= core->getFps() ) {
+        quint64 t = frameTimer.restart() * 10;
+        qDebug() << t;
+        frameCount = 0;
+    }
+
     Q_UNUSED( paintData );
+
 
 
     QSGTexture *texture = nullptr;
@@ -222,11 +258,15 @@ QSGNode* VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
     }
 
 
+
     textureNode->setTexture( texture );
     textureNode->setRect( boundingRect() );
     textureNode->setFiltering( QSGTexture::Nearest );
     textureNode->setOwnsTexture( true );
     textureNode->setTextureCoordinatesTransform( QSGSimpleTextureNode::MirrorVertically | QSGSimpleTextureNode::MirrorHorizontally );
+
+    grabToImage(boundingRect().size().toSize());
+    QFile fout("/Users/lee/Desktop/screenshotPhoenix");
 
     return textureNode;
 

@@ -28,7 +28,7 @@
  */
 
 // Helper for resolving libretro methods
-#define resolved_sym( name ) symbols->name = ( decltype( symbols->name ) )libretro_core->resolve( #name );
+#define resolved_sym( name ) symbols.name = ( decltype( symbols.name ) )libretroCore.resolve( #name );
 
 struct LibretroSymbols {
 
@@ -103,277 +103,327 @@ public:
 class Core: public QObject {
     Q_OBJECT
 
-    signals:
-        void signalVideoRefreshCallback( FrameData *frame );
-        void signalCallbackAudioData( AudioData *audioData );
-        void signalTimeOut();
+public:
 
-    public slots:
+    Core();
+    ~Core();
 
-        //
-        // Control
-        //
+    enum CoreState {
+        Running = 0,
+        NeedsCore,
+        NeedsGame,
+        Unloaded,
+        Loading,
+        ShutDown,
+        SaveRAM,
+        LoadRAM,
+    };
 
-        void slotStartCoreThread( QThread::Priority priority )
-        {
-            coreThread.start( priority );
+    Core::CoreState state() const
+    {
+        return currentState;
+    }
 
-            unsigned finishedImmediately = 0;
+    // Load a libretro core at the given path
+    // Returns: true if successful, false otherwise
+    bool loadCore( const char *path );
 
-            coreTimer.start( finishedImmediately );
+    // Load a game with the given path
+    // Returns: true if the game was successfully loaded, false otherwise
+    bool loadGame( const char *path );
+
+    // Run core for one frame
+    void doFrame();
+
+    //
+    // Misc
+    //
+
+    // A pointer to the last instance of the class used
+    static Core *core;
+
+    QByteArray getLibraryName() {
+        return libraryName;
+    }
+
+    bool saveGameState( QString save_path, QString game_name );
+    bool loadGameState( QString save_path, QString game_name );
+
+    //
+    // Video
+    //
+
+    retro_hw_render_callback getHWData() const {
+        return hw_callback;
+    }
+
+
+    retro_pixel_format getPixelFormat() const {
+        return pixel_format;
+    }
+    const retro_system_info *getSystemInfo() const {
+        return system_info;
+    }
+    float getAspectRatio() const {
+        if( system_av_info->geometry.aspect_ratio ) {
+            return system_av_info->geometry.aspect_ratio;
         }
 
-        void slotCoreThreadTimeOut()
-        {
-            quint64 timeout = 16000;
+        return ( qreal )system_av_info->geometry.base_width / system_av_info->geometry.base_height;
+    }
 
-            QThread::usleep(timeout);
-            emit signalTimeOut();
-        }
+    void setSystemDirectory( QString system_directory );
+    void setSaveDirectory( QString save_directory );
 
-        void slotDoFrame()
-        {
-            doFrame();
-        }
+    //
+    // Timing
+    //
 
-        void slotCallbackFrameData( FrameData *frame )
-        {
-            emit signalVideoRefreshCallback( frame );
-        }
+    double getFps() const {
+        return system_av_info->timing.fps;
+    }
+    double getSampleRate() const {
+        return system_av_info->timing.sample_rate;
+    }
+    bool isDupeFrame() const {
+        return is_dupe_frame;
+    }
 
-        void slotCallbackAudioData( AudioData *audioData )
-        {
-            emit signalCallbackAudioData( audioData );
-        }
+    // Container class for a libretro core variable
+    class Variable {
+        public:
+            Variable() {} // default constructor
 
-        //bool slotLoadCore( const char *path );
-        //bool slotLoadGame( const char *path );
-        //void slotSetSystemDirectory( QString system_directory );
-        //void slotSetSaveDirectory( QString save_directory );
+            Variable( const retro_variable *var ) {
+                m_key = var->key;
 
-        //void slotDoFrame();
+                // "Text before first ';' is description. This ';' must be followed by a space,
+                // and followed by a list of possible values split up with '|'."
+                QString valdesc( var->value );
+                int splitidx = valdesc.indexOf( "; " );
 
-    public:
+                if( splitidx != -1 ) {
+                    m_description = valdesc.mid( 0, splitidx ).toStdString();
+                    auto _choices = valdesc.mid( splitidx + 2 ).split( '|' );
 
-        Core();
-        ~Core();
-
-        //
-        // Video
-        //
-
-        //
-        // Input
-        //
-
-        //
-        // Misc.
-        //
-
-
-        //
-        // Control
-        //
-
-        // Load a libretro core at the given path
-        // Returns: true if successful, false otherwise
-        bool loadCore( const char *path );
-
-        // Load a game with the given path
-        // Returns: true if the game was successfully loaded, false otherwise
-        bool loadGame( const char *path );
-
-        // Run core for one frame
-        void doFrame();
-
-        //
-        // Misc
-        //
-
-        // A pointer to the last instance of the class used
-        static Core *core;
-
-        LibretroSymbols *getSymbols();
-        QByteArray getLibraryName() {
-            return library_name;
-        }
-
-        bool saveGameState( QString save_path, QString game_name );
-        bool loadGameState( QString save_path, QString game_name );
-
-        //
-        // Video
-        //
-
-        retro_hw_render_callback getHWData() const {
-            return hw_callback;
-        }
-
-
-        retro_pixel_format getPixelFormat() const {
-            return pixel_format;
-        }
-        const retro_system_info *getSystemInfo() const {
-            return system_info;
-        }
-        float getAspectRatio() const {
-            if( system_av_info->geometry.aspect_ratio ) {
-                return system_av_info->geometry.aspect_ratio;
-            }
-
-            return ( float )system_av_info->geometry.base_width / system_av_info->geometry.base_height;
-        }
-
-        //
-        // Audio
-        //
-
-        //const int16_t *getAudioData() const { return audio_data; };
-        //size_t getAudioFrames() const { return audio_frames; };
-        //int16_t getLeftChannel() const { return left_channel; };
-        //int16_t getRightChannel() const { return right_channel; };
-
-        //
-        // System
-        //
-
-        void setSystemDirectory( QString system_directory );
-        void setSaveDirectory( QString save_directory );
-
-        //
-        // Timing
-        //
-
-        double getFps() const {
-            return system_av_info->timing.fps;
-        }
-        double getSampleRate() const {
-            return system_av_info->timing.sample_rate;
-        }
-        bool isDupeFrame() const {
-            return is_dupe_frame;
-        }
-
-        // Container class for a libretro core variable
-        class Variable {
-            public:
-                Variable() {} // default constructor
-
-                Variable( const retro_variable *var ) {
-                    m_key = var->key;
-
-                    // "Text before first ';' is description. This ';' must be followed by a space,
-                    // and followed by a list of possible values split up with '|'."
-                    QString valdesc( var->value );
-                    int splitidx = valdesc.indexOf( "; " );
-
-                    if( splitidx != -1 ) {
-                        m_description = valdesc.mid( 0, splitidx ).toStdString();
-                        auto _choices = valdesc.mid( splitidx + 2 ).split( '|' );
-
-                        foreach( auto &choice, _choices ) {
-                            m_choices.append( choice.toStdString() );
-                        }
-                    } else {
-                        // unknown value
+                    foreach( auto &choice, _choices ) {
+                        m_choices.append( choice.toStdString() );
                     }
-                };
-                virtual ~Variable() {};
+                } else {
+                    // unknown value
+                }
+            };
+            virtual ~Variable() {};
 
-                const std::string &key() const {
-                    return m_key;
-                };
+            const std::string &key() const {
+                return m_key;
+            };
 
-                const std::string &value( const std::string &default_ ) const {
-                    if( m_value.empty() ) {
-                        return default_;
-                    }
-
-                    return m_value;
-                };
-
-                const std::string &value() const {
-                    static std::string default_( "" );
-                    return value( default_ );
+            const std::string &value( const std::string &default_ ) const {
+                if( m_value.empty() ) {
+                    return default_;
                 }
 
-                const std::string &description() const {
-                    return m_description;
-                };
+                return m_value;
+            };
 
-                const QVector<std::string> &choices() const {
-                    return m_choices;
-                };
+            const std::string &value() const {
+                static std::string default_( "" );
+                return value( default_ );
+            }
 
-                bool isValid() const {
-                    return !m_key.empty();
-                };
+            const std::string &description() const {
+                return m_description;
+            };
 
-            private:
-                // use std::strings instead of QStrings, since the later store data as 16bit chars
-                // while cores probably use ASCII/utf-8 internally..
-                std::string m_key;
-                std::string m_value; // XXX: value should not be modified from the UI while a retro_run() call happens
-                std::string m_description;
-                QVector<std::string> m_choices;
+            const QVector<std::string> &choices() const {
+                return m_choices;
+            };
 
-        };
+            bool isValid() const {
+                return !m_key.empty();
+            };
 
-    private:
-        // Handle to the libretro core
-        QThread coreThread;
-        QTimer coreTimer;
+        private:
+            // use std::strings instead of QStrings, since the later store data as 16bit chars
+            // while cores probably use ASCII/utf-8 internally..
+            std::string m_key;
+            std::string m_value; // XXX: value should not be modified from the UI while a retro_run() call happens
+            std::string m_description;
+            QVector<std::string> m_choices;
 
-        QLibrary *libretro_core;
-        QByteArray library_name;
+    };
 
-        // Struct containing libretro methods
-        LibretroSymbols *symbols;
+signals:
+    void signalVideoRefreshCallback( FrameData *frame );
+    void signalCallbackAudioData( AudioData *audioData );
+    void signalTimeOut();
+    void signalCoreStateChanged( Core::CoreState );
+    void signalRunning( bool );
 
-        // Information about the core
-        retro_system_av_info *system_av_info;
-        retro_system_info *system_info;
-        QMap<std::string, Core::Variable> variables;
+public slots:
 
-        // Do something with retro_variable
-        retro_input_descriptor input_descriptor;
-        retro_game_geometry game_geometry;
-        retro_system_timing system_timing;
-        retro_hw_render_callback hw_callback;
-        bool full_path_needed;
-        QByteArray system_directory;
-        QByteArray save_directory;
+    //
+    // Control
+    //
 
-        // Game
-        QByteArray game_data;
+    void slotStartCoreThread( QThread::Priority priority )
+    {
+        if (!coreThread.isRunning())
+            coreThread.start( priority );
 
-        // Video
-        unsigned video_height;
-        const void *video_data;
-        size_t video_pitch;
-        unsigned video_width;
-        retro_pixel_format pixel_format;
+        unsigned finishedImmediately = 0;
 
-        // Audio
-        int16_t left_channel;
-        int16_t right_channel;
+        coreTimer.start( finishedImmediately );
+    }
 
-        // Timing
-        bool is_dupe_frame;
+    void slotCoreThreadTimeOut()
+    {
+        quint64 timeout = (1 / (qreal) core->getFps() ) * 1000000;
 
-        // Misc
-        void *m_sram;
-        void saveSRAM();
-        void loadSRAM();
+        QThread::usleep(timeout);
+        emit signalTimeOut();
+    }
 
-        // Callbacks
-        static void audioSampleCallback( int16_t left, int16_t right );
-        static size_t audioSampleBatchCallback( const int16_t *data, size_t frames );
-        static bool environmentCallback( unsigned cmd, void *data );
-        static void inputPollCallback( void );
-        static void logCallback( enum retro_log_level level, const char *fmt, ... );
-        static int16_t inputStateCallback( unsigned port, unsigned device, unsigned index, unsigned id );
-        static void videoRefreshCallback( const void *data, unsigned width, unsigned height, size_t pitch );
+    void slotDoFrame()
+    {
+        doFrame();
+    }
+
+    void slotCallbackFrameData( FrameData *frame )
+    {
+        emit signalVideoRefreshCallback( frame );
+    }
+
+    void slotCallbackAudioData( AudioData *audioData )
+    {
+        emit signalCallbackAudioData( audioData );
+    }
+
+    void slotRefreshCoreState()
+    {
+        system_av_info = new retro_system_av_info();
+        system_info = new retro_system_info();
+    }
+
+
+    void slotHandleCoreStateChanged( Core::CoreState state )
+    {
+        currentState = state;
+
+        switch ( state ) {
+
+        case Unloaded:
+            QMetaObject::invokeMethod( &coreTimer, "stop" );
+            qCDebug( phxCore ) << "Began unloading core";
+
+            emit signalCoreStateChanged( Core::SaveRAM );
+
+            symbols.retro_unload_game();
+            symbols.retro_deinit();
+            libretroCore.unload();
+            gameBuffer.clear();
+            libraryName.clear();
+
+            delete system_av_info;
+            delete system_info;
+
+            break;
+
+        case Loading:
+            Core::core = this;
+
+            system_av_info = new retro_system_av_info;
+            system_info = new retro_system_info;
+
+            pixel_format = RETRO_PIXEL_FORMAT_UNKNOWN;
+
+            is_dupe_frame = false;
+            saveRAMPointer = nullptr;
+
+            break;
+
+        case ShutDown:
+            emit signalCoreStateChanged( Core::Unloaded );
+            this->deleteLater();
+
+        case SaveRAM:
+            saveSRAM();
+
+        case LoadRAM:
+            loadSRAM();
+
+        case Running:
+            //slotStartCoreThread( QThread::TimeCriticalPriority );
+            break;
+
+        default:
+            break;
+        }
+
+    }
+
+    //bool slotLoadCore( const char *path );
+    //bool slotLoadGame( const char *path );
+    //void slotSetSystemDirectory( QString system_directory );
+    //void slotSetSaveDirectory( QString save_directory );
+
+    //void slotDoFrame();
+
+
+
+private:
+    // Handle to the libretro core
+    QThread coreThread;
+    QTimer coreTimer;
+
+    QLibrary libretroCore;
+    QByteArray libraryName;
+
+    QFileInfo gameInfo;
+
+
+    CoreState currentState;
+    // Struct containing libretro methods
+    LibretroSymbols symbols;
+
+    // Information about the core
+    retro_system_av_info *system_av_info;
+    retro_system_info *system_info;
+    QMap<std::string, Core::Variable> variables;
+
+    // Do something with retro_variable
+    retro_input_descriptor input_descriptor;
+    retro_game_geometry game_geometry;
+    retro_system_timing system_timing;
+    retro_hw_render_callback hw_callback;
+    bool full_path_needed;
+    QByteArray system_directory;
+    QByteArray save_directory;
+
+    // Game
+    QByteArray gameBuffer;
+
+    // Video
+
+    retro_pixel_format pixel_format;
+
+    // Timing
+    bool is_dupe_frame;
+
+    // Misc
+    void *saveRAMPointer;
+    void saveSRAM();
+    void loadSRAM();
+
+    // Callbacks
+    static void audioSampleCallback( int16_t left, int16_t right );
+    static size_t audioSampleBatchCallback( const int16_t *data, size_t frames );
+    static bool environmentCallback( unsigned cmd, void *data );
+    static void inputPollCallback( void );
+    static void logCallback( enum retro_log_level level, const char *fmt, ... );
+    static int16_t inputStateCallback( unsigned port, unsigned device, unsigned index, unsigned id );
+    static void videoRefreshCallback( const void *data, unsigned width, unsigned height, size_t pitch );
 };
 
 // Do not scope this globally anymore, it is not thread-safe

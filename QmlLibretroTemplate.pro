@@ -1,6 +1,6 @@
 TEMPLATE = app
 
-QT += qml quick widgets multimedia
+QT += qml quick widgets multimedia concurrent
 
 SOURCES += main.cpp \
     videoitem.cpp \
@@ -8,7 +8,8 @@ SOURCES += main.cpp \
     audio.cpp \
     audiobuffer.cpp \
     phoenixglobals.cpp \
-    libretrocontroller.cpp
+    libretrocontroller.cpp \
+    pathwatcher.cpp
 
 RESOURCES += qml.qrc
 
@@ -36,4 +37,5 @@ HEADERS += \
     logging.h \
     audiobuffer.h \
     phoenixglobals.h \
-    libretrocontroller.h
+    libretrocontroller.h \
+    pathwatcher.h

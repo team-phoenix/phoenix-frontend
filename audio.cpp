@@ -13,12 +13,13 @@ Audio::Audio( QObject *parent )
 
     audioThread.setObjectName( "phoenix-audio" );
 
-    audioTimer.setTimerType(Qt::PreciseTimer);
+    audioTimer.setTimerType( Qt::PreciseTimer );
 
     resamplerState = nullptr;
 
     this->moveToThread( &audioThread );
     connect( &audioThread, &QThread::started, this, &Audio::slotThreadStarted );
+    //connect( audioBuf.get(), &AudioBuffer::readReady, this, &Audio::slotHandlePeriodTimer );
     connect( &audioTimer, &QTimer::timeout, this, &Audio::slotHandlePeriodTimer );
 
     // We need to send this signal to ourselves
@@ -88,10 +89,12 @@ void Audio::slotHandleFormatChanged() {
     }
 
     audioOut = new QAudioOutput( audioFormatOut );
+
+
     Q_CHECK_PTR( audioOut );
     audioOut->moveToThread( &audioThread );
 
-    connect( audioOut, &QAudioOutput::stateChanged, this, &Audio::slotStateChanged );
+    //connect( audioOut, &QAudioOutput::stateChanged, this, &Audio::slotStateChanged );
     audioOutIODev = audioOut->start();
 
     if( !isCoreRunning ) {
@@ -146,10 +149,14 @@ void Audio::slotThreadStarted() {
         return;
     }
 
-    slotHandleFormatChanged();
+    emit signalFormatChanged();
+
 }
 
-void Audio::slotHandlePeriodTimer() {
+void Audio::slotHandlePeriodTimer( ) {
+
+
+
     Q_ASSERT( QThread::currentThread() == &audioThread );
 
     // Handle the situation where there is no device to output to
@@ -179,12 +186,13 @@ void Audio::slotHandlePeriodTimer() {
         return;
     }
 
+
     // Compute the exact number of bytes to read from the circular buffer to
     // produce outputBytesFree bytes of output; Taking resampling and DRC into account
     double maxDeviation = 0.005;
     auto outputBufferMidPoint = audioOut->bufferSize() / 2;
     auto distanceFromCenter = outputBytesFree - outputBufferMidPoint;
-    double direction = ( double )distanceFromCenter / outputBufferMidPoint;
+    double direction = ( qreal )distanceFromCenter / outputBufferMidPoint;
     double adjust = 1.0 + maxDeviation * direction;
     double adjustedSampleRateRatio = sampleRateRatio * adjust;
     auto audioFormatTemp = audioFormatIn;
@@ -192,7 +200,10 @@ void Audio::slotHandlePeriodTimer() {
     auto inputBytesToRead = audioFormatTemp.bytesForDuration( audioFormatOut.durationForBytes( distanceFromCenter < 0 ? 0 : distanceFromCenter ) );
 
     // Read the input data
+
     auto inputBytesRead = audioBuf->read( inputDataChar, inputBytesToRead );
+    //if ( audioBuf->size() <= 0 )
+        //return;
     auto inputFramesRead = audioFormatIn.framesForBytes( inputBytesRead );
     auto inputSamplesRead = inputFramesRead * samplesPerFrame;
 
@@ -223,13 +234,20 @@ void Audio::slotHandlePeriodTimer() {
     // Convert float data back to shorts
     src_float_to_short_array( outputDataFloat, outputDataShort, outputSamplesConverted );
 
+    qDebug() << "converted: " << outputBytesConverted ;
+
+    if (!outputBytesConverted)
+        return;
+
     int outputBytesWritten = audioOutIODev->write( ( char * ) outputDataShort, outputBytesConverted );
     Q_UNUSED( outputBytesWritten );
 
 
     qCDebug( phxAudio ) << "Input is" << ( audioBuf->size() * 100 / audioFormatIn.bytesForFrames( 4096 ) ) << "% full, output is"
-                        << ( ( ( double )( audioOut->bufferSize() - outputBytesFree ) / audioOut->bufferSize() ) * 100 )  << "% full ; DRC:" << adjust
+                        << ( ( ( qreal )( audioOut->bufferSize() - outputBytesFree ) / audioOut->bufferSize() ) * 100 )  << "% full ; DRC:" << adjust
                         << ";" << inputBytesToRead << audioFormatIn.bytesForDuration( audioFormatOut.durationForBytes( outputBytesFree ) ) << sampleRateRatio << adjustedSampleRateRatio;
+
+
     qCDebug( phxAudio ) << "\tInput: needed" << inputBytesToRead << "bytes, read" << inputBytesRead << "bytes";
     qCDebug( phxAudio ) << "\tOutput: needed" << distanceFromCenter << "bytes, wrote" << outputBytesWritten << "bytes";
     qCDebug( phxAudio ) << "Input: needed" << audioFormatIn.framesForBytes( inputBytesToRead ) << "frames, read" << audioFormatIn.framesForBytes( inputBytesRead ) << "frames";
@@ -255,7 +273,7 @@ void Audio::slotRunChanged( bool _isCoreRunning ) {
         if( audioOut->state() != QAudio::ActiveState ) {
             qCDebug( phxAudio ) << "Started";
             audioOut->resume();
-            audioTimer.start();
+            audioTimer.start(0);
         }
     }
 }

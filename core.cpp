@@ -49,50 +49,34 @@ LibretroSymbols::LibretroSymbols() {
 }
 
 Core::Core()
-    : coreThread( this )
+    : coreThread( this ),
+      system_av_info( new retro_system_av_info ),
+      system_info( new retro_system_info )
+
 {
-    libretro_core = nullptr;
-    system_av_info = new retro_system_av_info();
-    system_info = new retro_system_info();
-    symbols = new LibretroSymbols;
-
-    pixel_format = RETRO_PIXEL_FORMAT_UNKNOWN;
-
-    left_channel = 0;
-    right_channel = 0;
-
-    is_dupe_frame = false;
-    m_sram = nullptr;
-
-    Core::core = this;
+    connect( this, &Core::signalCoreStateChanged, this, &Core::slotHandleCoreStateChanged, Qt::DirectConnection );
+    emit signalCoreStateChanged( Core::Loading );
 
     setSaveDirectory( phxGlobals.savePath() );
     setSystemDirectory( phxGlobals.biosPath() );
 
     this->moveToThread(&coreThread);
+
+    connect( this, &Core::signalTimeOut, this, &Core::slotDoFrame );
+    //connect( &coreThread, &QThread::started, this, &Core::slotCoreThreadTimeOut );
+
+    //connect( &coreTimer, &QTimer::timeout, this, &Core::slotCoreThreadTimeOut);
+
     connect( &coreTimer, &QTimer::timeout, this, &Core::slotCoreThreadTimeOut);
 
-    connect( this, &Core::signalTimeOut, this, &Core::slotDoFrame);
+    //connect( this, &Core::signalTimeOut, this, &Core::slotDoFrame);
+
 
 
 } // Core::Core()
 
-Core::~Core() {
-    coreTimer.stop();
-    qCDebug( phxCore ) << "Began unloading core";
-    saveSRAM();
-    symbols->retro_unload_game();
-    symbols->retro_deinit();
-    libretro_core->unload();
-    game_data.clear();
-    library_name.clear();
-
-    delete libretro_core;
-    delete system_av_info;
-    delete symbols;
-    delete system_info;
-    qCDebug( phxCore ) << "Finished unloading core";
-
+Core::~Core()
+{
 } // Core::~Core()
 
 //  ________________________
@@ -105,12 +89,15 @@ Core::~Core() {
 //
 
 bool Core::loadCore( const char *path ) {
-    libretro_core = new QLibrary( path );
-    libretro_core->load();
 
-    if( libretro_core->isLoaded() ) {
+    libretroCore.setFileName( path );
+    libretroCore.load();
 
-        library_name = libretro_core->fileName().toLocal8Bit();
+    emit signalCoreStateChanged( Core::Loading );
+
+    if( libretroCore.isLoaded() ) {
+
+        libraryName = libretroCore.fileName().toLocal8Bit();
 
         // Resolve symbols
         resolved_sym( retro_set_environment );
@@ -140,25 +127,30 @@ bool Core::loadCore( const char *path ) {
         resolved_sym( retro_get_memory_size );
 
         // Set callbacks
-        symbols->retro_set_environment( environmentCallback );
-        symbols->retro_set_audio_sample( audioSampleCallback );
-        symbols->retro_set_audio_sample_batch( audioSampleBatchCallback );
-        symbols->retro_set_input_poll( inputPollCallback );
-        symbols->retro_set_input_state( inputStateCallback );
-        symbols->retro_set_video_refresh( videoRefreshCallback );
-        //symbols->retro_get_memory_data( getMemoryData );
-        //symbols->retro_get_memory_size( getMemorySize );
+        symbols.retro_set_environment( environmentCallback );
+        symbols.retro_set_audio_sample( audioSampleCallback );
+        symbols.retro_set_audio_sample_batch( audioSampleBatchCallback );
+        symbols.retro_set_input_poll( inputPollCallback );
+        symbols.retro_set_input_state( inputStateCallback );
+        symbols.retro_set_video_refresh( videoRefreshCallback );
+        //symbols.retro_get_memory_data( getMemoryData );
+        //symbols.retro_get_memory_size( getMemorySize );
 
         // Init the core
-        symbols->retro_init();
+        symbols.retro_init();
 
         // Get some info about the game
-        symbols->retro_get_system_info( system_info );
+        symbols.retro_get_system_info( system_info );
         full_path_needed = system_info->need_fullpath;
+
+        emit signalCoreStateChanged( Core::NeedsGame );
 
         return true;
 
     }
+
+    else
+        qDebug() << "Core is not initialized";
 
     return false;
 
@@ -166,12 +158,13 @@ bool Core::loadCore( const char *path ) {
 
 bool Core::loadGame( const char *path ) {
     // create a retro_game_info struct, load with data (created on stack)
+
     retro_game_info game_info;
 
 
     // full path needed, pass this file path to the core
 
-    QFileInfo info( path );
+    gameInfo.setFile( path );
 
     //QString file_name = info.baseName() + "." + info.suffix();
     //qDebug() << "suffix: " << file_name;
@@ -203,68 +196,65 @@ bool Core::loadGame( const char *path ) {
         // full path not needed, read the file to a buffer and pass that to the core
 
 
-        QFile game( info.canonicalFilePath() );
+        QFile game( gameInfo.canonicalFilePath() );
 
         if( !game.open( QIODevice::ReadOnly ) ) {
             return false;
         }
 
         // read into memory
-        game_data = game.readAll();
+        gameBuffer = game.readAll();
 
         game_info.path = nullptr;
-        game_info.data = game_data.data();
+        game_info.data = gameBuffer.data();
         game_info.size = game.size();
         game_info.meta = "";
 
     }
 
 
-    bool ret = symbols->retro_load_game( &game_info );
+    bool ret = symbols.retro_load_game( &game_info );
+
 
     // Get some info about the game
     if( !ret ) {
         return false;
     }
 
-    symbols->retro_get_system_av_info( system_av_info );
+    symbols.retro_get_system_av_info( system_av_info );
     game_geometry = system_av_info->geometry;
     system_timing = system_av_info->timing;
 
-    loadSRAM();
+
+    emit signalCoreStateChanged( Core::LoadRAM );
 
     return true;
 
 } // Core::loadGame()
 
 void Core::doFrame() {
-    // Update the static pointer
+    // Update static pointer;
     core = this;
 
     // Tell the core to run a frame
-    symbols->retro_run();
+    symbols.retro_run();
 
-    if( symbols->retro_audio ) {
-        symbols->retro_audio();
+    if( symbols.retro_audio ) {
+        symbols.retro_audio();
     }
 
+    emit signalCoreStateChanged( Core::Running );
 } // void doFrame()
 
 //
 // Misc
 //
 
-LibretroSymbols *Core::getSymbols() {
-    return symbols;
-
-} // Core::getSymbols()
-
-
 bool Core::saveGameState( QString path, QString name ) {
     Q_UNUSED( path );
     Q_UNUSED( name );
 
-    size_t size = core->getSymbols()->retro_serialize_size();
+    size_t size = symbols.retro_serialize_size();
 
     if( !size ) {
         return false;
@@ -273,7 +263,7 @@ bool Core::saveGameState( QString path, QString name ) {
     char *data = new char[size];
     bool loaded = false;
 
-    if( symbols->retro_serialize( data, size ) ) {
+    if( symbols.retro_serialize( data, size ) ) {
         QFile *file = new QFile( phxGlobals.savePath() + phxGlobals.selectedGame().baseName() + "_STATE.sav" );
         qCDebug( phxCore ) << file->fileName();
 
@@ -308,7 +298,7 @@ bool Core::loadGameState( QString path, QString name ) {
 
         file.close();
 
-        if( symbols->retro_unserialize( data, size ) ) {
+        if( symbols.retro_unserialize( data, size ) ) {
             qCDebug( phxCore ) << "Save State loaded";
             loaded = true;
         }
@@ -346,29 +336,29 @@ void Core::setSaveDirectory( QString save_dir ) {
 // |________________________|
 
 void Core::saveSRAM() {
-    if( m_sram == nullptr ) {
+    if( saveRAMPointer == nullptr ) {
         return;
     }
 
-    QFile file( save_directory + phxGlobals.selectedGame().baseName() + ".srm" );
+    QFile file( save_directory + gameInfo.baseName() + ".srm" );
     qCDebug( phxCore ) << "Saving SRAM to: " << file.fileName();
 
     if( file.open( QIODevice::WriteOnly ) ) {
-        char *data = static_cast<char *>( m_sram );
-        size_t size = symbols->retro_get_memory_size( RETRO_MEMORY_SAVE_RAM );
+        const char *data = static_cast<const char *>( saveRAMPointer );
+        size_t size = symbols.retro_get_memory_size( RETRO_MEMORY_SAVE_RAM );
         file.write( data, size );
         file.close();
     }
 } // Core::saveSRAM()
 
 void Core::loadSRAM() {
-    m_sram = symbols->retro_get_memory_data( RETRO_MEMORY_SAVE_RAM );
+    saveRAMPointer = symbols.retro_get_memory_data( RETRO_MEMORY_SAVE_RAM );
 
-    QFile file( save_directory + phxGlobals.selectedGame().baseName() + ".srm" );
+    QFile file( save_directory + gameInfo.baseName() + ".srm" );
 
     if( file.open( QIODevice::ReadOnly ) ) {
         QByteArray data = file.readAll();
-        memcpy( m_sram, data.data(), data.size() );
+        memcpy( saveRAMPointer, data.data(), data.size() );
 
         qCDebug( phxCore ) << "Loading SRAM from: " << file.fileName();
         file.close();
@@ -383,15 +373,14 @@ void Core::loadSRAM() {
 
 void Core::audioSampleCallback( int16_t left, int16_t right )
 {
-
     uint32_t sample = ( ( uint16_t ) left << 16 ) | ( uint16_t ) right;
-    Core::core->slotCallbackAudioData( new AudioData( (char *)&sample, sizeof( int16_t ) * 2 ) );
+    Core::core->slotCallbackAudioData( new AudioData( (char *)std::move(sample), sizeof( int16_t ) * 2 ) );
 
 } // Core::audioSampleCallback()
 
 size_t Core::audioSampleBatchCallback( const int16_t *data, size_t frames )
 {
-    Core::core->slotCallbackAudioData( new AudioData ( (char *)data,  frames * sizeof( int16_t ) * 2 ) );
+    Core::core->slotCallbackAudioData( new AudioData ( (char *)std::move(data),  frames * sizeof( int16_t ) * 2 ) );
 
     return frames;
 
@@ -465,7 +454,7 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
 
         case RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK: // 12
             qDebug() << "\tRETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK (12) (handled)";
-            Core::core->symbols->retro_keyboard_event = ( decltype( LibretroSymbols::retro_keyboard_event ) )data;
+            Core::core->symbols.retro_keyboard_event = ( decltype( LibretroSymbols::retro_keyboard_event ) )data;
             break;
 
         case RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE: // 13
@@ -544,7 +533,7 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
 
         case RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK: // 21
             qDebug() << "RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK (21)";
-            Core::core->symbols->retro_frame_time = ( decltype( LibretroSymbols::retro_frame_time ) )data;
+            Core::core->symbols.retro_frame_time = ( decltype( LibretroSymbols::retro_frame_time ) )data;
             break;
 
         case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK: // 22
@@ -625,6 +614,9 @@ void Core::inputPollCallback( void ) {
 
 int16_t Core::inputStateCallback( unsigned port, unsigned device, unsigned index, unsigned id ) {
     Q_UNUSED( index )
+    Q_UNUSED( port )
+    Q_UNUSED( device )
+    Q_UNUSED( id)
 
     return 0;
 

@@ -10,8 +10,12 @@
 #include <QOpenGLContext>
 #include <QQueue>
 
+#include <QElapsedTimer>
+
+
 #include <memory>
 
+#include "recorder.h"
 #include "core.h"
 #include "audio.h"
 
@@ -44,6 +48,10 @@ private slots:
     void slotHandleAudioData( AudioData *audioFrame );
 
 private:
+
+    QElapsedTimer frameTimer;
+
+    Recorder recorder;
 
     Audio *audio;
     Core *core;
