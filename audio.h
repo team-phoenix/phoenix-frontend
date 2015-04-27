@@ -9,6 +9,7 @@
 #include <QDebug>
 
 #include <memory>
+#include <atomic>
 
 #include "audiobuffer.h"
 #include "logging.h"
@@ -25,30 +26,41 @@
  */
 
 class Audio : public QObject {
-        Q_OBJECT
+    Q_OBJECT
+
+    QTimer audioTimer;
+
     public:
         Audio( QObject * = 0 );
         ~Audio();
 
-        void startAudioThread();
-
         void setInFormat( QAudioFormat newInFormat );
 
-        AudioBuffer *getAudioBuf() const;
+        void setDefaultFormat( int rate )
+        {
+            QAudioFormat format;
+            format.setSampleSize( 16 );
+            format.setSampleRate( rate );
+            format.setChannelCount( 2 );
+            format.setSampleType( QAudioFormat::SignedInt );
+            format.setByteOrder( QAudioFormat::LittleEndian );
+            format.setCodec( "audio/pcm" );
+            // TODO test format
+            setInFormat( format );
+        }
 
     signals:
         void signalFormatChanged();
+        void signalStopTimer();
+        void signalStartTimer();
 
     public slots:
         void slotStateChanged( QAudio::State state );
-
         void slotRunChanged( bool _isCoreRunning );
         void slotSetVolume( qreal level );
-
-    private slots:
         void slotThreadStarted();
         void slotHandleFormatChanged();
-        void slotHandlePeriodTimer();
+        void slotHandlePeriodTimer( AudioBuffer *audioBuf, int size );
 
     private:
         // Opaque pointer for libsamplerate
@@ -70,11 +82,6 @@ class Audio : public QObject {
 
         // aio doesn't own the pointer; Use a normal pointer.
         QIODevice *audioOutIODev;
-
-        QThread audioThread;
-        QTimer audioTimer;
-
-        std::unique_ptr<AudioBuffer>audioBuf;
 
 };
 

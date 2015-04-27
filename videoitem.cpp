@@ -9,23 +9,45 @@
 #include <QOpenGLFramebufferObject>
 
 
-
-
 VideoItem::VideoItem() :
-    audio( new Audio ),
     core( new Core ),
+    audio( new Audio ),
+    audioBuffer( new AudioBuffer ),
+    coreTimer( nullptr ),
     renderReady( false ),
     gameReady( false ),
     libretroCoreReady( false ),
-    recorder( this )
+    texture ( nullptr )
 {
+    Q_CHECK_PTR( core );
     Q_CHECK_PTR( audio );
-    Q_CHECK_PTR ( core );
+    Q_CHECK_PTR( audioBuffer );
+
+    coreTimer.setParent( core );
+    coreTimer.moveToThread( &coreThread );
+
+    core->moveToThread( &coreThread );
+    audio->moveToThread( &coreThread );
+    audioBuffer->moveToThread( &coreThread );
+
+    connect( &coreThread, &QThread::started, audio, &Audio::slotThreadStarted );
+    //connect( &coreThread, &QThread::started, this, &VideoItem::startCoreTimer, Qt::DirectConnection );
+    //connect( &coreThread, &QThread::started, core, &Core::startTimer );
+    connect( &coreThread, &QThread::started, audio, [ this ]  {
+        audio->slotRunChanged( true );
+    });
+
+    //connect( &coreTimer, &QTimer::timeout, core, &Core::slotDoFrame );
+
+    connect( core, &Core::signalRenderFrame, this, &VideoItem::update );
+    connect( this, &VideoItem::signalDoFrame, core, &Core::slotDoFrame );
 
 
+    connect( audioBuffer.get(), &AudioBuffer::signalReadReady, audio, &Audio::slotHandlePeriodTimer );
+    //connect( core, &Core::signalRenderFrame, audio, &Audio::slotHandlePeriodTimer );
     connect( this, &VideoItem::windowChanged, this, &VideoItem::handleWindowChanged );
-    connect( core, &Core::signalVideoRefreshCallback, this, &VideoItem::slotHandleFrameData );
-    connect( core, &Core::signalCallbackAudioData, this, &VideoItem::slotHandleAudioData );
+
+    connect( core, &Core::signalVideoDataReady, this, &VideoItem::createTexture );
 }
 
 VideoItem::~VideoItem()
@@ -33,16 +55,33 @@ VideoItem::~VideoItem()
 
 }
 
+void VideoItem::createTexture( uchar *data, unsigned width, unsigned height, int pitch )
+{
+
+    QImage::Format frame_format = retroToQImageFormat( core->getPixelFormat() );
+    texture = window()->createTextureFromImage( QImage( std::move( data ),
+              width,
+              height,
+              pitch,
+              frame_format )
+              , QQuickWindow::TextureOwnsGLTexture );
+
+}
+
 void VideoItem::refresh()
 {
     if ( gameReady && libretroCoreReady ) {
 
-        core->slotStartCoreThread( QThread::TimeCriticalPriority );
+        core->setAudioBuffer( audioBuffer.get() );
+
+        audio->setDefaultFormat( core->getSampleRate() );
+        //core->slotStartCoreThread( QThread::TimeCriticalPriority );
 
         //core->slotHandleCoreStateChanged( Core::Running );
         renderReady = true;
-        updateAudioFormat();
-        audio->startAudioThread();
+
+        startThread( VideoItem::CoreThread, QThread::TimeCriticalPriority );
+        audio->slotRunChanged( true );
 
     }
 }
@@ -85,8 +124,7 @@ void VideoItem::handleWindowChanged(QQuickWindow *window)
 
     connect( window, &QQuickWindow::openglContextCreated, this, &VideoItem::handleOpenGLContextCreated );
 
-
-    //connect(window, &QQuickWindow::frameSwapped, this, &QQuickItem::update);
+    connect(window, &QQuickWindow::frameSwapped, this, &QQuickItem::update);
 
 }
 
@@ -121,17 +159,16 @@ QString VideoItem::libretroCore() const
 
 void VideoItem::setLibretroCore(QString libretroCore)
 {
-    qDebug() << libretroCore;
     libretroCore = libretroCore.remove( "file://" );
     qmlLibretroCore = libretroCore;
-
+/*
     if ( core->state() == Core::Running ) {
         frameDataQueue.clear();
         renderReady = false;
         gameReady = false;
         core->slotHandleCoreStateChanged( Core::Unloaded );
-
     }
+    */
 
     libretroCoreReady = core->loadCore( libretroCore.toUtf8().constData() );
 
@@ -144,42 +181,35 @@ void VideoItem::setGame( QString game )
 {
     game = game.remove( "file://" );
     qmlGame = game;
+
+    //if ( core->state() == Core::Running ) {
+      //  setLibretroCore( qmlLibretroCore );
+    //}
+
     gameReady = core->loadGame( game.toUtf8().constData() );
 
     emit gameChanged();
 
     refresh();
+
 }
-
-void VideoItem::updateAudioFormat()
-{
-    QAudioFormat format;
-    format.setSampleSize( 16 );
-    format.setSampleRate( core->getSampleRate() );
-    format.setChannelCount( 2 );
-    format.setSampleType( QAudioFormat::SignedInt );
-    format.setByteOrder( QAudioFormat::LittleEndian );
-    format.setCodec( "audio/pcm" );
-    audio->setInFormat( format );
-}
-
-void VideoItem::slotHandleAudioData( AudioData *audioFrame )
-{
-
-    size_t size = audio->getAudioBuf()->write( std::move(audioFrame->data), std::move(audioFrame->size) );
-    delete audioFrame;
-
-    //qDebug() << "Audio Frame: size( " << size << " ) " << size;
-}
-
+/*
 void VideoItem::slotHandleFrameData( FrameData *videoFrame )
 {
-    unsigned size = *videoFrame->data;
-    recorder.slotHandleVideoFrame( *videoFrame );
-    frameDataQueue.enqueue( std::move(videoFrame) );
+    // The core thread takes a little time to end, in this time the
+    // callbacks are still being fired, we need to verify the core is intact or
+    // else we will get strange errors.
+
+    if ( core->state() != Core::Running ) {
+        delete videoFrame;
+        return;
+    }
+
+    frameDataQueue.enqueue( videoFrame );
     //qDebug() << "Video Frame: size( " << size << " )";
     update();
 }
+*/
 
 void VideoItem::simpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTextureNode *textureNode )
 {
@@ -195,24 +225,8 @@ void VideoItem::simpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTexture
 }
 QSGNode* VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintData )
 {
-    static int frameCount = 0;
-
-    frameCount++;
-
-    if ( frameCount == 1 )
-        frameTimer.start();
-
-    if ( frameCount >= core->getFps() ) {
-        quint64 t = frameTimer.restart() * 10;
-        qDebug() << t;
-        frameCount = 0;
-    }
-
     Q_UNUSED( paintData );
 
-
-
-    QSGTexture *texture = nullptr;
     QSGSimpleTextureNode *textureNode = static_cast<QSGSimpleTextureNode *>( node );
     if (!textureNode)
         textureNode = new QSGSimpleTextureNode;
@@ -228,36 +242,38 @@ QSGNode* VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
 
     }
 
-    else {
-
-        if ( frameDataQueue.length() > 0 ) {
-            QImage::Format frame_format = retroToQImageFormat( core->getPixelFormat() );
-
-            FrameData *frame = frameDataQueue.dequeue();
-
-            texture = window()->createTextureFromImage( QImage( frame->data,
-                      frame->width,
-                      frame->height,
-                      frame->pitch,
-                      frame_format )
-                      , QQuickWindow::TextureOwnsGLTexture );
-
-            delete frame;
-        }
-
-        else {
-            simpleTextureNode( Qt::black, textureNode );
-            return textureNode;
-        }
-
-    }
-
-    if( texture == textureNode->texture() ) {
-
+    if ( !texture ) {
+        emit signalDoFrame();
+        simpleTextureNode( Qt::black, textureNode );
         return textureNode;
+
     }
 
+    static quint64 timeStamp = -1;
 
+
+    if ( timeStamp != -1 ) {
+        qreal calculatedFrameRate = ( 1 / (timeStamp / 1000000.0) ) * 1000.0;
+        int difference = calculatedFrameRate > core->getFps() ? calculatedFrameRate - core->getFps() : core->getFps() - calculatedFrameRate;
+        //qDebug() << "FrameRate: " <<  difference << " coreFps: " << core->getFps() << " calculatedFPS: " << calculatedFrameRate;
+
+        //frameTimer.hasExpired()
+        //qDebug() << (qreal)( 1 / core->getFps() ) * 1000;
+
+        //if ( difference > 1 / 60 ) {
+
+        //}
+
+
+
+
+    }
+
+    timeStamp = frameTimer.nsecsElapsed();
+    frameTimer.start();
+
+    if ( core->isDupeFrame() )
+        return textureNode;
 
     textureNode->setTexture( texture );
     textureNode->setRect( boundingRect() );
@@ -265,8 +281,9 @@ QSGNode* VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
     textureNode->setOwnsTexture( true );
     textureNode->setTextureCoordinatesTransform( QSGSimpleTextureNode::MirrorVertically | QSGSimpleTextureNode::MirrorHorizontally );
 
-    grabToImage(boundingRect().size().toSize());
-    QFile fout("/Users/lee/Desktop/screenshotPhoenix");
+    emit signalDoFrame();
+
+
 
     return textureNode;
 

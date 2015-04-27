@@ -15,7 +15,6 @@
 
 #include <memory>
 
-#include "recorder.h"
 #include "core.h"
 #include "audio.h"
 
@@ -24,6 +23,32 @@ class VideoItem : public QQuickItem
     Q_OBJECT
     Q_PROPERTY( QString libretroCore READ libretroCore WRITE setLibretroCore NOTIFY libretroCoreChanged )
     Q_PROPERTY( QString game READ game WRITE setGame NOTIFY gameChanged )
+
+    Core *core;
+    Audio *audio;
+    std::unique_ptr<AudioBuffer> audioBuffer;
+
+    QThread coreThread;
+    QThread audioThread;
+
+    QTimer coreTimer;
+
+    QElapsedTimer frameTimer;
+
+    bool renderReady;
+    bool gameReady;
+    bool libretroCoreReady;
+
+    QString qmlLibretroCore;
+    QString qmlGame;
+
+    enum Thread {
+        CoreThread = 0,
+        AudioThread,
+        InputThread,
+    };
+
+    QSGTexture *texture;
 
 public:
     VideoItem();
@@ -35,38 +60,40 @@ public:
     void setGame(QString game);
     void setLibretroCore(QString libretroCore);
 
-    void simpleTextureNode(Qt::GlobalColor, QSGSimpleTextureNode *textureNode);
+    void startThread( VideoItem::Thread type, QThread::Priority priority = QThread::TimeCriticalPriority )
+    {
+        switch ( type ) {
+        case CoreThread:
+            coreThread.start( priority);
+            break;
+        case AudioThread:
+            audioThread.start( priority );
+            break;
+        case InputThread:
+            break;
+        default:
+            break;
+        }
+    }
 
 signals:
     void libretroCoreChanged();
     void gameChanged();
+    void signalDoFrame();
 
 private slots:
-    void handleWindowChanged(QQuickWindow *window);
-    void handleOpenGLContextCreated(QOpenGLContext *GLContext);
-    void slotHandleFrameData( FrameData *videoFrame );
-    void slotHandleAudioData( AudioData *audioFrame );
+    void handleWindowChanged( QQuickWindow *window );
+    void handleOpenGLContextCreated( QOpenGLContext *GLContext );
+    void createTexture( uchar *data, unsigned width, unsigned height, int pitch );
+
 
 private:
 
-    QElapsedTimer frameTimer;
-
-    Recorder recorder;
-
-    Audio *audio;
-    Core *core;
-    bool renderReady;
-    bool gameReady;
-    bool libretroCoreReady;
-
-    QString qmlLibretroCore;
-    QString qmlGame;
-
-    QQueue< FrameData * > frameDataQueue;
-
-    void updateAudioFormat();
     void componentComplete();
     void refresh();
+
+    void simpleTextureNode(Qt::GlobalColor, QSGSimpleTextureNode *textureNode);
+
 
     QSGNode *updatePaintNode(QSGNode *node, UpdatePaintNodeData *paintData);
 
