@@ -29,10 +29,6 @@ Audio::~Audio() {
         delete audioOut;
     }
 
-    if( audioOutIODev ) {
-        delete audioOutIODev;
-    }
-
     if( outputDataFloat ) {
         delete outputDataFloat;
     }

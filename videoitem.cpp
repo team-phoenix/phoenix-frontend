@@ -10,55 +10,53 @@
 
 
 VideoItem::VideoItem() :
-    core( new Core ),
-    audio( new Audio ),
-    audioBuffer( new AudioBuffer ),
     coreTimer( nullptr ),
     renderReady( false ),
     gameReady( false ),
     libretroCoreReady( false ),
     texture ( nullptr )
 {
-    Q_CHECK_PTR( core );
-    Q_CHECK_PTR( audio );
-    Q_CHECK_PTR( audioBuffer );
-
-    coreTimer.setParent( core );
+    //coreTimer.setParent( &core );
     coreTimer.moveToThread( &coreThread );
 
-    core->moveToThread( &coreThread );
-    audio->moveToThread( &coreThread );
-    audioBuffer->moveToThread( &coreThread );
+    core.moveToThread( &coreThread );
+    audio.moveToThread( &coreThread );
+    audioBuffer.moveToThread( &coreThread );
 
-    connect( &coreThread, &QThread::started, audio, &Audio::slotThreadStarted );
+    connect( &coreThread, &QThread::started, &audio, &Audio::slotThreadStarted );
     //connect( &coreThread, &QThread::started, this, &VideoItem::startCoreTimer, Qt::DirectConnection );
     //connect( &coreThread, &QThread::started, core, &Core::startTimer );
-    connect( &coreThread, &QThread::started, audio, [ this ]  {
-        audio->slotRunChanged( true );
+    connect( &coreThread, &QThread::started, &audio, [ this ]  {
+        audio.slotRunChanged( true );
     });
 
     //connect( &coreTimer, &QTimer::timeout, core, &Core::slotDoFrame );
 
-    connect( core, &Core::signalRenderFrame, this, &VideoItem::update );
-    connect( this, &VideoItem::signalDoFrame, core, &Core::slotDoFrame );
+    connect( &core, &Core::signalRenderFrame, this, &VideoItem::update );
+    connect( this, &VideoItem::signalDoFrame, &core, &Core::slotDoFrame );
 
 
-    connect( audioBuffer.get(), &AudioBuffer::signalReadReady, audio, &Audio::slotHandlePeriodTimer );
+    connect( &audioBuffer, &AudioBuffer::signalReadReady, &audio, &Audio::slotHandlePeriodTimer );
     //connect( core, &Core::signalRenderFrame, audio, &Audio::slotHandlePeriodTimer );
     connect( this, &VideoItem::windowChanged, this, &VideoItem::handleWindowChanged );
 
-    connect( core, &Core::signalVideoDataReady, this, &VideoItem::createTexture );
+    connect( &core, &Core::signalVideoDataReady, this, &VideoItem::createTexture );
 }
 
 VideoItem::~VideoItem()
 {
+    coreThread.exit();
+    coreThread.wait();
+
+    audioThread.exit();
+    audioThread.wait();
 
 }
 
 void VideoItem::createTexture( uchar *data, unsigned width, unsigned height, int pitch )
 {
 
-    QImage::Format frame_format = retroToQImageFormat( core->getPixelFormat() );
+    QImage::Format frame_format = retroToQImageFormat( core.getPixelFormat() );
     texture = window()->createTextureFromImage( QImage( std::move( data ),
               width,
               height,
@@ -72,16 +70,16 @@ void VideoItem::refresh()
 {
     if ( gameReady && libretroCoreReady ) {
 
-        core->setAudioBuffer( audioBuffer.get() );
+        core.setAudioBuffer( &audioBuffer );
 
-        audio->setDefaultFormat( core->getSampleRate() );
+        audio.setDefaultFormat( core.getSampleRate() );
         //core->slotStartCoreThread( QThread::TimeCriticalPriority );
 
         //core->slotHandleCoreStateChanged( Core::Running );
         renderReady = true;
 
         startThread( VideoItem::CoreThread, QThread::TimeCriticalPriority );
-        audio->slotRunChanged( true );
+        audio.slotRunChanged( true );
 
     }
 }
@@ -90,8 +88,8 @@ void VideoItem::componentComplete()
 {
     QQuickItem::componentComplete();
 
-    setLibretroCore( "/Users/lee/Desktop/vbam_libretro.dylib" );
-    setGame( "/Users/lee/Desktop/GBA/Golden Sun.gba" );
+    //setLibretroCore( "/Users/lee/Desktop/vbam_libretro.dylib" );
+    //setGame( "/Users/lee/Desktop/GBA/Golden Sun.gba" );
 
     renderReady = true;
 
@@ -170,7 +168,7 @@ void VideoItem::setLibretroCore(QString libretroCore)
     }
     */
 
-    libretroCoreReady = core->loadCore( libretroCore.toUtf8().constData() );
+    libretroCoreReady = core.loadCore( libretroCore.toUtf8().constData() );
 
     emit libretroCoreChanged();
 
@@ -186,7 +184,7 @@ void VideoItem::setGame( QString game )
       //  setLibretroCore( qmlLibretroCore );
     //}
 
-    gameReady = core->loadGame( game.toUtf8().constData() );
+    gameReady = core.loadGame( game.toUtf8().constData() );
 
     emit gameChanged();
 
@@ -254,7 +252,7 @@ QSGNode* VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
 
     if ( timeStamp != -1 ) {
         qreal calculatedFrameRate = ( 1 / (timeStamp / 1000000.0) ) * 1000.0;
-        int difference = calculatedFrameRate > core->getFps() ? calculatedFrameRate - core->getFps() : core->getFps() - calculatedFrameRate;
+        int difference = calculatedFrameRate > core.getFps() ? calculatedFrameRate - core.getFps() : core.getFps() - calculatedFrameRate;
         //qDebug() << "FrameRate: " <<  difference << " coreFps: " << core->getFps() << " calculatedFPS: " << calculatedFrameRate;
 
         //frameTimer.hasExpired()
@@ -272,7 +270,7 @@ QSGNode* VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
     timeStamp = frameTimer.nsecsElapsed();
     frameTimer.start();
 
-    if ( core->isDupeFrame() )
+    if ( core.isDupeFrame() )
         return textureNode;
 
     textureNode->setTexture( texture );

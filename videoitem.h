@@ -24,12 +24,12 @@ class VideoItem : public QQuickItem
     Q_PROPERTY( QString libretroCore READ libretroCore WRITE setLibretroCore NOTIFY libretroCoreChanged )
     Q_PROPERTY( QString game READ game WRITE setGame NOTIFY gameChanged )
 
-    Core *core;
-    Audio *audio;
-    std::unique_ptr<AudioBuffer> audioBuffer;
-
     QThread coreThread;
     QThread audioThread;
+
+    Core core;
+    Audio audio;
+    AudioBuffer audioBuffer;
 
     QTimer coreTimer;
 

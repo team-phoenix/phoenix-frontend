@@ -384,7 +384,7 @@ void Core::setAudioBuffer( AudioBuffer *buffer )
 void Core::audioSampleCallback( int16_t left, int16_t right ) {
     if( core->audioBuffer ) {
         uint32_t sample = ( ( uint16_t ) left << 16 ) | ( uint16_t ) right;
-        core->audioBuffer->write( ( const char * )std::move(sample), sizeof( int16_t ) * 2 );
+        core->audioBuffer->write( ( const char * )std::move(&sample), sizeof( int16_t ) * 2 );
     }
 
 } // Core::audioSampleCallback()
