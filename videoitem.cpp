@@ -14,8 +14,7 @@ VideoItem::VideoItem() :
     renderReady( false ),
     gameReady( false ),
     libretroCoreReady( false ),
-    texture ( nullptr )
-{
+    texture( nullptr ) {
     //coreTimer.setParent( &core );
     coreTimer.moveToThread( &coreThread );
 
@@ -28,7 +27,7 @@ VideoItem::VideoItem() :
     //connect( &coreThread, &QThread::started, core, &Core::startTimer );
     connect( &coreThread, &QThread::started, &audio, [ this ]  {
         audio.slotRunChanged( true );
-    });
+    } );
 
     //connect( &coreTimer, &QTimer::timeout, core, &Core::slotDoFrame );
 
@@ -43,8 +42,7 @@ VideoItem::VideoItem() :
     connect( &core, &Core::signalVideoDataReady, this, &VideoItem::createTexture );
 }
 
-VideoItem::~VideoItem()
-{
+VideoItem::~VideoItem() {
     coreThread.exit();
     coreThread.wait();
 
@@ -53,8 +51,7 @@ VideoItem::~VideoItem()
 
 }
 
-void VideoItem::createTexture( uchar *data, unsigned width, unsigned height, int pitch )
-{
+void VideoItem::createTexture( uchar *data, unsigned width, unsigned height, int pitch ) {
 
     QImage::Format frame_format = retroToQImageFormat( core.getPixelFormat() );
     texture = window()->createTextureFromImage( QImage( std::move( data ),
@@ -66,9 +63,8 @@ void VideoItem::createTexture( uchar *data, unsigned width, unsigned height, int
 
 }
 
-void VideoItem::refresh()
-{
-    if ( gameReady && libretroCoreReady ) {
+void VideoItem::refresh() {
+    if( gameReady && libretroCoreReady ) {
 
         core.setAudioBuffer( &audioBuffer );
 
@@ -84,8 +80,7 @@ void VideoItem::refresh()
     }
 }
 
-void VideoItem::componentComplete()
-{
+void VideoItem::componentComplete() {
     QQuickItem::componentComplete();
 
     //setLibretroCore( "/Users/lee/Desktop/vbam_libretro.dylib" );
@@ -93,17 +88,17 @@ void VideoItem::componentComplete()
 
     renderReady = true;
 
-    if (renderReady) {
+    if( renderReady ) {
         update();
     }
 
 }
 
 
-void VideoItem::handleWindowChanged(QQuickWindow *window)
-{
-    if (!window)
+void VideoItem::handleWindowChanged( QQuickWindow *window ) {
+    if( !window ) {
         return;
+    }
 
 
     /* #################################
@@ -118,18 +113,18 @@ void VideoItem::handleWindowChanged(QQuickWindow *window)
     //qDebug() << "handle: " << window->renderTarget()->handle();
     //fbo_t = window->renderTarget()->handle();
 
-    setFlag( QQuickItem::ItemHasContents, true);
+    setFlag( QQuickItem::ItemHasContents, true );
 
     connect( window, &QQuickWindow::openglContextCreated, this, &VideoItem::handleOpenGLContextCreated );
 
-    connect(window, &QQuickWindow::frameSwapped, this, &QQuickItem::update);
+    connect( window, &QQuickWindow::frameSwapped, this, &QQuickItem::update );
 
 }
 
-void VideoItem::handleOpenGLContextCreated( QOpenGLContext *GLContext)
-{
-    if (!GLContext)
+void VideoItem::handleOpenGLContextCreated( QOpenGLContext *GLContext ) {
+    if( !GLContext ) {
         return;
+    }
 
     /* #################################
      *
@@ -145,28 +140,25 @@ void VideoItem::handleOpenGLContextCreated( QOpenGLContext *GLContext)
 
 }
 
-QString VideoItem::game() const
-{
+QString VideoItem::game() const {
     return qmlGame;
 }
 
-QString VideoItem::libretroCore() const
-{
+QString VideoItem::libretroCore() const {
     return qmlLibretroCore;
 }
 
-void VideoItem::setLibretroCore(QString libretroCore)
-{
+void VideoItem::setLibretroCore( QString libretroCore ) {
     libretroCore = libretroCore.remove( "file://" );
     qmlLibretroCore = libretroCore;
-/*
-    if ( core->state() == Core::Running ) {
-        frameDataQueue.clear();
-        renderReady = false;
-        gameReady = false;
-        core->slotHandleCoreStateChanged( Core::Unloaded );
-    }
-    */
+    /*
+        if ( core->state() == Core::Running ) {
+            frameDataQueue.clear();
+            renderReady = false;
+            gameReady = false;
+            core->slotHandleCoreStateChanged( Core::Unloaded );
+        }
+        */
 
     libretroCoreReady = core.loadCore( libretroCore.toUtf8().constData() );
 
@@ -175,13 +167,12 @@ void VideoItem::setLibretroCore(QString libretroCore)
     refresh();
 }
 
-void VideoItem::setGame( QString game )
-{
+void VideoItem::setGame( QString game ) {
     game = game.remove( "file://" );
     qmlGame = game;
 
     //if ( core->state() == Core::Running ) {
-      //  setLibretroCore( qmlLibretroCore );
+    //  setLibretroCore( qmlLibretroCore );
     //}
 
     gameReady = core.loadGame( game.toUtf8().constData() );
@@ -209,8 +200,7 @@ void VideoItem::slotHandleFrameData( FrameData *videoFrame )
 }
 */
 
-void VideoItem::simpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTextureNode *textureNode )
-{
+void VideoItem::simpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTextureNode *textureNode ) {
     QImage image( boundingRect().size().toSize(), QImage::Format_ARGB32 );
     image.fill( globalColor );
 
@@ -221,15 +211,16 @@ void VideoItem::simpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTexture
     textureNode->setFiltering( QSGTexture::Nearest );
     textureNode->setOwnsTexture( true );
 }
-QSGNode* VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintData )
-{
+QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintData ) {
     Q_UNUSED( paintData );
 
     QSGSimpleTextureNode *textureNode = static_cast<QSGSimpleTextureNode *>( node );
-    if (!textureNode)
-        textureNode = new QSGSimpleTextureNode;
 
-    if ( !renderReady ) {
+    if( !textureNode ) {
+        textureNode = new QSGSimpleTextureNode;
+    }
+
+    if( !renderReady ) {
 
         // This will be false if the scene graph loads before the core.
         // Which can happen more than you think.
@@ -240,7 +231,7 @@ QSGNode* VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
 
     }
 
-    if ( !texture ) {
+    if( !texture ) {
         emit signalDoFrame();
         simpleTextureNode( Qt::black, textureNode );
         return textureNode;
@@ -250,8 +241,8 @@ QSGNode* VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
     static quint64 timeStamp = -1;
 
 
-    if ( timeStamp != -1 ) {
-        qreal calculatedFrameRate = ( 1 / (timeStamp / 1000000.0) ) * 1000.0;
+    if( timeStamp != -1 ) {
+        qreal calculatedFrameRate = ( 1 / ( timeStamp / 1000000.0 ) ) * 1000.0;
         int difference = calculatedFrameRate > core.getFps() ? calculatedFrameRate - core.getFps() : core.getFps() - calculatedFrameRate;
         //qDebug() << "FrameRate: " <<  difference << " coreFps: " << core->getFps() << " calculatedFPS: " << calculatedFrameRate;
 
@@ -270,8 +261,9 @@ QSGNode* VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
     timeStamp = frameTimer.nsecsElapsed();
     frameTimer.start();
 
-    if ( core.isDupeFrame() )
+    if( core.isDupeFrame() ) {
         return textureNode;
+    }
 
     textureNode->setTexture( texture );
     textureNode->setRect( boundingRect() );

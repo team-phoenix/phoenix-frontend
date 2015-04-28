@@ -48,8 +48,7 @@ LibretroSymbols::LibretroSymbols() {
     retro_keyboard_event = nullptr;
 }
 
-Core::Core()
-{
+Core::Core() {
     audioBuffer = nullptr;
     system_av_info = new retro_system_av_info();
     system_info = new retro_system_info();
@@ -371,8 +370,7 @@ void Core::loadSRAM() {
 
 } // Core::loadSRAM()
 
-void Core::setAudioBuffer( AudioBuffer *buffer )
-{
+void Core::setAudioBuffer( AudioBuffer *buffer ) {
     audioBuffer = buffer;
 }
 
@@ -384,7 +382,7 @@ void Core::setAudioBuffer( AudioBuffer *buffer )
 void Core::audioSampleCallback( int16_t left, int16_t right ) {
     if( core->audioBuffer ) {
         uint32_t sample = ( ( uint16_t ) left << 16 ) | ( uint16_t ) right;
-        core->audioBuffer->write( ( const char * )std::move(&sample), sizeof( int16_t ) * 2 );
+        core->audioBuffer->write( ( const char * )std::move( &sample ), sizeof( int16_t ) * 2 );
     }
 
 } // Core::audioSampleCallback()
@@ -627,8 +625,8 @@ void Core::inputPollCallback( void ) {
 int16_t Core::inputStateCallback( unsigned port, unsigned device, unsigned index, unsigned id ) {
     Q_UNUSED( port )
     Q_UNUSED( device )
-    Q_UNUSED( index)
-    Q_UNUSED(  id )
+    Q_UNUSED( index )
+    Q_UNUSED( id )
 
     return 0;
 
@@ -691,13 +689,14 @@ void Core::logCallback( enum retro_log_level level, const char *fmt, ... ) {
 
 void Core::videoRefreshCallback( const void *data, unsigned width, unsigned height, size_t pitch ) {
 
-    if (data) {
-        core->emitVideoDataReady( (uchar *)data, width, height, ( int )pitch );
+    if( data ) {
+        core->emitVideoDataReady( ( uchar * )data, width, height, ( int )pitch );
         core->is_dupe_frame = false;
     }
 
-    else
+    else {
         core->is_dupe_frame = true;
+    }
 
     return;
 

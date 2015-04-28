@@ -19,41 +19,40 @@
  * This class uses atomic types in order to be thread safe.
  */
 class AudioBuffer : public QObject {
-    Q_OBJECT
+        Q_OBJECT
 
-    char *m_buffer;
-    std::atomic<size_t> m_head; // newest item in queue
-    std::atomic<size_t> m_tail; // oldest item in queue
-    const size_t m_size;
+        char *m_buffer;
+        std::atomic<size_t> m_head; // newest item in queue
+        std::atomic<size_t> m_tail; // oldest item in queue
+        const size_t m_size;
 
-    inline size_t next( size_t current ) {
-        return ( current + 1 ) % m_size;
-    }
+        inline size_t next( size_t current ) {
+            return ( current + 1 ) % m_size;
+        }
 
-    size_t size_impl( size_t head, size_t tail ) const;
-
-
-public:
-    AudioBuffer( size_t size = 4096 * 4 );
-
-    virtual ~AudioBuffer();
-
-    size_t write( const char *data, size_t size );
-
-    size_t read( char *object, size_t size );
-
-    size_t size() const;
-
-    void clear();
-
-    const char *data()
-    {
-        return m_buffer;
-    }
+        size_t size_impl( size_t head, size_t tail ) const;
 
 
-signals:
-    void signalReadReady( AudioBuffer *ptr, int size );
+    public:
+        AudioBuffer( size_t size = 4096 * 4 );
+
+        virtual ~AudioBuffer();
+
+        size_t write( const char *data, size_t size );
+
+        size_t read( char *object, size_t size );
+
+        size_t size() const;
+
+        void clear();
+
+        const char *data() {
+            return m_buffer;
+        }
+
+
+    signals:
+        void signalReadReady( AudioBuffer *ptr, int size );
 };
 
 #endif

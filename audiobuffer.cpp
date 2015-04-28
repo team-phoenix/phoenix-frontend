@@ -19,15 +19,15 @@ size_t AudioBuffer::write( const char *data, size_t size ) {
 
     //if ( this->size() + size >= m_size / 2 ) {
 
-        //qDebug() << "Total size: " << m_size
-        //         << " ::: Current size: " << this->size() << " ::: Projected size: " << this->size() + size;
+    //qDebug() << "Total size: " << m_size
+    //         << " ::: Current size: " << this->size() << " ::: Projected size: " << this->size() + size;
 
-        //emit signalReadReady( this, wrote );
+    //emit signalReadReady( this, wrote );
 
 
     //}
 
-    while ( wrote < size ) {
+    while( wrote < size ) {
         head = m_head.load( std::memory_order_relaxed );
         nextHead = next( head );
         tail = m_tail.load( std::memory_order_acquire );

@@ -8,8 +8,7 @@ Audio::Audio( QObject *parent )
       audioOutIODev( nullptr ),
       resamplerState( nullptr ),
       outputDataFloat( nullptr ),
-      outputDataShort( nullptr )
-{
+      outputDataShort( nullptr ) {
 
 
 
@@ -211,16 +210,16 @@ void Audio::slotHandlePeriodTimer( AudioBuffer *audioBuf, int size ) {
     int outputBytesWritten = audioOutIODev->write( ( char * ) outputDataShort, outputBytesConverted );
     Q_UNUSED( outputBytesWritten );
 
-/*
-    qCDebug( phxAudio ) << "Input is" << ( audioBuf->size() * 100 / audioFormatIn.bytesForFrames( 4096 ) ) << "% full, output is"
-                        << ( ( ( double )( audioOut->bufferSize() - outputBytesFree ) / audioOut->bufferSize() ) * 100 )  << "% full ; DRC:" << adjust
-                        << ";" << inputBytesToRead << audioFormatIn.bytesForDuration( audioFormatOut.durationForBytes( outputBytesFree ) ) << sampleRateRatio << adjustedSampleRateRatio;
-    qCDebug( phxAudio ) << "\tInput: needed" << inputBytesToRead << "bytes, read" << inputBytesRead << "bytes";
-    qCDebug( phxAudio ) << "\tOutput: needed" << distanceFromTarget << "bytes, wrote" << outputBytesWritten << "bytes";
-    qCDebug( phxAudio ) << "\toutputBytesFree =" << outputBytesFree << "outputBufferTargetPoint =" << outputBufferTargetPoint << "distanceFromTarget =" << distanceFromTarget;
-    qCDebug( phxAudio ) << "Input: needed" << audioFormatIn.framesForBytes( inputBytesToRead ) << "frames, read" << audioFormatIn.framesForBytes( inputBytesRead ) << "frames";
-    qCDebug( phxAudio ) << "Output: needed" << audioFormatOut.framesForBytes( outputBytesFree ) << "frames, wrote" << audioFormatOut.framesForBytes( outputBytesWritten ) << "frames";
-*/
+    /*
+        qCDebug( phxAudio ) << "Input is" << ( audioBuf->size() * 100 / audioFormatIn.bytesForFrames( 4096 ) ) << "% full, output is"
+                            << ( ( ( double )( audioOut->bufferSize() - outputBytesFree ) / audioOut->bufferSize() ) * 100 )  << "% full ; DRC:" << adjust
+                            << ";" << inputBytesToRead << audioFormatIn.bytesForDuration( audioFormatOut.durationForBytes( outputBytesFree ) ) << sampleRateRatio << adjustedSampleRateRatio;
+        qCDebug( phxAudio ) << "\tInput: needed" << inputBytesToRead << "bytes, read" << inputBytesRead << "bytes";
+        qCDebug( phxAudio ) << "\tOutput: needed" << distanceFromTarget << "bytes, wrote" << outputBytesWritten << "bytes";
+        qCDebug( phxAudio ) << "\toutputBytesFree =" << outputBytesFree << "outputBufferTargetPoint =" << outputBufferTargetPoint << "distanceFromTarget =" << distanceFromTarget;
+        qCDebug( phxAudio ) << "Input: needed" << audioFormatIn.framesForBytes( inputBytesToRead ) << "frames, read" << audioFormatIn.framesForBytes( inputBytesRead ) << "frames";
+        qCDebug( phxAudio ) << "Output: needed" << audioFormatOut.framesForBytes( outputBytesFree ) << "frames, wrote" << audioFormatOut.framesForBytes( outputBytesWritten ) << "frames";
+    */
 
 }
 

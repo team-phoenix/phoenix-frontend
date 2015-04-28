@@ -7,8 +7,7 @@
 
 PathWatcher::PathWatcher( QObject *parent )
     : QObject( parent ),
-    corePath( "/usr/local/lib/libretro" )
-{
+      corePath( "/usr/local/lib/libretro" ) {
     /*
     QString corePath =
             #ifdef Q_OS_MACX
@@ -29,50 +28,46 @@ PathWatcher::PathWatcher( QObject *parent )
 
 }
 
-PathWatcher::~PathWatcher()
-{
+PathWatcher::~PathWatcher() {
 
 
 }
 
-void PathWatcher::start()
-{
-    QFuture< void > future = QtConcurrent::run(this, &PathWatcher::slotHandleStarted);
+void PathWatcher::start() {
+    QFuture< void > future = QtConcurrent::run( this, &PathWatcher::slotHandleStarted );
     Q_UNUSED( future )
 }
 
-void PathWatcher::slotSetCorePath( const QUrl path )
-{
+void PathWatcher::slotSetCorePath( const QUrl path ) {
     corePath = path.toLocalFile();
     start();
 }
 
-void PathWatcher::clear()
-{
+void PathWatcher::clear() {
     coreList.clear();
 }
 
-void PathWatcher::slotHandleStarted()
-{
+void PathWatcher::slotHandleStarted() {
 
     QDirIterator dirIter( corePath, QStringList( { "*.so", "*.dylib", "*.dll" } ), QDir::Files, QDirIterator::NoIteratorFlags );
 
     int fileCount = 0;
 
-    while ( dirIter.hasNext() ) {
+    while( dirIter.hasNext() ) {
 
         QString file = dirIter.next();
 
-        if ( !coreList.contains( file ) ) {
-            emit fileAdded( file, QFileInfo(file).baseName() );
+        if( !coreList.contains( file ) ) {
+            emit fileAdded( file, QFileInfo( file ).baseName() );
             coreList.append( file );
         }
+
         fileCount++;
 
     }
 
     //if ( fileCount != coreList.size() )
-      //  emit fileRemoved();
+    //  emit fileRemoved();
 
 }
 

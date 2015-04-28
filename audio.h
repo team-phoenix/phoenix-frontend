@@ -26,9 +26,9 @@
  */
 
 class Audio : public QObject {
-    Q_OBJECT
+        Q_OBJECT
 
-    QTimer audioTimer;
+        QTimer audioTimer;
 
     public:
         Audio( QObject * = 0 );
@@ -36,8 +36,7 @@ class Audio : public QObject {
 
         void setInFormat( QAudioFormat newInFormat );
 
-        void setDefaultFormat( int rate )
-        {
+        void setDefaultFormat( int rate ) {
             QAudioFormat format;
             format.setSampleSize( 16 );
             format.setSampleRate( rate );

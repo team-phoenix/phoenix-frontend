@@ -70,8 +70,7 @@ struct LibretroSymbols {
     void ( *retro_frame_time )( retro_usec_t delta );
     void ( *retro_keyboard_event )( bool down, unsigned keycode, uint32_t character, uint16_t key_modifiers );
 
-    void clear()
-    {
+    void clear() {
         retro_api_version = nullptr;
         retro_cheat_reset = nullptr;
         retro_cheat_set = nullptr;
@@ -108,28 +107,26 @@ struct LibretroSymbols {
 };
 
 class Core: public QObject {
-    Q_OBJECT
+        Q_OBJECT
 
-    QTimer coreTimer;
+        QTimer coreTimer;
 
-public slots:
+    public slots:
 
-    void slotDoFrame()
-    {
-        doFrame();
-    }
+        void slotDoFrame() {
+            doFrame();
+        }
 
-signals:
-    void signalStartTimer( int );
-    void signalVideoDataReady( uchar *data, unsigned width, unsigned height, int pitch );
-    void signalRenderFrame();
+    signals:
+        void signalStartTimer( int );
+        void signalVideoDataReady( uchar *data, unsigned width, unsigned height, int pitch );
+        void signalRenderFrame();
 
-public:
+    public:
 
-    void emitVideoDataReady( uchar *data, unsigned width, unsigned height, int pitch )
-    {
-        emit signalVideoDataReady( data, width, height, pitch );
-    }
+        void emitVideoDataReady( uchar *data, unsigned width, unsigned height, int pitch ) {
+            emit signalVideoDataReady( data, width, height, pitch );
+        }
 
 
         Core();

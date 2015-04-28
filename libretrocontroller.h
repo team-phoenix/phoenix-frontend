@@ -7,21 +7,20 @@
 #include "audio.h"
 #include "videoitem.h"
 
-class LibretroController : public QQuickItem
-{
-    Q_OBJECT
-public:
-    LibretroController();
-    ~LibretroController();
+class LibretroController : public QQuickItem {
+        Q_OBJECT
+    public:
+        LibretroController();
+        ~LibretroController();
 
-signals:
+    signals:
 
-public slots:
+    public slots:
 
-private:
-    Core core;
-    Audio audio;
-    VideoItem videoItem;
+    private:
+        Core core;
+        Audio audio;
+        VideoItem videoItem;
 
 };
 
