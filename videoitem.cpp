@@ -23,6 +23,8 @@ VideoItem::VideoItem() :
     audio.moveToThread( &coreThread );
     audioBuffer.moveToThread( &coreThread );
 
+    audio.audioTimer = &coreTimer;
+
     connect( &coreThread, &QThread::started, &audio, &Audio::slotThreadStarted );
     //connect( &coreThread, &QThread::started, this, &VideoItem::startCoreTimer, Qt::DirectConnection );
     //connect( &coreThread, &QThread::started, core, &Core::startTimer );
