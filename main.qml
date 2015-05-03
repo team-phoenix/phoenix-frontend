@@ -5,9 +5,9 @@ import libretro.video 1.0
 import QtQuick.Dialogs 1.2
 
 ApplicationWindow {
-    title: qsTr("Hello World")
-    width: 1000
-    height: 1000
+    title: qsTr("Phoenix frontend")
+    width: 640
+    height: 480
     visible: true
 
     function qstr(str)
@@ -188,8 +188,6 @@ ApplicationWindow {
 
     */
 
-
-
     VideoItem {
         id: videoItem;
         rotation: 180;
@@ -198,9 +196,6 @@ ApplicationWindow {
             bottom: parent.bottom;
             horizontalCenter: parent.horizontalCenter;
         }
-
-        //libretroCore: "/Users/lee/Desktop/vbam_libretro.dylib";
-        //game: "/Users/lee/Desktop/GBA/Golden Sun.gba";
 
         width: height * 4/3;
         Column {

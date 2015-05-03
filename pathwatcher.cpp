@@ -6,25 +6,19 @@
 #include <QtConcurrent>
 
 PathWatcher::PathWatcher( QObject *parent )
-    : QObject( parent ),
-      corePath( "/usr/local/lib/libretro" ) {
-    /*
-    QString corePath =
-            #ifdef Q_OS_MACX
-                "/usr/local/lib/libretro"
-            #endif
+    : QObject( parent ) {
 
-            #ifdef Q_OS_LINUX
-                "/usr/lib/libretro"
-            #endif
+#ifdef Q_OS_MACX
+    corePath = "/usr/local/lib/libretro";
+#endif
 
-            #ifdef Q_OS_WIN32
-                "C:/libretro"
-            #endif
-                ;
+#ifdef Q_OS_LINUX
+    corePath = "/usr/lib/libretro";
+#endif
 
-                */
-
+#ifdef Q_OS_WIN32
+    corePath = "C:/Program Files/Libretro/Cores";
+#endif
 
 }
 

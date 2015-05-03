@@ -17,6 +17,7 @@ VideoItem::VideoItem() :
     texture( nullptr ) {
     //coreTimer.setParent( &core );
     coreTimer.moveToThread( &coreThread );
+    coreTimer.setTimerType( Qt::PreciseTimer );
 
     core.moveToThread( &coreThread );
     audio.moveToThread( &coreThread );
@@ -83,9 +84,6 @@ void VideoItem::refresh() {
 void VideoItem::componentComplete() {
     QQuickItem::componentComplete();
 
-    //setLibretroCore( "/Users/lee/Desktop/vbam_libretro.dylib" );
-    //setGame( "/Users/lee/Desktop/GBA/Golden Sun.gba" );
-
     renderReady = true;
 
     if( renderReady ) {
@@ -99,14 +97,6 @@ void VideoItem::handleWindowChanged( QQuickWindow *window ) {
     if( !window ) {
         return;
     }
-
-
-    /* #################################
-     *
-     * DO NOT DELETE THIS COMMENTED CODE!!!
-     *
-     * #################################
-     */
 
     //parentWindow = window;
 
@@ -126,15 +116,7 @@ void VideoItem::handleOpenGLContextCreated( QOpenGLContext *GLContext ) {
         return;
     }
 
-    /* #################################
-     *
-     * DO NOT DELETE THIS COMMENTED CODE!!!
-     *
-     * #################################
-     */
-
     //fbo_t = GLContext->defaultFramebufferObject();
-
 
     //connect( &fps_timer, &QTimer::timeout, this, &VideoItem::updateFps );
 
@@ -149,16 +131,15 @@ QString VideoItem::libretroCore() const {
 }
 
 void VideoItem::setLibretroCore( QString libretroCore ) {
-    libretroCore = libretroCore.remove( "file://" );
+    libretroCore = QUrl( libretroCore ).toLocalFile();
     qmlLibretroCore = libretroCore;
-    /*
-        if ( core->state() == Core::Running ) {
-            frameDataQueue.clear();
-            renderReady = false;
-            gameReady = false;
-            core->slotHandleCoreStateChanged( Core::Unloaded );
-        }
-        */
+
+    /*if ( core->state() == Core::Running ) {
+        frameDataQueue.clear();
+        renderReady = false;
+        gameReady = false;
+        core->slotHandleCoreStateChanged( Core::Unloaded );
+    }*/
 
     libretroCoreReady = core.loadCore( libretroCore.toUtf8().constData() );
 
@@ -168,7 +149,7 @@ void VideoItem::setLibretroCore( QString libretroCore ) {
 }
 
 void VideoItem::setGame( QString game ) {
-    game = game.remove( "file://" );
+    game = QUrl( game ).toLocalFile();
     qmlGame = game;
 
     //if ( core->state() == Core::Running ) {
@@ -182,8 +163,8 @@ void VideoItem::setGame( QString game ) {
     refresh();
 
 }
-/*
-void VideoItem::slotHandleFrameData( FrameData *videoFrame )
+
+/*void VideoItem::slotHandleFrameData( FrameData *videoFrame )
 {
     // The core thread takes a little time to end, in this time the
     // callbacks are still being fired, we need to verify the core is intact or
@@ -197,8 +178,7 @@ void VideoItem::slotHandleFrameData( FrameData *videoFrame )
     frameDataQueue.enqueue( videoFrame );
     //qDebug() << "Video Frame: size( " << size << " )";
     update();
-}
-*/
+}*/
 
 void VideoItem::simpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTextureNode *textureNode ) {
     QImage image( boundingRect().size().toSize(), QImage::Format_ARGB32 );
@@ -238,12 +218,12 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
 
     }
 
-    static quint64 timeStamp = -1;
-
+    static qint64 timeStamp = -1;
 
     if( timeStamp != -1 ) {
         qreal calculatedFrameRate = ( 1 / ( timeStamp / 1000000.0 ) ) * 1000.0;
         int difference = calculatedFrameRate > core.getFps() ? calculatedFrameRate - core.getFps() : core.getFps() - calculatedFrameRate;
+        Q_UNUSED( difference );
         //qDebug() << "FrameRate: " <<  difference << " coreFps: " << core->getFps() << " calculatedFPS: " << calculatedFrameRate;
 
         //frameTimer.hasExpired()
@@ -252,9 +232,6 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
         //if ( difference > 1 / 60 ) {
 
         //}
-
-
-
 
     }
 
@@ -273,8 +250,5 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
 
     emit signalDoFrame();
 
-
-
     return textureNode;
-
 }
