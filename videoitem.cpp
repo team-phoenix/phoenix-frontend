@@ -14,16 +14,15 @@ VideoItem::VideoItem() :
     renderReady( false ),
     gameReady( false ),
     libretroCoreReady( false ),
-    texture( nullptr ) {
-    //coreTimer.setParent( &core );
-    coreTimer.moveToThread( &coreThread );
+    texture( nullptr )
+{
+
     coreTimer.setTimerType( Qt::PreciseTimer );
+    coreTimer.moveToThread( &coreThread );
 
     core.moveToThread( &coreThread );
     audio.moveToThread( &coreThread );
-    audioBuffer.moveToThread( &coreThread );
-
-    audio.audioTimer = &coreTimer;
+    //audioBuffer.moveToThread( &coreThread );
 
     connect( &coreThread, &QThread::started, &audio, &Audio::slotThreadStarted );
     //connect( &coreThread, &QThread::started, this, &VideoItem::startCoreTimer, Qt::DirectConnection );
@@ -86,6 +85,9 @@ void VideoItem::refresh() {
 void VideoItem::componentComplete() {
     QQuickItem::componentComplete();
 
+    setLibretroCore( "/Users/lee/Desktop/bsnes_performance_libretro.dylib" );
+    setGame( "/Users/lee/Desktop/SNES/Super Mario All-Stars + Super Mario World (USA).sfc" );
+
     renderReady = true;
 
     if( renderReady ) {
@@ -99,6 +101,14 @@ void VideoItem::handleWindowChanged( QQuickWindow *window ) {
     if( !window ) {
         return;
     }
+
+
+    /* #################################
+     *
+     * DO NOT DELETE THIS COMMENTED CODE!!!
+     *
+     * #################################
+     */
 
     //parentWindow = window;
 
@@ -118,7 +128,15 @@ void VideoItem::handleOpenGLContextCreated( QOpenGLContext *GLContext ) {
         return;
     }
 
+    /* #################################
+     *
+     * DO NOT DELETE THIS COMMENTED CODE!!!
+     *
+     * #################################
+     */
+
     //fbo_t = GLContext->defaultFramebufferObject();
+
 
     //connect( &fps_timer, &QTimer::timeout, this, &VideoItem::updateFps );
 
@@ -133,15 +151,16 @@ QString VideoItem::libretroCore() const {
 }
 
 void VideoItem::setLibretroCore( QString libretroCore ) {
-    libretroCore = QUrl( libretroCore ).toLocalFile();
+    libretroCore = libretroCore.remove( "file://" );
     qmlLibretroCore = libretroCore;
-
-    /*if ( core->state() == Core::Running ) {
-        frameDataQueue.clear();
-        renderReady = false;
-        gameReady = false;
-        core->slotHandleCoreStateChanged( Core::Unloaded );
-    }*/
+    /*
+        if ( core->state() == Core::Running ) {
+            frameDataQueue.clear();
+            renderReady = false;
+            gameReady = false;
+            core->slotHandleCoreStateChanged( Core::Unloaded );
+        }
+        */
 
     libretroCoreReady = core.loadCore( libretroCore.toUtf8().constData() );
 
@@ -151,7 +170,7 @@ void VideoItem::setLibretroCore( QString libretroCore ) {
 }
 
 void VideoItem::setGame( QString game ) {
-    game = QUrl( game ).toLocalFile();
+    game = game.remove( "file://" );
     qmlGame = game;
 
     //if ( core->state() == Core::Running ) {
@@ -165,8 +184,8 @@ void VideoItem::setGame( QString game ) {
     refresh();
 
 }
-
-/*void VideoItem::slotHandleFrameData( FrameData *videoFrame )
+/*
+void VideoItem::slotHandleFrameData( FrameData *videoFrame )
 {
     // The core thread takes a little time to end, in this time the
     // callbacks are still being fired, we need to verify the core is intact or
@@ -180,7 +199,8 @@ void VideoItem::setGame( QString game ) {
     frameDataQueue.enqueue( videoFrame );
     //qDebug() << "Video Frame: size( " << size << " )";
     update();
-}*/
+}
+*/
 
 void VideoItem::simpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTextureNode *textureNode ) {
     QImage image( boundingRect().size().toSize(), QImage::Format_ARGB32 );
@@ -220,12 +240,12 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
 
     }
 
-    static qint64 timeStamp = -1;
+    static quint64 timeStamp = -1;
+
 
     if( timeStamp != -1 ) {
         qreal calculatedFrameRate = ( 1 / ( timeStamp / 1000000.0 ) ) * 1000.0;
         int difference = calculatedFrameRate > core.getFps() ? calculatedFrameRate - core.getFps() : core.getFps() - calculatedFrameRate;
-        Q_UNUSED( difference );
         //qDebug() << "FrameRate: " <<  difference << " coreFps: " << core->getFps() << " calculatedFPS: " << calculatedFrameRate;
 
         //frameTimer.hasExpired()
@@ -235,12 +255,15 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
 
         //}
 
+
+
+
     }
 
     timeStamp = frameTimer.nsecsElapsed();
     frameTimer.start();
 
-    if( core.isDupeFrame() ) {
+    if( core.isDuplicateFrame() ) {
         return textureNode;
     }
 
@@ -252,5 +275,8 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
 
     emit signalDoFrame();
 
+
+
     return textureNode;
+
 }

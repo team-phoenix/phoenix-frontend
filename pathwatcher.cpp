@@ -6,7 +6,8 @@
 #include <QtConcurrent>
 
 PathWatcher::PathWatcher( QObject *parent )
-    : QObject( parent ) {
+    : QObject( parent )
+{
 
 #ifdef Q_OS_MACX
     corePath = "/usr/local/lib/libretro";

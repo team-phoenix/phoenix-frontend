@@ -16,22 +16,20 @@
 #include "audiobuffer.h"
 #include "logging.h"
 
-/* Core is a class that manages the execution of a Libretro core and its associated game.
+/* The Core class is a wrapper around any given libretro core.
+ * The general functionality for this class is to load the core into memory,
+ * connect to all of the core's callbacks, such as video and audio rendering,
+ * and generate frames of video and audio data in the raw memory format.
  *
- * Core is a state machine, the normal lifecycle goes like this:
- * Core::UNINITIALIZED, Core::READY
+ * The Core class is instantiated inside of the VideoItem class, which lives in the videoitem.cpp file.
+ * Currently this approach only supports loading a single core and game at any one time.
  *
- * Core provides signalStateChanged( newState, data ) to inform its controller that it's in a
- * different state. If an error occurs, Core will be placed into Core::ERROR and data will contain
- * info about the error.
+ * Check out the static callbacks in order to see how data is passed from the core, to the screen.
  *
- * Call the constructor with a valid path to a Libretro core and game, along with controller mappings,
- * then call slotInit() to begin loading the game and slot. Core should change to Core::READY. You can
- * begin calling slotDoFrame() to have the core send out signals as data is produced.
  */
 
 // Helper for resolving libretro methods
-#define resolved_sym( name ) methods.name = ( decltype( methods.name ) )library.resolve( #name );
+#define resolved_sym( name ) symbols.name = ( decltype( symbols.name ) )libretroCore.resolve( #name );
 
 struct LibretroSymbols {
 
@@ -113,7 +111,9 @@ class Core: public QObject {
 
     public slots:
 
-        void slotDoFrame();
+        void slotDoFrame() {
+            doFrame();
+        }
 
     signals:
         void signalStartTimer( int );
@@ -122,12 +122,45 @@ class Core: public QObject {
 
     public:
 
-        void emitVideoDataReady( uchar *data, unsigned width, unsigned height, int pitch );
+        void emitVideoDataReady( uchar *data, unsigned width, unsigned height, int pitch ) {
+            emit signalVideoDataReady( data, width, height, pitch );
+        }
 
         Core();
         ~Core();
 
+        //signals:
+
+
+        // public slots:
+
+        //
+        // Control
+        //
+
+
+        //
+        // Audio
+        //
+
         void setAudioBuffer( AudioBuffer *buffer );
+
+        //
+        // Video
+        //
+
+        //
+        // Input
+        //
+
+        //
+        // Misc.
+        //
+
+
+        //
+        // Control
+        //
 
         // Load a libretro core at the given path
         // Returns: true if successful, false otherwise
@@ -140,35 +173,37 @@ class Core: public QObject {
         // Run core for one frame
         void doFrame();
 
+        //
+        // Misc
+        //
+
         // A pointer to the last instance of the class used
         static Core *core;
 
         // Struct containing libretro methods
-        LibretroSymbols methods;
+        LibretroSymbols symbols;
+
+
+        QByteArray getLibraryName() {
+            return libraryName;
+        }
 
         bool saveGameState( QString save_path, QString game_name );
         bool loadGameState( QString save_path, QString game_name );
 
+        //
+        // Video
+        //
+
         retro_hw_render_callback getHWData() const {
-            return openGLContext;
+            return hardwareCallback;
         }
-        const void *getImageData() const {
-            return videoBuffer;
-        }
-        unsigned getBaseWidth() const {
-            return videoWidth;
-        }
-        unsigned getBaseHeight() const {
-            return videoHeight;
-        }
+
         unsigned getMaxWidth() const {
-            return AVInfo->geometry.max_width;
+            return systemAVInfo->geometry.max_width;
         }
         unsigned getMaxHeight() const {
-            return AVInfo->geometry.max_height;
-        }
-        size_t getPitch() const {
-            return videoPitch;
+            return systemAVInfo->geometry.max_height;
         }
         retro_pixel_format getPixelFormat() const {
             return pixelFormat;
@@ -177,27 +212,40 @@ class Core: public QObject {
             return systemInfo;
         }
         float getAspectRatio() const {
-            if( AVInfo->geometry.aspect_ratio ) {
-                return AVInfo->geometry.aspect_ratio;
+            if( systemAVInfo->geometry.aspect_ratio ) {
+                return systemAVInfo->geometry.aspect_ratio;
             }
 
-            return ( float )AVInfo->geometry.base_width / AVInfo->geometry.base_height;
+            return ( float )systemAVInfo->geometry.base_width / systemAVInfo->geometry.base_height;
         }
-        QByteArray getLibraryName() {
-            return libraryFilename;
-        }
+
+        //
+        // Audio
+        //
+
         AudioBuffer *audioBuffer;
+
+        //
+        // System
+        //
+
         void setSystemDirectory( QString systemDirectory );
         void setSaveDirectory( QString saveDirectory );
+
+        //
+        // Timing
+        //
+
         double getFps() const {
-            return AVInfo->timing.fps;
+            return systemAVInfo->timing.fps;
         }
         double getSampleRate() const {
-            return ( AVInfo->timing.sample_rate ) * ( 60.0 / ( AVInfo->timing.fps ) );
+            return ( systemAVInfo->timing.sample_rate ) * ( 60.0 / ( systemAVInfo->timing.fps ) );
         }
-        bool isDupeFrame() const {
-            return currentFrameIsDupe;
+        bool isDuplicateFrame() const {
+            return isDupeFrame;
         }
+
         // Container class for a libretro core variable
         class Variable {
             public:
@@ -264,82 +312,42 @@ class Core: public QObject {
         };
 
     private:
+        // Handle to the libretro core
+        QLibrary libretroCore;
+        QByteArray libraryName;
 
-        //
-        // Core
-        //
 
-        // Wrapper around shared library file (.dll, .dylib, .so)
-        QLibrary library;
-
-        //
-        // Core-specific invariants
-        //
-
-        // Shared library filename
-        QByteArray libraryFilename;
-
-        // Audio and video rates/dimensions/types
-        retro_system_av_info *AVInfo;
-        retro_game_geometry videoDimensions;
-        retro_system_timing timing;
-        retro_pixel_format pixelFormat;
-
-        // Information about how the core handles stuff
+        // Information about the core
+        retro_system_av_info *systemAVInfo;
         retro_system_info *systemInfo;
-        bool fullPathNeeded;
-
-        //
-        // Variants
-        //
-
-        // Info about the OpenGL context provided by the Phoenix frontend
-        // for the core's internal use
-        retro_hw_render_callback openGLContext;
-
-        // Core-specific variables
         QMap<std::string, Core::Variable> variables;
 
-        // Mapping between a retropad id and a human-readble (and core-defined) label (a string)
-        // For use with controller setting UIs
-        // TODO: Make this an array, we'll be getting many of these mappings, each with different button ids/labels
-        retro_input_descriptor retropadToStringMap;
-
-        //
-        // Paths
-        //
-
+        // Do something with retro_variable
+        retro_input_descriptor inputDescriptor;
+        retro_game_geometry gameGeometry;
+        retro_system_timing systemTiming;
+        retro_hw_render_callback hardwareCallback;
+        bool fullPathNeeded;
         QByteArray systemDirectory;
         QByteArray saveDirectory;
 
-        //
         // Game
-        //
-
-        // Raw ROM/ISO data, empty if (fullPathNeeded)
         QByteArray gameData;
 
-        // Struct containing a reference to gameData or simply the path to the game
-        retro_game_info gameInfo;
+        // Video
+        retro_pixel_format pixelFormat;
 
-        //
-        // Video variants
-        //
+        // Audio
 
-        unsigned videoHeight;
-        const void *videoBuffer;
-        size_t videoPitch;
-        unsigned videoWidth;
-        bool currentFrameIsDupe;
+        // Timing
+        bool isDupeFrame;
 
-        void *SRAMDataRaw;
+        // Misc
+        void *RawSRAMPtr;
         void saveSRAM();
         void loadSRAM();
 
-        //
-        // Callbacks (static)
-        //
-
+        // Callbacks
         static void audioSampleCallback( int16_t left, int16_t right );
         static size_t audioSampleBatchCallback( const int16_t *data, size_t frames );
         static bool environmentCallback( unsigned cmd, void *data );
@@ -347,7 +355,9 @@ class Core: public QObject {
         static void logCallback( enum retro_log_level level, const char *fmt, ... );
         static int16_t inputStateCallback( unsigned port, unsigned device, unsigned index, unsigned id );
         static void videoRefreshCallback( const void *data, unsigned width, unsigned height, size_t pitch );
-
 };
+
+// Do not scope this globally anymore, it is not thread-safe
+// QDebug operator<<( QDebug, const Core::Variable & );
 
 #endif

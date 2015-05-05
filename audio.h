@@ -7,9 +7,9 @@
 #include <QTimer>
 #include <QAudioOutput>
 #include <QDebug>
-#include <QBuffer>
 
 #include <memory>
+#include <atomic>
 
 #include "audiobuffer.h"
 #include "logging.h"
@@ -27,11 +27,15 @@
 
 class Audio : public QObject {
         Q_OBJECT
+
+        QTimer audioTimer;
+
     public:
         Audio( QObject * = 0 );
         ~Audio();
 
-        void setInFormat( QAudioFormat newInFormat , double videoFPS );
+        void setInFormat( QAudioFormat newInFormat );
+
         void setDefaultFormat( int rate ) {
             QAudioFormat format;
             format.setSampleSize( 16 );
@@ -41,11 +45,8 @@ class Audio : public QObject {
             format.setByteOrder( QAudioFormat::LittleEndian );
             format.setCodec( "audio/pcm" );
             // TODO test format
-            setInFormat( format, 60.0 );
+            setInFormat( format );
         }
-
-        AudioBuffer *getAudioBuf() const;
-        QTimer *audioTimer;
 
     signals:
         void signalFormatChanged();
@@ -58,8 +59,7 @@ class Audio : public QObject {
         void slotSetVolume( qreal level );
         void slotThreadStarted();
         void slotHandleFormatChanged();
-        void slotHandlePeriodTimer();
-        void slotHandleNotify();
+        void slotHandlePeriodTimer( AudioBuffer *audioBuf, int size );
 
     private:
         // Opaque pointer for libsamplerate
@@ -75,17 +75,12 @@ class Audio : public QObject {
         bool isCoreRunning;
         QAudioFormat audioFormatOut;
         QAudioFormat audioFormatIn;
-        double videoFPS;
-        int outputBufferPos;
 
         // We delete aout; Use a normal pointer.
         QAudioOutput *audioOut;
 
-        QBuffer audioOutputBuffer;
-
-        std::unique_ptr<AudioBuffer>audioInputBuffer;
-
-        char silence[100000] = {0};
+        // aio doesn't own the pointer; Use a normal pointer.
+        QIODevice *audioOutIODev;
 
 };
 
