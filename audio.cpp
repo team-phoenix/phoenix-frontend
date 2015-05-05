@@ -148,20 +148,26 @@ void Audio::slotHandlePeriodTimer( AudioBuffer *audioBuf, int size ) {
         emit signalFormatChanged();
     }
 
-    if (!audioOut->bytesFree())
+    if( !audioOut->bytesFree() ) {
         return;
+    }
 
     int chunks = audioOut->bytesFree() / audioOut->periodSize();
-    QVarLengthArray<char, 44100 > tmpbuf(audioOut->bytesFree());
+    QVarLengthArray<char, 44100> tmpbuf( audioOut->bytesFree() );
 
     //qDebug() << audioOut->bytesFree();
 
-    while (chunks) {
+    while( chunks ) {
         const qint64 len = audioBuf->read( tmpbuf.data(), audioOut->periodSize() );
-        if (len)
+
+        if( len ) {
             audioOutIODev->write( tmpbuf.data(), len );
-        if (len != audioOut->periodSize())
+        }
+
+        if( len != audioOut->periodSize() ) {
             break;
+        }
+
         --chunks;
     }
 

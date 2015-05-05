@@ -24,7 +24,6 @@ class VideoItem : public QQuickItem {
         Q_PROPERTY( QString game READ game WRITE setGame NOTIFY gameChanged )
 
         QThread coreThread;
-        QThread audioThread;
 
         Core core;
         Audio audio;
@@ -43,7 +42,6 @@ class VideoItem : public QQuickItem {
 
         enum Thread {
             CoreThread = 0,
-            AudioThread,
             InputThread,
         };
 
@@ -64,11 +62,10 @@ class VideoItem : public QQuickItem {
                 case CoreThread:
                     coreThread.start( priority );
                     break;
-                case AudioThread:
-                    audioThread.start( priority );
-                    break;
+
                 case InputThread:
                     break;
+
                 default:
                     break;
             }
@@ -105,7 +102,6 @@ class VideoItem : public QQuickItem {
 
             return QImage::Format_Invalid;
         }
-
 
 };
 

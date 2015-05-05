@@ -306,7 +306,7 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
 
 }
 
-void Core::emitVideoDataReady(uchar *data, unsigned width, unsigned height, int pitch) {
+void Core::emitVideoDataReady( uchar *data, unsigned width, unsigned height, int pitch ) {
     emit signalVideoDataReady( data, width, height, pitch );
 }
 

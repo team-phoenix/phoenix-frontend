@@ -28,10 +28,6 @@ VideoItem::VideoItem() :
         audio.slotRunChanged( true );
     } );
 
-    connect( &core, &Core::signalRenderFrame, this, &VideoItem::update );
-    connect( this, &VideoItem::signalDoFrame, &core, &Core::slotDoFrame );
-
-
     connect( &audioBuffer, &AudioBuffer::signalReadReady, &audio, &Audio::slotHandlePeriodTimer );
     connect( this, &VideoItem::windowChanged, this, &VideoItem::handleWindowChanged );
 
@@ -39,11 +35,9 @@ VideoItem::VideoItem() :
 }
 
 VideoItem::~VideoItem() {
+
     coreThread.requestInterruption();
     coreThread.wait();
-
-    audioThread.requestInterruption();
-    audioThread.wait();
 
 }
 
@@ -89,7 +83,6 @@ void VideoItem::componentComplete() {
     }
 
 }
-
 
 void VideoItem::handleWindowChanged( QQuickWindow *window ) {
     if( !window ) {
@@ -175,11 +168,14 @@ void VideoItem::setGame( QString game ) {
 
     emit gameChanged();
 
+    connect( &core, &Core::signalRenderFrame, this, &VideoItem::update );
+    connect( this, &VideoItem::signalDoFrame, &core, &Core::slotDoFrame );
+
     refresh();
 
 }
-/*
-void VideoItem::slotHandleFrameData( FrameData *videoFrame )
+
+/*void VideoItem::slotHandleFrameData( FrameData *videoFrame )
 {
     // The core thread takes a little time to end, in this time the
     // callbacks are still being fired, we need to verify the core is intact or
@@ -193,8 +189,7 @@ void VideoItem::slotHandleFrameData( FrameData *videoFrame )
     frameDataQueue.enqueue( videoFrame );
     //qDebug() << "Video Frame: size( " << size << " )";
     update();
-}
-*/
+}*/
 
 void VideoItem::simpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTextureNode *textureNode ) {
     QImage image( boundingRect().size().toSize(), QImage::Format_ARGB32 );
@@ -207,6 +202,7 @@ void VideoItem::simpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTexture
     textureNode->setFiltering( QSGTexture::Nearest );
     textureNode->setOwnsTexture( true );
 }
+
 QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintData ) {
     Q_UNUSED( paintData );
 

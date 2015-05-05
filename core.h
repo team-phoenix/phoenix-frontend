@@ -19,15 +19,20 @@
 /* Core is a class that manages the execution of a Libretro core and its associated game.
  *
  * Core is a state machine, the normal lifecycle goes like this:
- * Core::UNINITIALIZED, Core::READY
+ * Core::UNINITIALIZED, Core::READY, Core::FINISHED
  *
- * Core provides signalStateChanged( newState, data ) to inform its controller that it's in a
- * different state. If an error occurs, Core will be placed into Core::ERROR and data will contain
- * info about the error.
+ * Core provides signalStateChanged( newState, data ) to inform its controller that its state
+ * changed.
  *
- * Call the constructor with a valid path to a Libretro core and game, along with controller mappings,
- * then call slotInit() to begin loading the game and slot. Core should change to Core::READY. You can
- * begin calling slotDoFrame() to have the core send out signals as data is produced.
+ * Contents of data:
+ *   Core::UNINITIALIZED: nothing
+ *   Core::READY: Data structure containing audio and video timing, format and dimensions
+ *   Core::FINISHED: nothing
+ *   Core::ERROR: Error enum
+ *
+ * Call Core's load methods with a valid path to a Libretro core and game, along with controller mappings,
+ * then call slotInit() to begin loading the game and slot. Core should change to Core::READY. You
+ * may now call slotDoFrame() to have the core emulate a video frame send out signals as data is produced.
  *
  * Currently, neither video nor audio signals are thread-safe. (TODO)
  */
@@ -322,7 +327,10 @@ class Core: public QObject {
         void saveSRAM();
         void loadSRAM();
 
+        //
         // Callbacks
+        //
+
         static void audioSampleCallback( int16_t left, int16_t right );
         static size_t audioSampleBatchCallback( const int16_t *data, size_t frames );
         static bool environmentCallback( unsigned cmd, void *data );
@@ -330,6 +338,7 @@ class Core: public QObject {
         static void logCallback( enum retro_log_level level, const char *fmt, ... );
         static int16_t inputStateCallback( unsigned port, unsigned device, unsigned index, unsigned id );
         static void videoRefreshCallback( const void *data, unsigned width, unsigned height, size_t pitch );
+
 };
 
 #endif
