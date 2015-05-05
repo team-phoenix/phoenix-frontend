@@ -8,7 +8,6 @@ SOURCES += main.cpp \
     audio.cpp \
     audiobuffer.cpp \
     phoenixglobals.cpp \
-    libretrocontroller.cpp \
     pathwatcher.cpp
 
 RESOURCES += qml.qrc
@@ -37,5 +36,4 @@ HEADERS += \
     logging.h \
     audiobuffer.h \
     phoenixglobals.h \
-    libretrocontroller.h \
     pathwatcher.h

@@ -64,14 +64,11 @@ class VideoItem : public QQuickItem {
                 case CoreThread:
                     coreThread.start( priority );
                     break;
-
                 case AudioThread:
                     audioThread.start( priority );
                     break;
-
                 case InputThread:
                     break;
-
                 default:
                     break;
             }
@@ -87,14 +84,11 @@ class VideoItem : public QQuickItem {
         void handleOpenGLContextCreated( QOpenGLContext *GLContext );
         void createTexture( uchar *data, unsigned width, unsigned height, int pitch );
 
-
     private:
-
         void componentComplete();
         void refresh();
 
         void simpleTextureNode( Qt::GlobalColor, QSGSimpleTextureNode *textureNode );
-
 
         QSGNode *updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintData );
 

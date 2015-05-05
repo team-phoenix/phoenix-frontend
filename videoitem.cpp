@@ -25,30 +25,25 @@ VideoItem::VideoItem() :
     //audioBuffer.moveToThread( &coreThread );
 
     connect( &coreThread, &QThread::started, &audio, &Audio::slotThreadStarted );
-    //connect( &coreThread, &QThread::started, this, &VideoItem::startCoreTimer, Qt::DirectConnection );
-    //connect( &coreThread, &QThread::started, core, &Core::startTimer );
     connect( &coreThread, &QThread::started, &audio, [ this ]  {
         audio.slotRunChanged( true );
     } );
-
-    //connect( &coreTimer, &QTimer::timeout, core, &Core::slotDoFrame );
 
     connect( &core, &Core::signalRenderFrame, this, &VideoItem::update );
     connect( this, &VideoItem::signalDoFrame, &core, &Core::slotDoFrame );
 
 
     connect( &audioBuffer, &AudioBuffer::signalReadReady, &audio, &Audio::slotHandlePeriodTimer );
-    //connect( core, &Core::signalRenderFrame, audio, &Audio::slotHandlePeriodTimer );
     connect( this, &VideoItem::windowChanged, this, &VideoItem::handleWindowChanged );
 
     connect( &core, &Core::signalVideoDataReady, this, &VideoItem::createTexture );
 }
 
 VideoItem::~VideoItem() {
-    coreThread.exit();
+    coreThread.requestInterruption();
     coreThread.wait();
 
-    audioThread.exit();
+    audioThread.requestInterruption();
     audioThread.wait();
 
 }
@@ -85,8 +80,8 @@ void VideoItem::refresh() {
 void VideoItem::componentComplete() {
     QQuickItem::componentComplete();
 
-    //setLibretroCore( "/Users/lee/Desktop/bsnes_performance_libretro.dylib" );
-    //setGame( "/Users/lee/Desktop/SNES/Super Mario All-Stars + Super Mario World (USA).sfc" );
+    setLibretroCore( "/Users/lee/Desktop/bsnes_performance_libretro.dylib" );
+    setGame( "/Users/lee/Desktop/SNES/Super Mario All-Stars + Super Mario World (USA).sfc" );
 
     renderReady = true;
 
