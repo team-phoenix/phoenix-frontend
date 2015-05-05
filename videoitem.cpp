@@ -14,8 +14,7 @@ VideoItem::VideoItem() :
     renderReady( false ),
     gameReady( false ),
     libretroCoreReady( false ),
-    texture( nullptr )
-{
+    texture( nullptr ) {
 
     coreTimer.setTimerType( Qt::PreciseTimer );
     coreTimer.moveToThread( &coreThread );
@@ -146,7 +145,7 @@ QString VideoItem::libretroCore() const {
 }
 
 void VideoItem::setLibretroCore( QString libretroCore ) {
-    libretroCore = libretroCore.remove( "file://" );
+    libretroCore = QUrl( libretroCore ).toLocalFile();
     qmlLibretroCore = libretroCore;
     /*
         if ( core->state() == Core::Running ) {
@@ -165,7 +164,7 @@ void VideoItem::setLibretroCore( QString libretroCore ) {
 }
 
 void VideoItem::setGame( QString game ) {
-    game = game.remove( "file://" );
+    game = QUrl( game ).toLocalFile();
     qmlGame = game;
 
     //if ( core->state() == Core::Running ) {
@@ -235,12 +234,13 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
 
     }
 
-    static quint64 timeStamp = -1;
+    static qint64 timeStamp = -1;
 
 
     if( timeStamp != -1 ) {
         qreal calculatedFrameRate = ( 1 / ( timeStamp / 1000000.0 ) ) * 1000.0;
         int difference = calculatedFrameRate > core.getFps() ? calculatedFrameRate - core.getFps() : core.getFps() - calculatedFrameRate;
+        Q_UNUSED( difference );
         //qDebug() << "FrameRate: " <<  difference << " coreFps: " << core->getFps() << " calculatedFPS: " << calculatedFrameRate;
 
         //frameTimer.hasExpired()

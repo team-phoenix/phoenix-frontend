@@ -6,8 +6,7 @@
 #include <QtConcurrent>
 
 PathWatcher::PathWatcher( QObject *parent )
-    : QObject( parent )
-{
+    : QObject( parent ) {
 
 #ifdef Q_OS_MACX
     corePath = "/usr/local/lib/libretro";
@@ -50,7 +49,7 @@ void PathWatcher::slotHandleStarted() {
 
     while( dirIter.hasNext() ) {
 
-        QString file = dirIter.next();
+        QString file = QUrl::fromLocalFile( dirIter.next() ).toString();
 
         if( !coreList.contains( file ) ) {
             emit fileAdded( file, QFileInfo( file ).baseName() );
