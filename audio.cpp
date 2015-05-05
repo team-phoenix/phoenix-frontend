@@ -74,6 +74,7 @@ void Audio::slotHandleFormatChanged() {
 
 
     connect( audioOut, &QAudioOutput::stateChanged, this, &Audio::slotStateChanged );
+    audioOut->setBufferSize( audioFormatOut.sampleRate() );
     audioOutIODev = audioOut->start();
 
     if( !isCoreRunning ) {
@@ -147,8 +148,13 @@ void Audio::slotHandlePeriodTimer( AudioBuffer *audioBuf, int size ) {
         emit signalFormatChanged();
     }
 
+    if (!audioOut->bytesFree())
+        return;
+
     int chunks = audioOut->bytesFree() / audioOut->periodSize();
-    QVarLengthArray<char, 4096 * 4> tmpbuf(audioOut->bytesFree());
+    QVarLengthArray<char, 44100 > tmpbuf(audioOut->bytesFree());
+
+    //qDebug() << audioOut->bytesFree();
 
     while (chunks) {
         const qint64 len = audioBuf->read( tmpbuf.data(), audioOut->periodSize() );

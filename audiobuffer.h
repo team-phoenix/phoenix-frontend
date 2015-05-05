@@ -34,7 +34,7 @@ class AudioBuffer : public QObject {
 
 
     public:
-        AudioBuffer( size_t size = 4096 * 4 );
+        AudioBuffer( size_t size = 44100 );
 
         virtual ~AudioBuffer();
 
