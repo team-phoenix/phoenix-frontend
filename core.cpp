@@ -71,11 +71,14 @@ Core::Core()
 Core::~Core() {
     qCDebug( phxCore ) << "Began unloading core";
     saveSRAM();
-    symbols.retro_unload_game();
-    symbols.retro_deinit();
-    libretroCore.unload();
-    gameData.clear();
-    libraryName.clear();
+
+    if ( !gameData.isEmpty() ) {
+        symbols.retro_unload_game();
+        symbols.retro_deinit();
+        gameData.clear();
+        libretroCore.unload();
+        libraryName.clear();
+    }
 
     delete systemAVInfo;
     delete systemInfo;
@@ -226,6 +229,11 @@ bool Core::loadGame( const char *path ) {
 
 void Core::doFrame() {
     // Update the static pointer
+    if ( thread()->isInterruptionRequested() ) {
+        this->deleteLater();
+        return;
+    }
+
     core = this;
 
     // Tell the core to run a frame
