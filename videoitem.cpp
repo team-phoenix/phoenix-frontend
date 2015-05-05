@@ -85,8 +85,8 @@ void VideoItem::refresh() {
 void VideoItem::componentComplete() {
     QQuickItem::componentComplete();
 
-    setLibretroCore( "/Users/lee/Desktop/bsnes_performance_libretro.dylib" );
-    setGame( "/Users/lee/Desktop/SNES/Super Mario All-Stars + Super Mario World (USA).sfc" );
+    //setLibretroCore( "/Users/lee/Desktop/bsnes_performance_libretro.dylib" );
+    //setGame( "/Users/lee/Desktop/SNES/Super Mario All-Stars + Super Mario World (USA).sfc" );
 
     renderReady = true;
 
