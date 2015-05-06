@@ -10,25 +10,20 @@
 
 
 VideoItem::VideoItem() :
-    coreTimer( nullptr ),
     renderReady( false ),
     gameReady( false ),
     libretroCoreReady( false ),
     texture( nullptr ) {
 
-    coreTimer.setTimerType( Qt::PreciseTimer );
-    coreTimer.moveToThread( &coreThread );
-
     core.moveToThread( &coreThread );
-    audio.moveToThread( &coreThread );
-    //audioBuffer.moveToThread( &coreThread );
+    audioOutput.moveToThread( &coreThread );
 
-    connect( &coreThread, &QThread::started, &audio, &Audio::slotThreadStarted );
-    connect( &coreThread, &QThread::started, &audio, [ this ]  {
-        audio.slotRunChanged( true );
+    connect( &coreThread, &QThread::started, &audioOutput, &AudioOutput::slotThreadStarted );
+    connect( &coreThread, &QThread::started, &audioOutput, [ this ]  {
+        audioOutput.slotRunChanged( true );
     } );
 
-    connect( &audioBuffer, &AudioBuffer::signalReadReady, &audio, &Audio::slotHandlePeriodTimer );
+    connect( &audioBuffer, &AudioBuffer::signalReadReady, &audioOutput, &AudioOutput::slotHandleAudioData );
     connect( this, &VideoItem::windowChanged, this, &VideoItem::handleWindowChanged );
 
     connect( &core, &Core::signalVideoDataReady, this, &VideoItem::createTexture );
@@ -54,20 +49,20 @@ void VideoItem::createTexture( uchar *data, unsigned width, unsigned height, int
 }
 
 void VideoItem::refresh() {
+
     if( gameReady && libretroCoreReady ) {
 
-        core.setAudioBuffer( &audioBuffer );
-
-        audio.setDefaultFormat( core.getSampleRate() );
+        audioOutput.setDefaultFormat( core.getSampleRate() );
         //core->slotStartCoreThread( QThread::TimeCriticalPriority );
 
         //core->slotHandleCoreStateChanged( Core::Running );
         renderReady = true;
 
         startThread( VideoItem::CoreThread, QThread::TimeCriticalPriority );
-        audio.slotRunChanged( true );
+        audioOutput.slotRunChanged( true );
 
     }
+
 }
 
 void VideoItem::componentComplete() {
@@ -81,6 +76,10 @@ void VideoItem::componentComplete() {
     if( renderReady ) {
         update();
     }
+
+}
+
+void VideoItem::handleCoreStateChange( Core::State newState, void *data ) {
 
 }
 
@@ -149,11 +148,25 @@ void VideoItem::setLibretroCore( QString libretroCore ) {
         }
         */
 
-    libretroCoreReady = core.loadCore( libretroCore.toUtf8().constData() );
+    libretroCoreReady = core.slotLoadCore( libretroCore.toUtf8().constData() );
 
     emit libretroCoreChanged();
 
     refresh();
+}
+
+void VideoItem::startThread(VideoItem::Thread type, QThread::Priority priority) {
+    switch( type ) {
+    case CoreThread:
+        coreThread.start( priority );
+        break;
+
+    case InputThread:
+        break;
+
+    default:
+        break;
+    }
 }
 
 void VideoItem::setGame( QString game ) {
@@ -164,11 +177,11 @@ void VideoItem::setGame( QString game ) {
     //  setLibretroCore( qmlLibretroCore );
     //}
 
-    gameReady = core.loadGame( game.toUtf8().constData() );
+    gameReady = core.slotLoadGame( game.toUtf8().constData() );
 
     emit gameChanged();
 
-    connect( &core, &Core::signalRenderFrame, this, &VideoItem::update );
+    connect( &core, &Core::signalFrameRendered, this, &VideoItem::update );
     connect( this, &VideoItem::signalDoFrame, &core, &Core::slotDoFrame );
 
     refresh();

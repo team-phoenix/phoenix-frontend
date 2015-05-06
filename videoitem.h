@@ -22,11 +22,15 @@ class VideoItem : public QQuickItem {
         Q_OBJECT
         Q_PROPERTY( QString libretroCore READ libretroCore WRITE setLibretroCore NOTIFY libretroCoreChanged )
         Q_PROPERTY( QString game READ game WRITE setGame NOTIFY gameChanged )
+    public:
+
+        VideoItem();
+        ~VideoItem();
 
         QThread coreThread;
 
         Core core;
-        Audio audio;
+        AudioOutput audioOutput;
         AudioBuffer audioBuffer;
 
         QTimer coreTimer;
@@ -47,41 +51,35 @@ class VideoItem : public QQuickItem {
 
         QSGTexture *texture;
 
-    public:
-        VideoItem();
-        ~VideoItem();
-
         QString game() const;
         QString libretroCore() const;
 
         void setGame( QString game );
         void setLibretroCore( QString libretroCore );
 
-        void startThread( VideoItem::Thread type, QThread::Priority priority = QThread::TimeCriticalPriority ) {
-            switch( type ) {
-                case CoreThread:
-                    coreThread.start( priority );
-                    break;
-
-                case InputThread:
-                    break;
-
-                default:
-                    break;
-            }
-        }
+        void startThread( VideoItem::Thread type, QThread::Priority priority = QThread::TimeCriticalPriority );
 
     signals:
+
         void libretroCoreChanged();
         void gameChanged();
         void signalDoFrame();
 
+    public slots:
+
+        void handleCoreStateChange( Core::State newState, void *data );
+
     private slots:
+
         void handleWindowChanged( QQuickWindow *window );
         void handleOpenGLContextCreated( QOpenGLContext *GLContext );
         void createTexture( uchar *data, unsigned width, unsigned height, int pitch );
 
     private:
+
+        retro_system_av_info *avInfo;
+        retro_pixel_format pixelFormat;
+
         void componentComplete();
         void refresh();
 

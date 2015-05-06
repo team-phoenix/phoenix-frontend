@@ -1,31 +1,19 @@
 
 #include "audio.h"
 
-Audio::Audio( QObject *parent )
-    : QObject( parent ),
-      isCoreRunning( false ),
-      audioOut( nullptr ),
+AudioOutput::AudioOutput()
+    : isCoreRunning( false ),
+      audioOutInterface( nullptr ),
       audioOutIODev( nullptr ),
       resamplerState( nullptr ),
       outputDataFloat( nullptr ),
       outputDataShort( nullptr ) {
 
-
-
-
-
-
-    //connect( &audioTimer, &QTimer::timeout, this, &Audio::slotHandlePeriodTimer );
-    //connect( this, &Audio::signalStartTimer, &audioTimer, static_cast<void ( QTimer::* )( void )> ( &QTimer::start ) );
-    //connect( this, &Audio::signalStopTimer, &audioTimer, &QTimer::stop );
-    // We need to send this signal to ourselves
-    connect( this, &Audio::signalFormatChanged, this, &Audio::slotHandleFormatChanged );
-
 }
 
-Audio::~Audio() {
-    if( audioOut ) {
-        delete audioOut;
+AudioOutput::~AudioOutput() {
+    if( audioOutInterface ) {
+        delete audioOutInterface;
     }
 
     if( outputDataFloat ) {
@@ -37,21 +25,24 @@ Audio::~Audio() {
     }
 }
 
-void Audio::setInFormat( QAudioFormat newInFormat ) {
+void AudioOutput::slotSetInputFormat( QAudioFormat newInFormat, double coreFrameRate ) {
 
     qCDebug( phxAudio, "setInFormat(%iHz %ibits)", newInFormat.sampleRate(), newInFormat.sampleSize() );
 
     QAudioDeviceInfo info( QAudioDeviceInfo::defaultOutputDevice() );
 
     audioFormatIn = newInFormat;
-    audioFormatOut = info.nearestFormat( newInFormat ); // try using the nearest supported format
 
-    if( audioFormatOut.sampleRate() < audioFormatIn.sampleRate() ) {
-        // If that got us a format with a worse sample rate, use preferred format
+    // Try using the nearest supported format
+    audioFormatOut = info.nearestFormat( newInFormat );
+
+    // If that got us a format with a worse sample rate, use preferred format
+    if( audioFormatOut.sampleRate() <= audioFormatIn.sampleRate() ) {
         audioFormatOut = info.preferredFormat();
     }
 
     sampleRateRatio = ( qreal )audioFormatOut.sampleRate()  / audioFormatIn.sampleRate();
+    this->coreFrameRate = coreFrameRate;
 
     qCDebug( phxAudio ) << "audioFormatIn" << audioFormatIn;
     qCDebug( phxAudio ) << "audioFormatOut" << audioFormatOut;
@@ -59,26 +50,26 @@ void Audio::setInFormat( QAudioFormat newInFormat ) {
     qCDebug( phxAudio, "Using nearest format supported by sound card: %iHz %ibits",
              audioFormatOut.sampleRate(), audioFormatOut.sampleSize() );
 
-    emit signalFormatChanged();
-
 }
 
-void Audio::slotHandleFormatChanged() {
-    if( audioOut ) {
-        audioOut->stop();
-        delete audioOut;
+void AudioOutput::slotInitAudio() {
+
+    // Re-create the output interface object
+    if( audioOutInterface ) {
+        audioOutInterface->stop();
+        delete audioOutInterface;
     }
 
-    audioOut = new QAudioOutput( audioFormatOut, this );
-    Q_CHECK_PTR( audioOut );
+    audioOutInterface = new QAudioOutput( audioFormatOut, this );
+    Q_CHECK_PTR( audioOutInterface );
 
 
-    connect( audioOut, &QAudioOutput::stateChanged, this, &Audio::slotStateChanged );
-    audioOut->setBufferSize( audioFormatOut.sampleRate() );
-    audioOutIODev = audioOut->start();
+    connect( audioOutInterface, &QAudioOutput::stateChanged, this, &AudioOutput::slotStateChanged );
+    audioOutInterface->setBufferSize( audioFormatOut.sampleRate() );
+    audioOutIODev = audioOutInterface->start();
 
     if( !isCoreRunning ) {
-        audioOut->suspend();
+        audioOutInterface->suspend();
     }
 
     //audioOutIODev->moveToThread( &audioThread );
@@ -89,7 +80,7 @@ void Audio::slotHandleFormatChanged() {
     // qint64 durationInMs = audioFormatOut.durationForBytes( audioOut->periodSize() * 1.0 ) / 1000;
 
     qint64 durationInMs = 16;
-    qCDebug( phxAudio ) << "Timer interval set to" << durationInMs << "ms, Period size" << audioOut->periodSize() << "bytes, buffer size" << audioOut->bufferSize() << "bytes";
+    qCDebug( phxAudio ) << "Timer interval set to" << durationInMs << "ms, Period size" << audioOutInterface->periodSize() << "bytes, buffer size" << audioOutInterface->bufferSize() << "bytes";
 
 
     audioTimer.setInterval( durationInMs );
@@ -107,7 +98,7 @@ void Audio::slotHandleFormatChanged() {
 
     // Now that the IO devices are properly set up,
     // allocate space for buffers that'll hold up to their hardware couterpart's size in data
-    auto outputDataSamples = audioOut->bufferSize() * 2;
+    auto outputDataSamples = audioOutInterface->bufferSize() * 2;
     qCDebug( phxAudio ) << "Allocated" << outputDataSamples << "for conversion.";
 
     if( outputDataFloat ) {
@@ -122,49 +113,49 @@ void Audio::slotHandleFormatChanged() {
     outputDataShort = new short[outputDataSamples];
 }
 
-void Audio::slotThreadStarted() {
+void AudioOutput::slotThreadStarted() {
     if( !audioFormatIn.isValid() ) {
         // We don't have a valid audio format yet...
         qCDebug( phxAudio ) << "audioFormatIn is not valid";
         return;
     }
 
-    slotHandleFormatChanged();
+    slotResetAudiod();
 }
 
-void Audio::slotHandlePeriodTimer( AudioBuffer *audioBuf, int size ) {
+void AudioOutput::slotHandleAudioData( int16_t data ) {
 
     // Handle the situation where there is no device to output to
 
     if( !audioOutIODev ) {
         qCDebug( phxAudio ) << "Audio device was not found, attempting reset...";
-        emit signalFormatChanged();
+        slotInitAudio();
         return;
     }
 
     // Handle the situation where there is an error opening the audio device
-    if( audioOut->error() == QAudio::OpenError ) {
+    if( audioOutInterface->error() == QAudio::OpenError ) {
         qWarning( phxAudio ) << "QAudio::OpenError, attempting reset...";
-        emit signalFormatChanged();
+        slotInitAudio();
     }
 
-    if( !audioOut->bytesFree() ) {
+    if( !audioOutInterface->bytesFree() ) {
         return;
     }
 
-    int chunks = audioOut->bytesFree() / audioOut->periodSize();
-    QVarLengthArray<char, 44100> tmpbuf( audioOut->bytesFree() );
+    int chunks = audioOutInterface->bytesFree() / audioOutInterface->periodSize();
+    QVarLengthArray<char, 44100> tmpbuf( audioOutInterface->bytesFree() );
 
     //qDebug() << audioOut->bytesFree();
 
     while( chunks ) {
-        const qint64 len = audioBuf->read( tmpbuf.data(), audioOut->periodSize() );
+        const qint64 len = audioBuf->read( tmpbuf.data(), audioOutInterface->periodSize() );
 
         if( len ) {
             audioOutIODev->write( tmpbuf.data(), len );
         }
 
-        if( len != audioOut->periodSize() ) {
+        if( len != audioOutInterface->periodSize() ) {
             break;
         }
 
@@ -173,32 +164,32 @@ void Audio::slotHandlePeriodTimer( AudioBuffer *audioBuf, int size ) {
 
 }
 
-void Audio::slotRunChanged( bool _isCoreRunning ) {
+void AudioOutput::slotRunChanged( bool _isCoreRunning ) {
     isCoreRunning = _isCoreRunning;
 
-    if( !audioOut ) {
+    if( !audioOutInterface ) {
         return;
     }
 
     if( !isCoreRunning ) {
-        if( audioOut->state() != QAudio::SuspendedState ) {
+        if( audioOutInterface->state() != QAudio::SuspendedState ) {
             qCDebug( phxAudio ) << "Paused";
-            audioOut->suspend();
-            emit signalStopTimer();
+            audioOutInterface->suspend();
+            //emit signalStopTimer();
         }
     } else {
-        if( audioOut->state() != QAudio::ActiveState ) {
+        if( audioOutInterface->state() != QAudio::ActiveState ) {
             qCDebug( phxAudio ) << "Started";
-            audioOut->resume();
-            emit signalStartTimer();
+            audioOutInterface->resume();
+            //emit signalStartTimer();
         }
     }
 }
 
-void Audio::slotStateChanged( QAudio::State s ) {
-    if( s == QAudio::IdleState && audioOut->error() == QAudio::UnderrunError ) {
+void AudioOutput::slotStateChanged( QAudio::State s ) {
+    if( s == QAudio::IdleState && audioOutInterface->error() == QAudio::UnderrunError ) {
         qWarning( phxAudio ) << "audioOut underrun";
-        audioOutIODev = audioOut->start();
+        audioOutIODev = audioOutInterface->start();
     }
 
     if( s != QAudio::IdleState && s != QAudio::ActiveState ) {
@@ -206,9 +197,9 @@ void Audio::slotStateChanged( QAudio::State s ) {
     }
 }
 
-void Audio::slotSetVolume( qreal level ) {
-    if( audioOut ) {
-        audioOut->setVolume( level );
+void AudioOutput::slotSetVolume( qreal level ) {
+    if( audioOutInterface ) {
+        audioOutInterface->setVolume( level );
     }
 }
 

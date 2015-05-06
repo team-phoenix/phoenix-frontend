@@ -25,61 +25,56 @@
  * that can be written has a whole chunk to the audio output.
  */
 
-class Audio : public QObject {
+class AudioOutput : public QObject {
         Q_OBJECT
 
-        QTimer audioTimer;
-
-    public:
-        Audio( QObject * = 0 );
-        ~Audio();
-
-        void setInFormat( QAudioFormat newInFormat );
-
-        void setDefaultFormat( int rate ) {
-            QAudioFormat format;
-            format.setSampleSize( 16 );
-            format.setSampleRate( rate );
-            format.setChannelCount( 2 );
-            format.setSampleType( QAudioFormat::SignedInt );
-            format.setByteOrder( QAudioFormat::LittleEndian );
-            format.setCodec( "audio/pcm" );
-            // TODO test format
-            setInFormat( format );
-        }
-
     signals:
+
         void signalFormatChanged();
-        void signalStopTimer();
-        void signalStartTimer();
 
     public slots:
+
+        // Tell Audio what sample rate to expect from Core
+        void slotSetInputFormat( QAudioFormat newInFormat, double coreFrameRate );
+
+        // Completely init/re-init audio output
+        void slotInitAudio();
+
+        // Output incoming video frame of audio data to the audio output
+        void slotHandleAudioData( int16_t data );
+
         void slotStateChanged( QAudio::State state );
         void slotRunChanged( bool _isCoreRunning );
         void slotSetVolume( qreal level );
         void slotThreadStarted();
-        void slotHandleFormatChanged();
-        void slotHandlePeriodTimer( AudioBuffer *audioBuf, int size );
+
+    public:
+
+        AudioOutput();
+        ~AudioOutput();
 
     private:
+
         // Opaque pointer for libsamplerate
         SRC_STATE *resamplerState;
 
         double sampleRateRatio;
+        double coreFrameRate;
+
         int audioInBytesNeeded;
         float inputDataFloat[4096 * 2];
         char inputDataChar[4096 * 4];
         float *outputDataFloat;
         short *outputDataShort;
 
+
         bool isCoreRunning;
+
         QAudioFormat audioFormatOut;
         QAudioFormat audioFormatIn;
 
-        // We delete aout; Use a normal pointer.
-        QAudioOutput *audioOut;
+        QAudioOutput *audioOutInterface;
 
-        // aio doesn't own the pointer; Use a normal pointer.
         QIODevice *audioOutIODev;
 
 };
