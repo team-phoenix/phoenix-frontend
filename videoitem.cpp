@@ -1,32 +1,18 @@
 #include "videoitem.h"
 
-#include <QSGSimpleRectNode>
-#include <QFileInfo>
-#include <QFile>
-#include <QQuickWindow>
-#include <QDebug>
-#include <QOpenGLContext>
-#include <QOpenGLFramebufferObject>
-
-
 VideoItem::VideoItem() :
-    renderReady( false ),
-    gameReady( false ),
-    libretroCoreReady( false ),
     texture( nullptr ) {
 
+    // Place the objects under VideoItem's control into their own threads
     core.moveToThread( &coreThread );
-    audioOutput.moveToThread( &coreThread );
+    // audioOutput.moveToThread( &audioOutputThread );
 
-    connect( &coreThread, &QThread::started, &audioOutput, &AudioOutput::slotThreadStarted );
-    connect( &coreThread, &QThread::started, &audioOutput, [ this ]  {
-        audioOutput.slotRunChanged( true );
-    } );
-
-    connect( &audioBuffer, &AudioBuffer::signalReadReady, &audioOutput, &AudioOutput::slotHandleAudioData );
-    connect( this, &VideoItem::windowChanged, this, &VideoItem::handleWindowChanged );
-
-    connect( &core, &Core::signalVideoDataReady, this, &VideoItem::createTexture );
+    // Connect controller signals and slots
+    connect( this, &VideoItem::signalLoadCore, &core, &Core::slotLoadCore );
+    connect( this, &VideoItem::signalLoadGame, &core, &Core::slotLoadGame );
+    // connect( this, &VideoItem::signalAudioFormat, &audioOutput, &AudioOutput::slotAudioFormat );
+    connect( this, &VideoItem::signalVideoFormat, this, &VideoItem::slotVideoFormat );
+    connect( this, &VideoItem::signalFrame, &core, &Core::slotFrame );
 }
 
 VideoItem::~VideoItem() {
@@ -36,50 +22,92 @@ VideoItem::~VideoItem() {
 
 }
 
-void VideoItem::createTexture( uchar *data, unsigned width, unsigned height, int pitch ) {
+//
+// Controller methods
+//
 
-    QImage::Format frame_format = retroToQImageFormat( core.getPixelFormat() );
-    texture = window()->createTextureFromImage( QImage( std::move( data ),
+void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) {
+    coreState = newState;
+
+    switch( newState ) {
+        case Core::STATEUNINITIALIZED:
+            break;
+
+        case Core::STATEREADY:
+            break;
+
+        case Core::STATEFINISHED:
+            break;
+
+        case Core::STATEERROR:
+            switch( error ) {
+                default:
+                    break;
+            }
+
+            break;
+    }
+}
+
+void VideoItem::slotCoreAVFormat( retro_system_av_info avInfo, retro_pixel_format pixelFormat ) {
+
+    this->avInfo = avInfo;
+    this->pixelFormat = pixelFormat;
+
+    emit signalAudioFormat( avInfo.timing.sample_rate, avInfo.timing.fps, 60.0 );
+    emit signalVideoFormat( pixelFormat,
+                            avInfo.geometry.max_width,
+                            avInfo.geometry.max_height,
+                            avInfo.geometry.max_width
+                            * ( pixelFormat == RETRO_PIXEL_FORMAT_XRGB8888 ? 4 : 2 ),
+                            avInfo.timing.fps, 60.0 );
+
+}
+
+void VideoItem::setCore( QString libretroCore ) {
+
+    libretroCore = QUrl( libretroCore ).toLocalFile();
+    corePath = libretroCore;
+    emit signalLoadCore( corePath.toUtf8().constData() );
+
+}
+
+void VideoItem::setGame( QString game ) {
+
+    game = QUrl( game ).toLocalFile();
+    gamePath = game;
+    emit signalLoadGame( gamePath.toUtf8().constData() );
+
+}
+
+//
+// Consumer methods
+//
+
+void VideoItem::slotVideoFormat( retro_pixel_format pixelFormat, int width, int height, int pitch, double coreFPS, double hostFPS ) {
+
+    this->pixelFormat = pixelFormat;
+    this->width = width;
+    this->height = height;
+    this->pitch = pitch;
+    this->coreFPS = coreFPS;
+    this->hostFPS = hostFPS;
+
+}
+
+void VideoItem::slotVideoData( uchar *data, unsigned width, unsigned height, size_t pitch ) {
+
+    if( texture ) {
+        texture->deleteLater();
+    }
+
+    QImage::Format frame_format = retroToQImageFormat( pixelFormat );
+    texture = window()->createTextureFromImage( QImage( data,
               width,
               height,
               pitch,
               frame_format )
               , QQuickWindow::TextureOwnsGLTexture );
-
-}
-
-void VideoItem::refresh() {
-
-    if( gameReady && libretroCoreReady ) {
-
-        audioOutput.setDefaultFormat( core.getSampleRate() );
-        //core->slotStartCoreThread( QThread::TimeCriticalPriority );
-
-        //core->slotHandleCoreStateChanged( Core::Running );
-        renderReady = true;
-
-        startThread( VideoItem::CoreThread, QThread::TimeCriticalPriority );
-        audioOutput.slotRunChanged( true );
-
-    }
-
-}
-
-void VideoItem::componentComplete() {
-    QQuickItem::componentComplete();
-
-    //setLibretroCore( "/Users/lee/Desktop/bsnes_performance_libretro.dylib" );
-    //setGame( "/Users/lee/Desktop/SNES/Super Mario All-Stars + Super Mario World (USA).sfc" );
-
-    renderReady = true;
-
-    if( renderReady ) {
-        update();
-    }
-
-}
-
-void VideoItem::handleCoreStateChange( Core::State newState, void *data ) {
 
 }
 
@@ -128,83 +156,69 @@ void VideoItem::handleOpenGLContextCreated( QOpenGLContext *GLContext ) {
 
 }
 
-QString VideoItem::game() const {
-    return qmlGame;
-}
+QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintData ) {
+    Q_UNUSED( paintData );
 
-QString VideoItem::libretroCore() const {
-    return qmlLibretroCore;
-}
+    QSGSimpleTextureNode *textureNode = static_cast<QSGSimpleTextureNode *>( node );
 
-void VideoItem::setLibretroCore( QString libretroCore ) {
-    libretroCore = QUrl( libretroCore ).toLocalFile();
-    qmlLibretroCore = libretroCore;
-    /*
-        if ( core->state() == Core::Running ) {
-            frameDataQueue.clear();
-            renderReady = false;
-            gameReady = false;
-            core->slotHandleCoreStateChanged( Core::Unloaded );
-        }
-        */
+    if( !textureNode ) {
 
-    libretroCoreReady = core.slotLoadCore( libretroCore.toUtf8().constData() );
+        textureNode = new QSGSimpleTextureNode;
 
-    emit libretroCoreChanged();
-
-    refresh();
-}
-
-void VideoItem::startThread(VideoItem::Thread type, QThread::Priority priority) {
-    switch( type ) {
-    case CoreThread:
-        coreThread.start( priority );
-        break;
-
-    case InputThread:
-        break;
-
-    default:
-        break;
-    }
-}
-
-void VideoItem::setGame( QString game ) {
-    game = QUrl( game ).toLocalFile();
-    qmlGame = game;
-
-    //if ( core->state() == Core::Running ) {
-    //  setLibretroCore( qmlLibretroCore );
-    //}
-
-    gameReady = core.slotLoadGame( game.toUtf8().constData() );
-
-    emit gameChanged();
-
-    connect( &core, &Core::signalFrameRendered, this, &VideoItem::update );
-    connect( this, &VideoItem::signalDoFrame, &core, &Core::slotDoFrame );
-
-    refresh();
-
-}
-
-/*void VideoItem::slotHandleFrameData( FrameData *videoFrame )
-{
-    // The core thread takes a little time to end, in this time the
-    // callbacks are still being fired, we need to verify the core is intact or
-    // else we will get strange errors.
-
-    if ( core->state() != Core::Running ) {
-        delete videoFrame;
-        return;
     }
 
-    frameDataQueue.enqueue( videoFrame );
-    //qDebug() << "Video Frame: size( " << size << " )";
+    // It's not time yet. Show a black rectangle.
+    if( coreState != Core::STATEREADY ) {
+
+        generateSimpleTextureNode( Qt::black, textureNode );
+        return textureNode;
+
+    }
+
+    // First frame, no video data yet. Tell core to render a frame
+    // then display it next time.
+    if( !texture ) {
+        emit signalFrame();
+        generateSimpleTextureNode( Qt::black, textureNode );
+        return textureNode;
+
+    }
+
+    static qint64 timeStamp = -1;
+
+    if( timeStamp != -1 ) {
+
+        qreal calculatedFrameRate = ( 1 / ( timeStamp / 1000000.0 ) ) * 1000.0;
+        int difference = calculatedFrameRate > coreFPS ? calculatedFrameRate - coreFPS : coreFPS - calculatedFrameRate;
+        Q_UNUSED( difference );
+
+    }
+
+    timeStamp = frameTimer.nsecsElapsed();
+    frameTimer.start();
+
+    textureNode->setTexture( texture );
+    textureNode->setRect( boundingRect() );
+    textureNode->setFiltering( QSGTexture::Nearest );
+    textureNode->setOwnsTexture( true );
+    textureNode->setTextureCoordinatesTransform( QSGSimpleTextureNode::MirrorVertically | QSGSimpleTextureNode::MirrorHorizontally );
+
+    emit signalFrame();
+
+    return textureNode;
+
+}
+
+void VideoItem::componentComplete() {
+
+    QQuickItem::componentComplete();
+
     update();
-}*/
 
-void VideoItem::simpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTextureNode *textureNode ) {
+}
+
+void VideoItem::generateSimpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTextureNode *textureNode ) {
+
     QImage image( boundingRect().size().toSize(), QImage::Format_ARGB32 );
     image.fill( globalColor );
 
@@ -214,73 +228,21 @@ void VideoItem::simpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTexture
     textureNode->setRect( boundingRect() );
     textureNode->setFiltering( QSGTexture::Nearest );
     textureNode->setOwnsTexture( true );
+
 }
 
-QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintData ) {
-    Q_UNUSED( paintData );
+QImage::Format VideoItem::retroToQImageFormat( retro_pixel_format fmt ) {
 
-    QSGSimpleTextureNode *textureNode = static_cast<QSGSimpleTextureNode *>( node );
+    static QImage::Format format_table[3] = {
+        QImage::Format_RGB16,   // RETRO_PIXEL_FORMAT_0RGB1555
+        QImage::Format_RGB32,   // RETRO_PIXEL_FORMAT_XRGB8888
+        QImage::Format_RGB16    // RETRO_PIXEL_FORMAT_RGB565
+    };
 
-    if( !textureNode ) {
-        textureNode = new QSGSimpleTextureNode;
+    if( fmt >= 0 && fmt < ( sizeof( format_table ) / sizeof( QImage::Format ) ) ) {
+        return format_table[fmt];
     }
 
-    if( !renderReady ) {
-
-        // This will be false if the scene graph loads before the core.
-        // Which can happen more than you think.
-
-        // If that's the case then just give us a black rectangle.
-        simpleTextureNode( Qt::black, textureNode );
-        return textureNode;
-
-    }
-
-    if( !texture ) {
-        emit signalDoFrame();
-        simpleTextureNode( Qt::black, textureNode );
-        return textureNode;
-
-    }
-
-    static qint64 timeStamp = -1;
-
-
-    if( timeStamp != -1 ) {
-        qreal calculatedFrameRate = ( 1 / ( timeStamp / 1000000.0 ) ) * 1000.0;
-        int difference = calculatedFrameRate > core.getFps() ? calculatedFrameRate - core.getFps() : core.getFps() - calculatedFrameRate;
-        Q_UNUSED( difference );
-        //qDebug() << "FrameRate: " <<  difference << " coreFps: " << core->getFps() << " calculatedFPS: " << calculatedFrameRate;
-
-        //frameTimer.hasExpired()
-        //qDebug() << (qreal)( 1 / core->getFps() ) * 1000;
-
-        //if ( difference > 1 / 60 ) {
-
-        //}
-
-
-
-
-    }
-
-    timeStamp = frameTimer.nsecsElapsed();
-    frameTimer.start();
-
-    if( core.isDuplicateFrame() ) {
-        return textureNode;
-    }
-
-    textureNode->setTexture( texture );
-    textureNode->setRect( boundingRect() );
-    textureNode->setFiltering( QSGTexture::Nearest );
-    textureNode->setOwnsTexture( true );
-    textureNode->setTextureCoordinatesTransform( QSGSimpleTextureNode::MirrorVertically | QSGSimpleTextureNode::MirrorHorizontally );
-
-    emit signalDoFrame();
-
-
-
-    return textureNode;
+    return QImage::Format_Invalid;
 
 }

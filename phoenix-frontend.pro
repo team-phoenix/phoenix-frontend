@@ -5,10 +5,10 @@ QT += qml quick widgets multimedia concurrent
 SOURCES += main.cpp \
     videoitem.cpp \
     core.cpp \
-    audio.cpp \
     audiobuffer.cpp \
     phoenixglobals.cpp \
-    pathwatcher.cpp
+    pathwatcher.cpp \
+    audiooutput.cpp
 
 RESOURCES += qml.qrc
 
@@ -32,8 +32,8 @@ HEADERS += \
     videoitem.h \
     core.h \
     libretro.h \
-    audio.h \
     logging.h \
     audiobuffer.h \
     phoenixglobals.h \
-    pathwatcher.h
+    pathwatcher.h \
+    audiooutput.h

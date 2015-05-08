@@ -1,5 +1,5 @@
 
-#include "audio.h"
+#include "audiooutput.h"
 
 AudioOutput::AudioOutput()
     : isCoreRunning( false ),
@@ -83,7 +83,7 @@ void AudioOutput::slotInitAudio() {
     qCDebug( phxAudio ) << "Timer interval set to" << durationInMs << "ms, Period size" << audioOutInterface->periodSize() << "bytes, buffer size" << audioOutInterface->bufferSize() << "bytes";
 
 
-    audioTimer.setInterval( durationInMs );
+    // audioTimer.setInterval( durationInMs );
 
     if( resamplerState ) {
         src_delete( resamplerState );
@@ -120,7 +120,7 @@ void AudioOutput::slotThreadStarted() {
         return;
     }
 
-    slotResetAudiod();
+    slotInitAudio();
 }
 
 void AudioOutput::slotHandleAudioData( int16_t data ) {
@@ -149,7 +149,7 @@ void AudioOutput::slotHandleAudioData( int16_t data ) {
     //qDebug() << audioOut->bytesFree();
 
     while( chunks ) {
-        const qint64 len = audioBuf->read( tmpbuf.data(), audioOutInterface->periodSize() );
+        const qint64 len = 0;// audioBuf->read( tmpbuf.data(), audioOutInterface->periodSize() );
 
         if( len ) {
             audioOutIODev->write( tmpbuf.data(), len );

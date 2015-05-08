@@ -36,8 +36,7 @@ LibretroSymbols::LibretroSymbols()
 }
 
 Core::Core()
-    : audioBuffer( nullptr ),
-      avInfo( new retro_system_av_info ),
+    : avInfo( new retro_system_av_info ),
       pixelFormat( RETRO_PIXEL_FORMAT_UNKNOWN ),
       systemInfo( new retro_system_info ),
       SRAMDataRaw( nullptr ) {
@@ -118,22 +117,20 @@ void Core::audioSampleCallback( int16_t left, int16_t right ) {
 
 void Core::emitAudioDataReady( int16_t *data ) {
 
-    emit signalAudioDataReady( data );
+    emit signalAudioData( data );
 
 }
 
 void Core::emitReadyState() {
 
-    stateChangedData data;
-    data.avInfo.avInfo = *avInfo;
-    data.avInfo.pixelFormat = pixelFormat;
-    emit signalStateChanged( Core::STATEREADY, data );
+    emit signalAVFormat( *avInfo, pixelFormat );
+    emit signalCoreStateChanged( Core::STATEREADY, Core::CORENOERROR );
 
 }
 
 void Core::emitVideoDataReady( uchar *data, unsigned width, unsigned height, size_t pitch ) {
 
-    emit signalVideoDataReady( data, width, height, pitch );
+    emit signalVideoData( data, width, height, pitch );
 
 }
 
@@ -428,17 +425,15 @@ void Core::slotLoadCore( const char *path ) {
         symbols.retro_get_system_info( systemInfo );
         fullPathNeeded = systemInfo->need_fullpath;
 
-        return true;
-
     }
 
-    return false;
+    // TODO: Set unknown error
 
 }
 
 void Core::slotLoadGame( const char *path ) {
 
-    qDCebug( phxCore ) << "loadGame(" << path << ")";
+    qCDebug( phxCore ) << "loadGame(" << path << ")";
 
     // Argument struct for symbols.retro_load_game()
     retro_game_info gameInfo;
@@ -458,7 +453,7 @@ void Core::slotLoadGame( const char *path ) {
         QFile game( info.canonicalFilePath() );
 
         if( !game.open( QIODevice::ReadOnly ) ) {
-            return false;
+            ;// TODO: Set error state
         }
 
         // read into memory
@@ -472,9 +467,9 @@ void Core::slotLoadGame( const char *path ) {
     }
 
     if( !symbols.retro_load_game( &gameInfo ) ) {
-        stateChangedData data;
-        data.error = Core::GAMEUNKNOWNERROR;
-        emit signalStateChanged( Core::STATEERROR, data );
+
+        emit signalCoreStateChanged( Core::STATEERROR, Core::GAMEUNKNOWNERROR );
+
     }
 
     // Get the AV timing/dimensions/format
@@ -483,10 +478,10 @@ void Core::slotLoadGame( const char *path ) {
     loadSRAM();
 
     // Allocate buffers now that we know how large to make them
-    // Assume 32-bit video
+    // Assume 16-bit stereo audio, 32-bit video
     for( int i = 0; i < 30; i++ ) {
-        audioBufferPool[i] = calloc( 1, avInfo->timing.sample_rate * 4 );
-        videoBufferPool[i] = calloc( 1, avInfo->geometry.max_width * avInfo->geometry.max_height * 4 );
+        audioBufferPool[i] = ( int16_t * )calloc( 1, avInfo->timing.sample_rate * 4 );
+        videoBufferPool[i] = ( uchar * )calloc( 1, avInfo->geometry.max_width * avInfo->geometry.max_height * 4 );
     }
 
     core->emitReadyState();
@@ -636,7 +631,7 @@ void Core::saveSRAM() {
     }
 }
 
-void Core::slotDoFrame() {
+void Core::slotFrame() {
     // Update the static pointer
     if( thread()->isInterruptionRequested() ) {
         this->deleteLater();
@@ -648,11 +643,12 @@ void Core::slotDoFrame() {
     // Tell the core to run a frame
     symbols.retro_run();
 
-    if( symbols.retro_audio ) {
+    // This should never be used...
+    /*if( symbols.retro_audio ) {
         symbols.retro_audio();
-    }
+    }*/
 
-    emit signalFrameRendered();
+    // emit signalFrameRendered();
 
 }
 
