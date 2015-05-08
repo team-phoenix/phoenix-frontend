@@ -51,6 +51,8 @@ Core::Core()
     audioBufferCurrentByte = 0;
     videoBufferPoolIndex = 0;
 
+    emit signalCoreStateChanged( STATEUNINITIALIZED, CORENOERROR );
+
 }
 
 Core::~Core() {
@@ -172,26 +174,26 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
             return true;
 
         case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT: { // 10
-            qDebug() << "\tRETRO_ENVIRONMENT_SET_pixelFormat (10) (handled)";
+            qDebug() << "\tRETRO_ENVIRONMENT_SET_PIXEL_FORMAT (10) (handled)";
 
             retro_pixel_format *pixelformat = ( enum retro_pixel_format * )data;
             Core::core->pixelFormat = *pixelformat;
 
             switch( *pixelformat ) {
                 case RETRO_PIXEL_FORMAT_0RGB1555:
-                    qDebug() << "\tPixel format: 0RGB1555\n";
+                    qDebug() << "\t\tPixel format: 0RGB1555\n";
                     return true;
 
                 case RETRO_PIXEL_FORMAT_RGB565:
-                    qDebug() << "\tPixel format: RGB565\n";
+                    qDebug() << "\t\tPixel format: RGB565\n";
                     return true;
 
                 case RETRO_PIXEL_FORMAT_XRGB8888:
-                    qDebug() << "\tPixel format: XRGB8888\n";
+                    qDebug() << "\t\tPixel format: XRGB8888\n";
                     return true;
 
                 default:
-                    qDebug() << "\tError: Pixel format is not supported. (" << pixelformat << ")";
+                    qDebug() << "\t\tError: Pixel format is not supported. (" << pixelformat << ")";
                     break;
             }
 
@@ -443,7 +445,7 @@ void Core::slotLoadGame( QString path ) {
 
     gamePath = path;
 
-    qCDebug( phxCore ) << "loadGame(" << gamePath << ")";
+    qCDebug( phxCore ) << "slotLoadGame(" << gamePath << ")";
 
     // Argument struct for symbols.retro_load_game()
     retro_game_info gameInfo;
@@ -642,11 +644,6 @@ void Core::saveSRAM() {
 }
 
 void Core::slotFrame() {
-    // Update the static pointer
-    if( thread()->isInterruptionRequested() ) {
-        this->deleteLater();
-        return;
-    }
 
     // Tell the core to run a frame
     symbols.retro_run();
@@ -655,8 +652,6 @@ void Core::slotFrame() {
     /*if( symbols.retro_audio ) {
         symbols.retro_audio();
     }*/
-
-    // emit signalFrameRendered();
 
 }
 

@@ -1,7 +1,8 @@
 #include "videoitem.h"
 
 VideoItem::VideoItem() :
-    texture( nullptr ) {
+    texture( nullptr ),
+    core() {
 
     // Place the objects under VideoItem's control into their own threads
     core.moveToThread( &coreThread );
@@ -12,22 +13,23 @@ VideoItem::VideoItem() :
     connect( &core, &Core::signalAVFormat, this, &VideoItem::slotCoreAVFormat );
     connect( this, &VideoItem::signalLoadCore, &core, &Core::slotLoadCore );
     connect( this, &VideoItem::signalLoadGame, &core, &Core::slotLoadGame );
-    // connect( this, &VideoItem::signalAudioFormat, &audioOutput, &AudioOutput::slotAudioFormat );
-    connect( this, &VideoItem::signalVideoFormat, this, &VideoItem::slotVideoFormat );
     connect( this, &VideoItem::signalFrame, &core, &Core::slotFrame );
 
     // Connect consumer signals and slots
     // connect( &core, &Core::signalAudioData, &audioOutput, &AudioOutput::slotAudioData );
     connect( &core, &Core::signalVideoData, this, &VideoItem::slotVideoData );
+    // connect( this, &VideoItem::signalAudioFormat, &audioOutput, &AudioOutput::slotAudioFormat );
+    connect( this, &VideoItem::signalVideoFormat, this, &VideoItem::slotVideoFormat );
 
     // Start threads
     coreThread.start();
     // audioOutputThread.start();
+
 }
 
 VideoItem::~VideoItem() {
 
-    coreThread.requestInterruption();
+    coreThread.exit();
     coreThread.wait();
 
 }
@@ -81,13 +83,11 @@ void VideoItem::slotCoreAVFormat( retro_system_av_info avInfo, retro_pixel_forma
 
 void VideoItem::setCore( QString libretroCore ) {
 
-    qCDebug( phxController ) << "setCore(" << libretroCore << ")";
-
     libretroCore = QUrl( libretroCore ).toLocalFile();
     corePath = libretroCore;
-    emit signalLoadCore( corePath );
 
-    qCDebug( phxController ) << "= setCore(" << libretroCore << ")";
+    qCDebug( phxController ) << "emit signalLoadCore(" << corePath << ")";
+    emit signalLoadCore( corePath );
 
 }
 
@@ -95,6 +95,8 @@ void VideoItem::setGame( QString game ) {
 
     game = QUrl( game ).toLocalFile();
     gamePath = game;
+
+    qCDebug( phxController ) << "emit signalLoadGame(" << gamePath << ")";
     emit signalLoadGame( gamePath );
 
 }
@@ -114,7 +116,7 @@ void VideoItem::slotVideoFormat( retro_pixel_format pixelFormat, int width, int 
 
 }
 
-void VideoItem::slotVideoData(uchar *data, unsigned width, unsigned height, int pitch ) {
+void VideoItem::slotVideoData( uchar *data, unsigned width, unsigned height, int pitch ) {
 
     if( texture ) {
         texture->deleteLater();

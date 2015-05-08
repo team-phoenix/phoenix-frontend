@@ -83,7 +83,7 @@ ApplicationWindow {
 
             Menu {
                 id: coresAvailable;
-                title: qstr("Available...");
+                title: qstr("Available");
 
                 Instantiator {
                     model: pathWatcherModel;
