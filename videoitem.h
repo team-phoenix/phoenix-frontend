@@ -35,8 +35,8 @@ class VideoItem : public QQuickItem {
     signals:
 
         // Controller
-        void signalLoadCore( const char *path );
-        void signalLoadGame( const char *path );
+        void signalLoadCore( QString path );
+        void signalLoadGame( QString path );
         void signalAudioFormat( int sampleRate, double coreFPS, double hostFPS );
         void signalVideoFormat( retro_pixel_format pixelFormat, int width, int height, int pitch, double coreFPS, double hostFPS );
         void signalFrame();
@@ -49,7 +49,7 @@ class VideoItem : public QQuickItem {
 
         // Consumer
         void slotVideoFormat( retro_pixel_format pixelFormat, int width, int height, int pitch, double coreFPS, double hostFPS );
-        void slotVideoData( uchar *data, unsigned width, unsigned height, size_t pitch );
+        void slotVideoData( uchar *data, unsigned width, unsigned height, int pitch );
 
     private slots:
 

@@ -36,9 +36,7 @@ LibretroSymbols::LibretroSymbols()
 }
 
 Core::Core()
-    : avInfo( new retro_system_av_info ),
-      pixelFormat( RETRO_PIXEL_FORMAT_UNKNOWN ),
-      systemInfo( new retro_system_info ),
+    : pixelFormat( RETRO_PIXEL_FORMAT_RGB565 ),
       SRAMDataRaw( nullptr ) {
 
     Core::core = this;
@@ -46,19 +44,24 @@ Core::Core()
     setSaveDirectory( phxGlobals.savePath() );
     setSystemDirectory( phxGlobals.biosPath() );
 
+    avInfo = new retro_system_av_info;
+    systemInfo = new retro_system_info;
+
+    audioBufferPoolIndex = 0;
+    audioBufferCurrentByte = 0;
+    videoBufferPoolIndex = 0;
+
 }
 
 Core::~Core() {
     qCDebug( phxCore ) << "Began unloading core";
     saveSRAM();
 
-    if( !gameData.isEmpty() ) {
-        symbols.retro_unload_game();
-        symbols.retro_deinit();
-        gameData.clear();
-        libretroCore.unload();
-        libraryFilename.clear();
-    }
+    symbols.retro_unload_game();
+    symbols.retro_deinit();
+    gameData.clear();
+    libretroCore.unload();
+    libraryFilename.clear();
 
     delete avInfo;
     delete systemInfo;
@@ -372,8 +375,13 @@ int16_t Core::inputStateCallback( unsigned port, unsigned device, unsigned index
 
 }
 
-void Core::slotLoadCore( const char *path ) {
-    libretroCore.setFileName( path );
+void Core::slotLoadCore( QString path ) {
+
+    libraryPath = path;
+
+    qCDebug( phxCore ) << "slotLoadCore(" << libraryPath << ")";
+
+    libretroCore.setFileName( libraryPath );
     libretroCore.load();
 
     if( libretroCore.isLoaded() ) {
@@ -431,18 +439,20 @@ void Core::slotLoadCore( const char *path ) {
 
 }
 
-void Core::slotLoadGame( const char *path ) {
+void Core::slotLoadGame( QString path ) {
 
-    qCDebug( phxCore ) << "loadGame(" << path << ")";
+    gamePath = path;
+
+    qCDebug( phxCore ) << "loadGame(" << gamePath << ")";
 
     // Argument struct for symbols.retro_load_game()
     retro_game_info gameInfo;
 
-    QFileInfo info( path );
+    QFileInfo info( gamePath );
 
     // Full path needed, simply pass the game's file path to the core
     if( fullPathNeeded ) {
-        gameInfo.path = path;
+        gameInfo.path = gamePath.toUtf8().constData();
         gameInfo.data = nullptr;
         gameInfo.size = 0;
         gameInfo.meta = "";
@@ -637,8 +647,6 @@ void Core::slotFrame() {
         this->deleteLater();
         return;
     }
-
-    core = this;
 
     // Tell the core to run a frame
     symbols.retro_run();

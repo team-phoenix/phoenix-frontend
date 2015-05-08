@@ -8,11 +8,21 @@ VideoItem::VideoItem() :
     // audioOutput.moveToThread( &audioOutputThread );
 
     // Connect controller signals and slots
+    connect( &core, &Core::signalCoreStateChanged, this, &VideoItem::slotCoreStateChanged );
+    connect( &core, &Core::signalAVFormat, this, &VideoItem::slotCoreAVFormat );
     connect( this, &VideoItem::signalLoadCore, &core, &Core::slotLoadCore );
     connect( this, &VideoItem::signalLoadGame, &core, &Core::slotLoadGame );
     // connect( this, &VideoItem::signalAudioFormat, &audioOutput, &AudioOutput::slotAudioFormat );
     connect( this, &VideoItem::signalVideoFormat, this, &VideoItem::slotVideoFormat );
     connect( this, &VideoItem::signalFrame, &core, &Core::slotFrame );
+
+    // Connect consumer signals and slots
+    // connect( &core, &Core::signalAudioData, &audioOutput, &AudioOutput::slotAudioData );
+    connect( &core, &Core::signalVideoData, this, &VideoItem::slotVideoData );
+
+    // Start threads
+    coreThread.start();
+    // audioOutputThread.start();
 }
 
 VideoItem::~VideoItem() {
@@ -27,6 +37,9 @@ VideoItem::~VideoItem() {
 //
 
 void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) {
+
+    qCDebug( phxController ) << "slotStateChanged(" << newState << "," << error << ")";
+
     coreState = newState;
 
     switch( newState ) {
@@ -34,6 +47,7 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             break;
 
         case Core::STATEREADY:
+            emit signalFrame();
             break;
 
         case Core::STATEFINISHED:
@@ -47,6 +61,7 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
 
             break;
     }
+
 }
 
 void VideoItem::slotCoreAVFormat( retro_system_av_info avInfo, retro_pixel_format pixelFormat ) {
@@ -66,9 +81,13 @@ void VideoItem::slotCoreAVFormat( retro_system_av_info avInfo, retro_pixel_forma
 
 void VideoItem::setCore( QString libretroCore ) {
 
+    qCDebug( phxController ) << "setCore(" << libretroCore << ")";
+
     libretroCore = QUrl( libretroCore ).toLocalFile();
     corePath = libretroCore;
-    emit signalLoadCore( corePath.toUtf8().constData() );
+    emit signalLoadCore( corePath );
+
+    qCDebug( phxController ) << "= setCore(" << libretroCore << ")";
 
 }
 
@@ -76,7 +95,7 @@ void VideoItem::setGame( QString game ) {
 
     game = QUrl( game ).toLocalFile();
     gamePath = game;
-    emit signalLoadGame( gamePath.toUtf8().constData() );
+    emit signalLoadGame( gamePath );
 
 }
 
@@ -95,7 +114,7 @@ void VideoItem::slotVideoFormat( retro_pixel_format pixelFormat, int width, int 
 
 }
 
-void VideoItem::slotVideoData( uchar *data, unsigned width, unsigned height, size_t pitch ) {
+void VideoItem::slotVideoData(uchar *data, unsigned width, unsigned height, int pitch ) {
 
     if( texture ) {
         texture->deleteLater();
@@ -108,6 +127,8 @@ void VideoItem::slotVideoData( uchar *data, unsigned width, unsigned height, siz
               pitch,
               frame_format )
               , QQuickWindow::TextureOwnsGLTexture );
+
+    update();
 
 }
 
@@ -178,6 +199,7 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
     // First frame, no video data yet. Tell core to render a frame
     // then display it next time.
     if( !texture ) {
+
         emit signalFrame();
         generateSimpleTextureNode( Qt::black, textureNode );
         return textureNode;
@@ -212,6 +234,8 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
 void VideoItem::componentComplete() {
 
     QQuickItem::componentComplete();
+
+    setFlag( QQuickItem::ItemHasContents, true );
 
     update();
 

@@ -231,18 +231,18 @@ class Core: public QObject {
 
     signals:
 
-        void signalCoreStateChanged( State newState, Error error );
+        void signalCoreStateChanged( Core::State newState, Core::Error error );
         void signalAVFormat( retro_system_av_info avInfo, retro_pixel_format pixelFormat );
         void signalAudioData( int16_t *data );
-        void signalVideoData( uchar *data, unsigned width, unsigned height, size_t pitch );
+        void signalVideoData( uchar *data, unsigned width, unsigned height, int pitch );
 
     public slots:
 
         // Load the libretro core at the given path
-        void slotLoadCore( const char *path );
+        void slotLoadCore( QString path );
 
         // Load the game at the given path
-        void slotLoadGame( const char *path );
+        void slotLoadGame( QString path );
 
         // Run core for one frame
         void slotFrame();
@@ -278,6 +278,7 @@ class Core: public QObject {
 
         // Wrapper around shared library file (.dll, .dylib, .so)
         QLibrary libretroCore;
+        QString libraryPath;
 
         //
         // Core-specific constants
@@ -308,6 +309,9 @@ class Core: public QObject {
         //
         // Game
         //
+
+        // Path to ROM/ISO, empty if (!fullPathNeeded)
+        QString gamePath;
 
         // Raw ROM/ISO data, empty if (fullPathNeeded)
         QByteArray gameData;
