@@ -65,7 +65,7 @@ Core::~Core() {
 
     emit signalCoreStateChanged( STATEFINISHED, CORENOERROR );
 
-    saveSRAM();
+    // saveSRAM();
 
     // symbols.retro_audio is the first symbol set to null in the constructor, so check that one
     if( symbols.retro_audio ) {
@@ -510,7 +510,7 @@ void Core::slotLoadGame( QString path ) {
     // Get the AV timing/dimensions/format
     symbols.retro_get_system_av_info( avInfo );
 
-    loadSRAM();
+    // loadSRAM();
 
     // Allocate buffers now that we know how large to make them
     // Assume 16-bit stereo audio, 32-bit video

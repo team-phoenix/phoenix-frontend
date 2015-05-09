@@ -6,7 +6,7 @@ import QtQuick.Dialogs 1.2
 
 ApplicationWindow {
     title: qsTr("Phoenix");
-    width: 1000
+    width: 1333
     height: 1000
     visible: true
 

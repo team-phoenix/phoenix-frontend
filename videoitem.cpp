@@ -1,8 +1,8 @@
 #include "videoitem.h"
 
 VideoItem::VideoItem() :
-    texture( nullptr ),
-    core() {
+    core(),
+    texture( nullptr ) {
 
     // Place the objects under VideoItem's control into their own threads
     core.moveToThread( &coreThread );
@@ -131,6 +131,8 @@ void VideoItem::slotVideoData( uchar *data, unsigned width, unsigned height, int
               frame_format )
               , QQuickWindow::TextureOwnsGLTexture );
 
+    texture->moveToThread( window()->openglContext()->thread() );
+
     update();
 
 }
@@ -224,11 +226,14 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
 
     textureNode->setTexture( texture );
     textureNode->setRect( boundingRect() );
-    textureNode->setFiltering( QSGTexture::Nearest );
+    textureNode->setFiltering( QSGTexture::Linear );
     textureNode->setOwnsTexture( true );
     textureNode->setTextureCoordinatesTransform( QSGSimpleTextureNode::MirrorVertically | QSGSimpleTextureNode::MirrorHorizontally );
 
-    emit signalFrame();
+    // Tell Core to make another frame
+    if( coreState == Core::STATEREADY ) {
+        emit signalFrame();
+    }
 
     return textureNode;
 
