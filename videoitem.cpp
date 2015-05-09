@@ -10,16 +10,16 @@ VideoItem::VideoItem() :
 
     // Connect controller signals and slots
     connect( &core, &Core::signalCoreStateChanged, this, &VideoItem::slotCoreStateChanged );
-    connect( &core, &Core::signalAVFormat, this, &VideoItem::slotCoreAVFormat );
     connect( this, &VideoItem::signalLoadCore, &core, &Core::slotLoadCore );
     connect( this, &VideoItem::signalLoadGame, &core, &Core::slotLoadGame );
+    connect( &core, &Core::signalAVFormat, this, &VideoItem::slotCoreAVFormat );
+    // connect( this, &VideoItem::signalAudioFormat, &audioOutput, &AudioOutput::slotAudioFormat );
+    connect( this, &VideoItem::signalVideoFormat, this, &VideoItem::slotVideoFormat ); // Belongs in both categories
     connect( this, &VideoItem::signalFrame, &core, &Core::slotFrame );
 
     // Connect consumer signals and slots
     // connect( &core, &Core::signalAudioData, &audioOutput, &AudioOutput::slotAudioData );
     connect( &core, &Core::signalVideoData, this, &VideoItem::slotVideoData );
-    // connect( this, &VideoItem::signalAudioFormat, &audioOutput, &AudioOutput::slotAudioFormat );
-    connect( this, &VideoItem::signalVideoFormat, this, &VideoItem::slotVideoFormat );
 
     // Start threads
     coreThread.start();
@@ -29,6 +29,7 @@ VideoItem::VideoItem() :
 
 VideoItem::~VideoItem() {
 
+    // Stop processing events in the other threads, then block the main thread until they're finished
     coreThread.exit();
     coreThread.wait();
 

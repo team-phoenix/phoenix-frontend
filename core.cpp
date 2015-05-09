@@ -29,9 +29,7 @@ LibretroSymbols::LibretroSymbols()
     : retro_audio( nullptr ),
       retro_audio_set_state( nullptr ),
       retro_frame_time( nullptr ),
-      retro_keyboard_event( nullptr )
-
-{
+      retro_keyboard_event( nullptr ) {
 
 }
 
@@ -51,23 +49,36 @@ Core::Core()
     audioBufferCurrentByte = 0;
     videoBufferPoolIndex = 0;
 
+    for( int i = 0; i < 30; i++ ) {
+
+        audioBufferPool[i] = nullptr;
+
+        videoBufferPool[i] = nullptr;
+
+    }
+
     emit signalCoreStateChanged( STATEUNINITIALIZED, CORENOERROR );
 
 }
 
 Core::~Core() {
-    qCDebug( phxCore ) << "Began unloading core";
+
+    emit signalCoreStateChanged( STATEFINISHED, CORENOERROR );
+
     saveSRAM();
 
-    symbols.retro_unload_game();
-    symbols.retro_deinit();
+    // symbols.retro_audio is the first symbol set to null in the constructor, so check that one
+    if( symbols.retro_audio ) {
+        symbols.retro_unload_game();
+        symbols.retro_deinit();
+    }
+
     gameData.clear();
     libretroCore.unload();
     libraryFilename.clear();
 
     delete avInfo;
     delete systemInfo;
-    qCDebug( phxCore ) << "Finished unloading core";
 
     for( int i = 0; i < 30; i++ ) {
 
@@ -87,7 +98,13 @@ size_t Core::audioSampleBatchCallback( const int16_t *data, size_t samples ) {
 
     Core *core = Core::core;
 
+    // Sanity check
+    Q_ASSERT( core->audioBufferCurrentByte <= core->avInfo->timing.sample_rate * 4 );
+
+    // Need to do a bit of pointer arithmetic to get the right offset (the buffer is counted in increments of 2 bytes)
     memcpy( core->audioBufferPool[core->audioBufferPoolIndex] + ( core->audioBufferCurrentByte / 2 ), data, samples );
+
+    // Each sample is 2 bytes (16-bit)
     core->audioBufferCurrentByte += samples * 2;
 
     // Flush if index is now beyond buffer size
@@ -105,18 +122,24 @@ void Core::audioSampleCallback( int16_t left, int16_t right ) {
 
     Core *core = Core::core;
 
-    core->audioBufferPool[core->audioBufferPoolIndex][core->audioBufferCurrentByte] = left;
-    core->audioBufferPool[core->audioBufferPoolIndex][core->audioBufferCurrentByte + 1] = right;
+    // Sanity check
+    Q_ASSERT( core->audioBufferCurrentByte <= core->avInfo->timing.sample_rate * 4 );
+
+    // Stereo audio is interleaved, left then right
+    core->audioBufferPool[core->audioBufferPoolIndex][core->audioBufferCurrentByte / 2] = left;
+    core->audioBufferPool[core->audioBufferPoolIndex][core->audioBufferCurrentByte / 2 + 1] = right;
+
+    // Two 16-bit samples is 4 bytes
     core->audioBufferCurrentByte += 4;
 
     // Flush if index is now beyond buffer size
     if( core->audioBufferCurrentByte >= ( core->avInfo->timing.sample_rate * 2 ) ) {
+
         core->audioBufferCurrentByte = 0;
         core->emitAudioDataReady( core->audioBufferPool[core->audioBufferPoolIndex] );
         core->audioBufferPoolIndex = ( core->audioBufferPoolIndex + 1 ) % 30;
-    }
 
-    return;
+    }
 
 }
 
