@@ -40,6 +40,7 @@ class VideoItem : public QQuickItem {
         void signalAudioFormat( int sampleRate, double coreFPS, double hostFPS );
         void signalVideoFormat( retro_pixel_format pixelFormat, int width, int height, int pitch, double coreFPS, double hostFPS );
         void signalFrame();
+        void signalDestroy();
 
     public slots:
 
@@ -65,6 +66,9 @@ class VideoItem : public QQuickItem {
 
         // The emulator itself, a libretro core
         Core core;
+
+        // The timer that makes the core produce frames at regular intervals
+        QTimer coreTimer;
 
         // Thread that keeps the emulation from blocking this UI thread
         QThread coreThread;

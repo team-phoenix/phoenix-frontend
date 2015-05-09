@@ -1,14 +1,21 @@
 #include "videoitem.h"
 
 VideoItem::VideoItem() :
-    core(),
-    texture( nullptr ) {
+    core(), coreTimer(), coreThread(), coreState( Core::STATEUNINITIALIZED ),
+    // audioOutput(), audioOutputThread(),
+    avInfo(), pixelFormat(),
+    corePath( "" ), gamePath( "" ),
+    width( 0 ), height( 0 ), pitch( 0 ), coreFPS( 0.0 ), hostFPS( 0.0 ),
+    texture( nullptr ),
+    frameTimer() {
 
     // Place the objects under VideoItem's control into their own threads
+
     core.moveToThread( &coreThread );
     // audioOutput.moveToThread( &audioOutputThread );
 
     // Connect controller signals and slots
+
     connect( &core, &Core::signalCoreStateChanged, this, &VideoItem::slotCoreStateChanged );
     connect( this, &VideoItem::signalLoadCore, &core, &Core::slotLoadCore );
     connect( this, &VideoItem::signalLoadGame, &core, &Core::slotLoadGame );
@@ -17,7 +24,12 @@ VideoItem::VideoItem() :
     connect( this, &VideoItem::signalVideoFormat, this, &VideoItem::slotVideoFormat ); // Belongs in both categories
     connect( this, &VideoItem::signalFrame, &core, &Core::slotFrame );
 
+    // Run a timer to make core produce a frame at regular intervals
+    // Disabled at the moment due to the granulatiry being 1ms (not good enough)
+    // connect( &coreTimer, &QTimer::timeout, &core, &Core::slotFrame );
+
     // Connect consumer signals and slots
+
     // connect( &core, &Core::signalAudioData, &audioOutput, &AudioOutput::slotAudioData );
     connect( &core, &Core::signalVideoData, this, &VideoItem::slotVideoData );
 
@@ -28,6 +40,10 @@ VideoItem::VideoItem() :
 }
 
 VideoItem::~VideoItem() {
+
+    // Tell objects living in other threads it's time to shut down and be ready to get destroyed
+    // Some of these connections are blocking to ensure they'll get properly stopped
+    emit signalDestroy();
 
     // Stop processing events in the other threads, then block the main thread until they're finished
     coreThread.exit();
@@ -49,8 +65,36 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
         case Core::STATEUNINITIALIZED:
             break;
 
+        // Time to run the game
         case Core::STATEREADY:
+
+            // Run a timer to make core produce a frame at regular intervals
+            // Disabled at the moment due to the granulatiry being 1ms (not good enough)
+
+            /*
+            // Set up and start the frame timer
+            qCDebug( phxController ) << "\tcoreTimer.start(" << ( double )1 / ( avInfo.timing.fps / 1000 ) << "ms (core) =" << ( int )( 1 / ( avInfo.timing.fps / 1000 ) ) << "ms (actual) )";
+
+            // Stop when the program stops
+            connect( this, &VideoItem::signalDestroy, &coreTimer, &QTimer::stop, Qt::BlockingQueuedConnection );
+
+            // Millisecond accuracy on Unix (OS X/Linux)
+            // Multimedia timer accuracy on Windows (better?)
+            coreTimer.setTimerType( Qt::PreciseTimer );
+
+            // Granulatiry is in the integer range :(
+            coreTimer.start( ( int )( 1 / ( avInfo.timing.fps / 1000 ) ) );
+
+            // Have the timer run in the same thread as Core
+            // This will mean timeouts are blocking, preventing them from piling up if Core runs too slow
+            coreTimer.moveToThread( &coreThread );
+            */
+
+            qCDebug( phxController ) << "Begin emulation.";
+
+            // Get core to immediately (sorta) produce the first frame
             emit signalFrame();
+
             break;
 
         case Core::STATEFINISHED:
@@ -72,13 +116,16 @@ void VideoItem::slotCoreAVFormat( retro_system_av_info avInfo, retro_pixel_forma
     this->avInfo = avInfo;
     this->pixelFormat = pixelFormat;
 
-    emit signalAudioFormat( avInfo.timing.sample_rate, avInfo.timing.fps, 60.0 );
+    // TODO: Set this properly, either with testing and averages (RA style) or via EDID (proposed)
+    double monitorRefreshRate = 60.0;
+
+    emit signalAudioFormat( avInfo.timing.sample_rate, avInfo.timing.fps, monitorRefreshRate );
     emit signalVideoFormat( pixelFormat,
                             avInfo.geometry.max_width,
                             avInfo.geometry.max_height,
                             avInfo.geometry.max_width
                             * ( pixelFormat == RETRO_PIXEL_FORMAT_XRGB8888 ? 4 : 2 ),
-                            avInfo.timing.fps, 60.0 );
+                            avInfo.timing.fps, monitorRefreshRate );
 
 }
 
@@ -133,11 +180,14 @@ void VideoItem::slotVideoData( uchar *data, unsigned width, unsigned height, int
 
     texture->moveToThread( window()->openglContext()->thread() );
 
+    // One half of the vsync render loop
+    // Invoke a window redraw now that the texture is changed
     update();
 
 }
 
 void VideoItem::handleWindowChanged( QQuickWindow *window ) {
+
     if( !window ) {
         return;
     }
@@ -164,6 +214,7 @@ void VideoItem::handleWindowChanged( QQuickWindow *window ) {
 }
 
 void VideoItem::handleOpenGLContextCreated( QOpenGLContext *GLContext ) {
+
     if( !GLContext ) {
         return;
     }
@@ -227,10 +278,11 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
     textureNode->setTexture( texture );
     textureNode->setRect( boundingRect() );
     textureNode->setFiltering( QSGTexture::Linear );
-    textureNode->setOwnsTexture( true );
+    // textureNode->setOwnsTexture( true );
     textureNode->setTextureCoordinatesTransform( QSGSimpleTextureNode::MirrorVertically | QSGSimpleTextureNode::MirrorHorizontally );
 
-    // Tell Core to make another frame
+    // One half of the vsync loop
+    // Now that the texture is sent out to be drawn, tell core to make a new frame
     if( coreState == Core::STATEREADY ) {
         emit signalFrame();
     }

@@ -2,6 +2,7 @@
 #include "phoenixglobals.h"
 
 QDebug operator<<( QDebug debug, const Core::Variable &var ) {
+
     // join a QVector of std::strings. (Really, C++ ?)
     auto &choices = var.choices();
     std::string joinedchoices;
@@ -20,6 +21,7 @@ QDebug operator<<( QDebug debug, const Core::Variable &var ) {
                          arg( QStr( var.key() ) ).arg( QStr( var.value( "<not set>" ) ) ).
                          arg( QStr( var.description() ) ).arg( QStr( joinedchoices ) ) );
     return debug;
+
 }
 
 // Must always point to the last Core instance used
@@ -163,6 +165,7 @@ void Core::emitVideoDataReady( uchar *data, unsigned width, unsigned height, siz
 }
 
 bool Core::environmentCallback( unsigned cmd, void *data ) {
+
     switch( cmd ) {
         case RETRO_ENVIRONMENT_SET_ROTATION: // 1
             qDebug() << "\tRETRO_ENVIRONMENT_SET_ROTATION (1)";
@@ -384,6 +387,7 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
 }
 
 void Core::inputPollCallback( void ) {
+
     // qDebug() << "Core::inputPollCallback";
     return;
 
@@ -396,7 +400,6 @@ int16_t Core::inputStateCallback( unsigned port, unsigned device, unsigned index
     Q_UNUSED( id )
 
     return 0;
-
 
 }
 
@@ -460,7 +463,9 @@ void Core::slotLoadCore( QString path ) {
 
     }
 
-    // TODO: Set unknown error
+    else {
+        emit signalCoreStateChanged( STATEERROR, COREUNKNOWNERROR );
+    }
 
 }
 
@@ -549,6 +554,7 @@ void Core::slotLoadGame( QString path ) {
 }*/
 
 void Core::logCallback( enum retro_log_level level, const char *fmt, ... ) {
+
     QVarLengthArray<char, 1024> outbuf( 1024 );
     va_list args;
     va_start( args, fmt );
@@ -603,6 +609,7 @@ void Core::logCallback( enum retro_log_level level, const char *fmt, ... ) {
 }
 
 void Core::loadSRAM() {
+
     SRAMDataRaw = symbols.retro_get_memory_data( RETRO_MEMORY_SAVE_RAM );
 
     QFile file( saveDirectory + phxGlobals.selectedGame().baseName() + ".srm" );
@@ -651,6 +658,7 @@ void Core::loadSRAM() {
 }*/
 
 void Core::saveSRAM() {
+
     if( SRAMDataRaw == nullptr ) {
         return;
     }
@@ -664,6 +672,7 @@ void Core::saveSRAM() {
         file.write( data, size );
         file.close();
     }
+
 }
 
 void Core::slotFrame() {
@@ -679,11 +688,13 @@ void Core::slotFrame() {
 }
 
 void Core::setSaveDirectory( QString save_dir ) {
+
     saveDirectory = save_dir.toLocal8Bit();
 
 }
 
 void Core::setSystemDirectory( QString system_dir ) {
+
     systemDirectory = system_dir.toLocal8Bit();
 
 }
