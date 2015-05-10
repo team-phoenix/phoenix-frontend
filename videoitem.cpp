@@ -57,7 +57,7 @@ VideoItem::~VideoItem() {
 
 void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) {
 
-    qCDebug( phxController ) << "slotStateChanged(" << newState << "," << error << ")";
+    qCDebug( phxController ) << "slotStateChanged(" << Core::stateToText( newState ) << "," << error << ")";
 
     coreState = newState;
 
@@ -134,7 +134,7 @@ void VideoItem::setCore( QString libretroCore ) {
     libretroCore = QUrl( libretroCore ).toLocalFile();
     corePath = libretroCore;
 
-    qCDebug( phxController ) << "emit signalLoadCore(" << corePath << ")";
+    // qCDebug( phxController ) << "emit signalLoadCore(" << corePath << ")";
     emit signalLoadCore( corePath );
 
 }
@@ -144,7 +144,7 @@ void VideoItem::setGame( QString game ) {
     game = QUrl( game ).toLocalFile();
     gamePath = game;
 
-    qCDebug( phxController ) << "emit signalLoadGame(" << gamePath << ")";
+    // qCDebug( phxController ) << "emit signalLoadGame(" << gamePath << ")";
     emit signalLoadGame( gamePath );
 
 }
@@ -278,7 +278,6 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
     textureNode->setTexture( texture );
     textureNode->setRect( boundingRect() );
     textureNode->setFiltering( QSGTexture::Linear );
-    // textureNode->setOwnsTexture( true );
     textureNode->setTextureCoordinatesTransform( QSGSimpleTextureNode::MirrorVertically | QSGSimpleTextureNode::MirrorHorizontally );
 
     // One half of the vsync loop
@@ -311,7 +310,6 @@ void VideoItem::generateSimpleTextureNode( Qt::GlobalColor globalColor, QSGSimpl
     textureNode->setTextureCoordinatesTransform( QSGSimpleTextureNode::MirrorVertically );
     textureNode->setRect( boundingRect() );
     textureNode->setFiltering( QSGTexture::Nearest );
-    textureNode->setOwnsTexture( true );
 
 }
 

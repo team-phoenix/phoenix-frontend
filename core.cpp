@@ -723,3 +723,25 @@ void Core::videoRefreshCallback( const void *data, unsigned width, unsigned heig
 
 }
 
+QString Core::stateToText( Core::State state ) {
+
+    switch( state ) {
+
+        case STATEUNINITIALIZED:
+            return "Uninitialized";
+
+        case STATEREADY:
+            return "Ready";
+
+        case STATEFINISHED:
+            return "Finished";
+
+        case STATEERROR:
+            return "Error";
+
+    }
+
+    return "Unknown";
+
+}
+

@@ -229,6 +229,9 @@ class Core: public QObject {
 
         };
 
+        // State to text helper
+        static QString stateToText( State state );
+
     signals:
 
         void signalCoreStateChanged( Core::State newState, Core::Error error );
