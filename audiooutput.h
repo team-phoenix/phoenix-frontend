@@ -28,25 +28,25 @@
 class AudioOutput : public QObject {
         Q_OBJECT
 
-    signals:
-
-        void signalFormatChanged();
-
     public slots:
 
         // Tell Audio what sample rate to expect from Core
-        void slotSetInputFormat( QAudioFormat newInFormat, double coreFrameRate );
-
-        // Completely init/re-init audio output
-        void slotInitAudio();
+        void slotAudioFormat( int sampleRate, double coreFPS, double hostFPS );
 
         // Output incoming video frame of audio data to the audio output
-        void slotHandleAudioData( int16_t data );
+        void slotAudioData( int16_t *data );
 
-        void slotStateChanged( QAudio::State state );
-        void slotRunChanged( bool _isCoreRunning );
+        // Respond to the core running or not by keeping audio output active or not
+        // AKA Pause if core is paused
+        void slotSetAudioActive( bool coreIsRunning );
+
+        // Set volume level [0.0...1.0]
         void slotSetVolume( qreal level );
-        void slotThreadStarted();
+
+    private slots:
+
+        void slotHandleNotify();
+        void slotAudioOutputStateChanged( QAudio::State state );
 
     public:
 
@@ -55,20 +55,25 @@ class AudioOutput : public QObject {
 
     private:
 
+        // Completely init/re-init audio output
+        void resetAudio();
+
         // Opaque pointer for libsamplerate
         SRC_STATE *resamplerState;
 
+        int sampleRate;
+        double coreFPS;
+        double hostFPS;
         double sampleRateRatio;
-        double coreFrameRate;
 
         int audioInBytesNeeded;
-        float inputDataFloat[4096 * 2];
-        char inputDataChar[4096 * 4];
+        float *inputDataFloat;
+        char *inputDataChar;
         float *outputDataFloat;
         short *outputDataShort;
 
 
-        bool isCoreRunning;
+        bool coreIsRunning;
 
         QAudioFormat audioFormatOut;
         QAudioFormat audioFormatIn;
@@ -76,6 +81,10 @@ class AudioOutput : public QObject {
         QAudioOutput *audioOutInterface;
 
         QIODevice *audioOutIODev;
+
+        int outputBufferPos;
+
+        char silence[3000] = {0};
 
 };
 

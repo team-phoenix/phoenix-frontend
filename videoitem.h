@@ -41,6 +41,7 @@ class VideoItem : public QQuickItem {
         void signalVideoFormat( retro_pixel_format pixelFormat, int width, int height, int pitch, double coreFPS, double hostFPS );
         void signalFrame();
         void signalDestroy();
+        void signalRunChanged( bool run );
 
     public slots:
 
@@ -77,10 +78,10 @@ class VideoItem : public QQuickItem {
         Core::State coreState;
 
         // Audio output on the system's default audio output device
-        // AudioOutput audioOutput;
+        AudioOutput audioOutput;
 
         // Resampling is an expensive operation, keep it on a seperate thread, too
-        // QThread audioOutputThread;
+        QThread audioOutputThread;
 
         // Timing and format information provided by core once the core/game is loaded
         // Needs to be passed down to all consumers via signals

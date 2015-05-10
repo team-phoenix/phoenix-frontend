@@ -26,5 +26,3 @@ android-no-sdk {
 
 export(INSTALLS)
 
-SOURCES += \
-    $$PWD/logging.cpp

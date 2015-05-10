@@ -2,7 +2,7 @@
 
 VideoItem::VideoItem() :
     core(), coreTimer(), coreThread(), coreState( Core::STATEUNINITIALIZED ),
-    // audioOutput(), audioOutputThread(),
+    audioOutput(), audioOutputThread(),
     avInfo(), pixelFormat(),
     corePath( "" ), gamePath( "" ),
     width( 0 ), height( 0 ), pitch( 0 ), coreFPS( 0.0 ), hostFPS( 0.0 ),
@@ -12,30 +12,32 @@ VideoItem::VideoItem() :
     // Place the objects under VideoItem's control into their own threads
 
     core.moveToThread( &coreThread );
-    // audioOutput.moveToThread( &audioOutputThread );
+    audioOutput.moveToThread( &coreThread );
 
     // Connect controller signals and slots
-
-    connect( &core, &Core::signalCoreStateChanged, this, &VideoItem::slotCoreStateChanged );
-    connect( this, &VideoItem::signalLoadCore, &core, &Core::slotLoadCore );
-    connect( this, &VideoItem::signalLoadGame, &core, &Core::slotLoadGame );
-    connect( &core, &Core::signalAVFormat, this, &VideoItem::slotCoreAVFormat );
-    // connect( this, &VideoItem::signalAudioFormat, &audioOutput, &AudioOutput::slotAudioFormat );
-    connect( this, &VideoItem::signalVideoFormat, this, &VideoItem::slotVideoFormat ); // Belongs in both categories
-    connect( this, &VideoItem::signalFrame, &core, &Core::slotFrame );
 
     // Run a timer to make core produce a frame at regular intervals
     // Disabled at the moment due to the granulatiry being 1ms (not good enough)
     // connect( &coreTimer, &QTimer::timeout, &core, &Core::slotFrame );
 
+    connect( &core, &Core::signalCoreStateChanged, this, &VideoItem::slotCoreStateChanged );
+    connect( this, &VideoItem::signalLoadCore, &core, &Core::slotLoadCore );
+    connect( this, &VideoItem::signalLoadGame, &core, &Core::slotLoadGame );
+    connect( &core, &Core::signalAVFormat, this, &VideoItem::slotCoreAVFormat );
+    connect( this, &VideoItem::signalAudioFormat, &audioOutput, &AudioOutput::slotAudioFormat );
+    connect( this, &VideoItem::signalRunChanged, &audioOutput, &AudioOutput::slotSetAudioActive );
+    connect( this, &VideoItem::signalVideoFormat, this, &VideoItem::slotVideoFormat ); // Belongs in both categories
+    connect( this, &VideoItem::signalFrame, &core, &Core::slotFrame );
+
     // Connect consumer signals and slots
 
-    // connect( &core, &Core::signalAudioData, &audioOutput, &AudioOutput::slotAudioData );
+    connect( &core, &Core::signalAudioData, &audioOutput, &AudioOutput::slotAudioData );
     connect( &core, &Core::signalVideoData, this, &VideoItem::slotVideoData );
 
     // Start threads
+
     coreThread.start();
-    // audioOutputThread.start();
+    audioOutputThread.start();
 
 }
 
@@ -48,6 +50,8 @@ VideoItem::~VideoItem() {
     // Stop processing events in the other threads, then block the main thread until they're finished
     coreThread.exit();
     coreThread.wait();
+    audioOutputThread.exit();
+    audioOutputThread.wait();
 
 }
 
@@ -62,6 +66,7 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
     coreState = newState;
 
     switch( newState ) {
+
         case Core::STATEUNINITIALIZED:
             break;
 
@@ -94,6 +99,9 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
 
             // Get core to immediately (sorta) produce the first frame
             emit signalFrame();
+
+            // Let all the consumers know emulation began
+            emit signalRunChanged( true );
 
             break;
 

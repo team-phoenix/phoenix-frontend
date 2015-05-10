@@ -8,7 +8,8 @@ SOURCES += main.cpp \
     audiobuffer.cpp \
     phoenixglobals.cpp \
     pathwatcher.cpp \
-    audiooutput.cpp
+    audiooutput.cpp \
+    logging.cpp
 
 RESOURCES += qml.qrc
 
