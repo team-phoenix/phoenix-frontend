@@ -24,9 +24,6 @@ QDebug operator<<( QDebug debug, const Core::Variable &var ) {
 
 }
 
-// Must always point to the last Core instance used
-Core *Core::core = nullptr;
-
 LibretroSymbols::LibretroSymbols()
     : retro_audio( nullptr ),
       retro_audio_set_state( nullptr ),
@@ -34,6 +31,10 @@ LibretroSymbols::LibretroSymbols()
       retro_keyboard_event( nullptr ) {
 
 }
+
+//
+// Public
+//
 
 Core::Core()
     : pixelFormat( RETRO_PIXEL_FORMAT_RGB565 ),
@@ -96,29 +97,310 @@ Core::~Core() {
 
 }
 
-size_t Core::audioSampleBatchCallback( const int16_t *data, size_t samples ) {
+QString Core::stateToText( Core::State state ) {
 
-    Core *core = Core::core;
+    switch( state ) {
 
-    // Sanity check
-    Q_ASSERT( core->audioBufferCurrentByte <= core->avInfo->timing.sample_rate * 4 );
+        case STATEUNINITIALIZED:
+            return "Uninitialized";
 
-    // Need to do a bit of pointer arithmetic to get the right offset (the buffer is counted in increments of 2 bytes)
-    memcpy( core->audioBufferPool[core->audioBufferPoolIndex] + ( core->audioBufferCurrentByte / 2 ), data, samples );
+        case STATEREADY:
+            return "Ready";
 
-    // Each sample is 2 bytes (16-bit)
-    core->audioBufferCurrentByte += samples * 2;
+        case STATEFINISHED:
+            return "Finished";
 
-    // Flush if index is now beyond buffer size
-    if( core->audioBufferCurrentByte >= ( core->avInfo->timing.sample_rate * 2 ) ) {
-        core->audioBufferCurrentByte = 0;
-        core->emitAudioDataReady( core->audioBufferPool[core->audioBufferPoolIndex] );
-        core->audioBufferPoolIndex = ( core->audioBufferPoolIndex + 1 ) % 30;
+        case STATEERROR:
+            return "Error";
+
     }
 
-    return samples;
+    return "Unknown";
 
 }
+
+//
+// Signals
+//
+
+void Core::slotLoadCore( QString path ) {
+
+    libraryPath = path;
+
+    qCDebug( phxCore ) << "slotLoadCore(" << libraryPath << ")";
+
+    libretroCore.setFileName( libraryPath );
+    libretroCore.load();
+
+    if( libretroCore.isLoaded() ) {
+
+        libraryFilename = libretroCore.fileName().toLocal8Bit();
+
+        // Resolve symbols
+        resolved_sym( retro_set_environment );
+        resolved_sym( retro_set_video_refresh );
+        resolved_sym( retro_set_audio_sample );
+        resolved_sym( retro_set_audio_sample_batch );
+        resolved_sym( retro_set_input_poll );
+        resolved_sym( retro_set_input_state );
+        resolved_sym( retro_init );
+        resolved_sym( retro_deinit );
+        resolved_sym( retro_api_version );
+        resolved_sym( retro_get_system_info );
+        resolved_sym( retro_get_system_av_info );
+        resolved_sym( retro_set_controller_port_device );
+        resolved_sym( retro_reset );
+        resolved_sym( retro_run );
+        resolved_sym( retro_serialize );
+        resolved_sym( retro_serialize_size );
+        resolved_sym( retro_unserialize );
+        resolved_sym( retro_cheat_reset );
+        resolved_sym( retro_cheat_set );
+        resolved_sym( retro_load_game );
+        resolved_sym( retro_load_game_special );
+        resolved_sym( retro_unload_game );
+        resolved_sym( retro_get_region );
+        resolved_sym( retro_get_memory_data );
+        resolved_sym( retro_get_memory_size );
+
+        // Set callbacks
+        symbols.retro_set_environment( environmentCallback );
+        symbols.retro_set_audio_sample( audioSampleCallback );
+        symbols.retro_set_audio_sample_batch( audioSampleBatchCallback );
+        symbols.retro_set_input_poll( inputPollCallback );
+        symbols.retro_set_input_state( inputStateCallback );
+        symbols.retro_set_video_refresh( videoRefreshCallback );
+        //symbols.retro_get_memory_data( getMemoryData );
+        //symbols.retro_get_memory_size( getMemorySize );
+
+        // Init the core
+        symbols.retro_init();
+
+
+        // Get some info about the game
+        symbols.retro_get_system_info( systemInfo );
+        fullPathNeeded = systemInfo->need_fullpath;
+
+    }
+
+    else {
+        emit signalCoreStateChanged( STATEERROR, COREUNKNOWNERROR );
+    }
+
+}
+
+void Core::slotLoadGame( QString path ) {
+
+    gamePath = path;
+
+    qCDebug( phxCore ) << "slotLoadGame(" << gamePath << ")";
+
+    // Argument struct for symbols.retro_load_game()
+    retro_game_info gameInfo;
+
+    QFileInfo info( gamePath );
+
+    // Full path needed, simply pass the game's file path to the core
+    if( fullPathNeeded ) {
+        gameInfo.path = gamePath.toUtf8().constData();
+        gameInfo.data = nullptr;
+        gameInfo.size = 0;
+        gameInfo.meta = "";
+    }
+
+    // Full path not needed, read the file to a buffer and pass that to the core
+    else {
+        QFile game( info.canonicalFilePath() );
+
+        if( !game.open( QIODevice::ReadOnly ) ) {
+            ;// TODO: Set error state
+        }
+
+        // read into memory
+        gameData = game.readAll();
+
+        gameInfo.path = nullptr;
+        gameInfo.data = gameData.data();
+        gameInfo.size = game.size();
+        gameInfo.meta = "";
+
+    }
+
+    if( !symbols.retro_load_game( &gameInfo ) ) {
+
+        emit signalCoreStateChanged( Core::STATEERROR, Core::GAMEUNKNOWNERROR );
+
+    }
+
+    // Get the AV timing/dimensions/format
+    symbols.retro_get_system_av_info( avInfo );
+
+    // loadSRAM();
+
+    // Allocate buffers now that we know how large to make them
+    // Assume 16-bit stereo audio, 32-bit video
+    for( int i = 0; i < 30; i++ ) {
+        audioBufferPool[i] = ( int16_t * )calloc( 1, avInfo->timing.sample_rate * 4 );
+        videoBufferPool[i] = ( uchar * )calloc( 1, avInfo->geometry.max_width * avInfo->geometry.max_height * 4 );
+    }
+
+    core->emitReadyState();
+
+}
+
+void Core::slotFrame() {
+
+    // Tell the core to run a frame
+    symbols.retro_run();
+
+    // This should never be used...
+    /*if( symbols.retro_audio ) {
+        symbols.retro_audio();
+    }*/
+
+}
+
+//
+// Protected
+//
+
+// Must always point to the last Core instance used
+Core *Core::core = nullptr;
+
+void Core::emitReadyState() {
+
+    emit signalAVFormat( *avInfo, pixelFormat );
+    emit signalCoreStateChanged( Core::STATEREADY, Core::CORENOERROR );
+
+}
+
+void Core::emitAudioDataReady( int16_t *data ) {
+
+    emit signalAudioData( data );
+
+}
+
+void Core::emitVideoDataReady( uchar *data, unsigned width, unsigned height, size_t pitch ) {
+
+    emit signalVideoData( data, width, height, pitch );
+
+}
+
+//
+// Private
+//
+
+// Paths
+
+void Core::setSaveDirectory( QString save_dir ) {
+
+    saveDirectory = save_dir.toLocal8Bit();
+
+}
+
+void Core::setSystemDirectory( QString system_dir ) {
+
+    systemDirectory = system_dir.toLocal8Bit();
+
+}
+
+// Save states
+
+void Core::loadSRAM() {
+
+    SRAMDataRaw = symbols.retro_get_memory_data( RETRO_MEMORY_SAVE_RAM );
+
+    QFile file( saveDirectory + phxGlobals.selectedGame().baseName() + ".srm" );
+
+    if( file.open( QIODevice::ReadOnly ) ) {
+        QByteArray data = file.readAll();
+        memcpy( SRAMDataRaw, data.data(), data.size() );
+
+        qCDebug( phxCore ) << "Loading SRAM from: " << file.fileName();
+        file.close();
+    }
+
+}
+
+void Core::saveSRAM() {
+
+    if( SRAMDataRaw == nullptr ) {
+        return;
+    }
+
+    QFile file( saveDirectory + phxGlobals.selectedGame().baseName() + ".srm" );
+    qCDebug( phxCore ) << "Saving SRAM to: " << file.fileName();
+
+    if( file.open( QIODevice::WriteOnly ) ) {
+        char *data = static_cast<char *>( SRAMDataRaw );
+        size_t size = symbols.retro_get_memory_size( RETRO_MEMORY_SAVE_RAM );
+        file.write( data, size );
+        file.close();
+    }
+
+}
+
+// SRAM
+
+/*bool Core::loadGameState( QString path, QString name ) {
+    Q_UNUSED( path );
+    Q_UNUSED( name );
+
+    QFile file( phxGlobals.savePath() + phxGlobals.selectedGame().baseName() + "_STATE.sav" );
+
+    bool loaded = false;
+
+    if( file.open( QIODevice::ReadOnly ) ) {
+        QByteArray state = file.readAll();
+        void *data = state.data();
+        size_t size = static_cast<int>( state.size() );
+
+        file.close();
+
+        if( symbols.retro_unserialize( data, size ) ) {
+            qCDebug( phxCore ) << "Save State loaded";
+            loaded = true;
+        }
+    }
+
+    return loaded;
+
+}*/
+
+/*bool Core::saveGameState( QString path, QString name ) {
+    Q_UNUSED( path );
+    Q_UNUSED( name );
+
+    size_t size = core->symbols.retro_serialize_size();
+
+    if( !size ) {
+        return false;
+    }
+
+    char *data = new char[size];
+    bool loaded = false;
+
+    if( symbols.retro_serialize( data, size ) ) {
+        QFile *file = new QFile( phxGlobals.savePath() + phxGlobals.selectedGame().baseName() + "_STATE.sav" );
+        qCDebug( phxCore ) << file->fileName();
+
+        if( file->open( QIODevice::WriteOnly ) ) {
+            file->write( QByteArray( static_cast<char *>( data ), static_cast<int>( size ) ) );
+            qCDebug( phxCore ) << "Save State wrote to " << file->fileName();
+            file->close();
+            loaded = true;
+        }
+
+        delete file;
+
+    }
+
+    delete[] data;
+    return loaded;
+
+}*/
+
+// Callbacks
 
 void Core::audioSampleCallback( int16_t left, int16_t right ) {
 
@@ -145,22 +427,27 @@ void Core::audioSampleCallback( int16_t left, int16_t right ) {
 
 }
 
-void Core::emitAudioDataReady( int16_t *data ) {
+size_t Core::audioSampleBatchCallback( const int16_t *data, size_t samples ) {
 
-    emit signalAudioData( data );
+    Core *core = Core::core;
 
-}
+    // Sanity check
+    Q_ASSERT( core->audioBufferCurrentByte <= core->avInfo->timing.sample_rate * 4 );
 
-void Core::emitReadyState() {
+    // Need to do a bit of pointer arithmetic to get the right offset (the buffer is counted in increments of 2 bytes)
+    memcpy( core->audioBufferPool[core->audioBufferPoolIndex] + ( core->audioBufferCurrentByte / 2 ), data, samples );
 
-    emit signalAVFormat( *avInfo, pixelFormat );
-    emit signalCoreStateChanged( Core::STATEREADY, Core::CORENOERROR );
+    // Each sample is 2 bytes (16-bit)
+    core->audioBufferCurrentByte += samples * 2;
 
-}
+    // Flush if index is now beyond buffer size
+    if( core->audioBufferCurrentByte >= ( core->avInfo->timing.sample_rate * 2 ) ) {
+        core->audioBufferCurrentByte = 0;
+        core->emitAudioDataReady( core->audioBufferPool[core->audioBufferPoolIndex] );
+        core->audioBufferPoolIndex = ( core->audioBufferPoolIndex + 1 ) % 30;
+    }
 
-void Core::emitVideoDataReady( uchar *data, unsigned width, unsigned height, size_t pitch ) {
-
-    emit signalVideoData( data, width, height, pitch );
+    return samples;
 
 }
 
@@ -393,166 +680,6 @@ void Core::inputPollCallback( void ) {
 
 }
 
-int16_t Core::inputStateCallback( unsigned port, unsigned device, unsigned index, unsigned id ) {
-    Q_UNUSED( port )
-    Q_UNUSED( device )
-    Q_UNUSED( index )
-    Q_UNUSED( id )
-
-    return 0;
-
-}
-
-void Core::slotLoadCore( QString path ) {
-
-    libraryPath = path;
-
-    qCDebug( phxCore ) << "slotLoadCore(" << libraryPath << ")";
-
-    libretroCore.setFileName( libraryPath );
-    libretroCore.load();
-
-    if( libretroCore.isLoaded() ) {
-
-        libraryFilename = libretroCore.fileName().toLocal8Bit();
-
-        // Resolve symbols
-        resolved_sym( retro_set_environment );
-        resolved_sym( retro_set_video_refresh );
-        resolved_sym( retro_set_audio_sample );
-        resolved_sym( retro_set_audio_sample_batch );
-        resolved_sym( retro_set_input_poll );
-        resolved_sym( retro_set_input_state );
-        resolved_sym( retro_init );
-        resolved_sym( retro_deinit );
-        resolved_sym( retro_api_version );
-        resolved_sym( retro_get_system_info );
-        resolved_sym( retro_get_system_av_info );
-        resolved_sym( retro_set_controller_port_device );
-        resolved_sym( retro_reset );
-        resolved_sym( retro_run );
-        resolved_sym( retro_serialize );
-        resolved_sym( retro_serialize_size );
-        resolved_sym( retro_unserialize );
-        resolved_sym( retro_cheat_reset );
-        resolved_sym( retro_cheat_set );
-        resolved_sym( retro_load_game );
-        resolved_sym( retro_load_game_special );
-        resolved_sym( retro_unload_game );
-        resolved_sym( retro_get_region );
-        resolved_sym( retro_get_memory_data );
-        resolved_sym( retro_get_memory_size );
-
-        // Set callbacks
-        symbols.retro_set_environment( environmentCallback );
-        symbols.retro_set_audio_sample( audioSampleCallback );
-        symbols.retro_set_audio_sample_batch( audioSampleBatchCallback );
-        symbols.retro_set_input_poll( inputPollCallback );
-        symbols.retro_set_input_state( inputStateCallback );
-        symbols.retro_set_video_refresh( videoRefreshCallback );
-        //symbols.retro_get_memory_data( getMemoryData );
-        //symbols.retro_get_memory_size( getMemorySize );
-
-        // Init the core
-        symbols.retro_init();
-
-
-        // Get some info about the game
-        symbols.retro_get_system_info( systemInfo );
-        fullPathNeeded = systemInfo->need_fullpath;
-
-    }
-
-    else {
-        emit signalCoreStateChanged( STATEERROR, COREUNKNOWNERROR );
-    }
-
-}
-
-void Core::slotLoadGame( QString path ) {
-
-    gamePath = path;
-
-    qCDebug( phxCore ) << "slotLoadGame(" << gamePath << ")";
-
-    // Argument struct for symbols.retro_load_game()
-    retro_game_info gameInfo;
-
-    QFileInfo info( gamePath );
-
-    // Full path needed, simply pass the game's file path to the core
-    if( fullPathNeeded ) {
-        gameInfo.path = gamePath.toUtf8().constData();
-        gameInfo.data = nullptr;
-        gameInfo.size = 0;
-        gameInfo.meta = "";
-    }
-
-    // Full path not needed, read the file to a buffer and pass that to the core
-    else {
-        QFile game( info.canonicalFilePath() );
-
-        if( !game.open( QIODevice::ReadOnly ) ) {
-            ;// TODO: Set error state
-        }
-
-        // read into memory
-        gameData = game.readAll();
-
-        gameInfo.path = nullptr;
-        gameInfo.data = gameData.data();
-        gameInfo.size = game.size();
-        gameInfo.meta = "";
-
-    }
-
-    if( !symbols.retro_load_game( &gameInfo ) ) {
-
-        emit signalCoreStateChanged( Core::STATEERROR, Core::GAMEUNKNOWNERROR );
-
-    }
-
-    // Get the AV timing/dimensions/format
-    symbols.retro_get_system_av_info( avInfo );
-
-    // loadSRAM();
-
-    // Allocate buffers now that we know how large to make them
-    // Assume 16-bit stereo audio, 32-bit video
-    for( int i = 0; i < 30; i++ ) {
-        audioBufferPool[i] = ( int16_t * )calloc( 1, avInfo->timing.sample_rate * 4 );
-        videoBufferPool[i] = ( uchar * )calloc( 1, avInfo->geometry.max_width * avInfo->geometry.max_height * 4 );
-    }
-
-    core->emitReadyState();
-
-}
-
-/*bool Core::loadGameState( QString path, QString name ) {
-    Q_UNUSED( path );
-    Q_UNUSED( name );
-
-    QFile file( phxGlobals.savePath() + phxGlobals.selectedGame().baseName() + "_STATE.sav" );
-
-    bool loaded = false;
-
-    if( file.open( QIODevice::ReadOnly ) ) {
-        QByteArray state = file.readAll();
-        void *data = state.data();
-        size_t size = static_cast<int>( state.size() );
-
-        file.close();
-
-        if( symbols.retro_unserialize( data, size ) ) {
-            qCDebug( phxCore ) << "Save State loaded";
-            loaded = true;
-        }
-    }
-
-    return loaded;
-
-}*/
-
 void Core::logCallback( enum retro_log_level level, const char *fmt, ... ) {
 
     QVarLengthArray<char, 1024> outbuf( 1024 );
@@ -608,94 +735,13 @@ void Core::logCallback( enum retro_log_level level, const char *fmt, ... ) {
 
 }
 
-void Core::loadSRAM() {
+int16_t Core::inputStateCallback( unsigned port, unsigned device, unsigned index, unsigned id ) {
+    Q_UNUSED( port )
+    Q_UNUSED( device )
+    Q_UNUSED( index )
+    Q_UNUSED( id )
 
-    SRAMDataRaw = symbols.retro_get_memory_data( RETRO_MEMORY_SAVE_RAM );
-
-    QFile file( saveDirectory + phxGlobals.selectedGame().baseName() + ".srm" );
-
-    if( file.open( QIODevice::ReadOnly ) ) {
-        QByteArray data = file.readAll();
-        memcpy( SRAMDataRaw, data.data(), data.size() );
-
-        qCDebug( phxCore ) << "Loading SRAM from: " << file.fileName();
-        file.close();
-    }
-
-}
-
-/*bool Core::saveGameState( QString path, QString name ) {
-    Q_UNUSED( path );
-    Q_UNUSED( name );
-
-    size_t size = core->symbols.retro_serialize_size();
-
-    if( !size ) {
-        return false;
-    }
-
-    char *data = new char[size];
-    bool loaded = false;
-
-    if( symbols.retro_serialize( data, size ) ) {
-        QFile *file = new QFile( phxGlobals.savePath() + phxGlobals.selectedGame().baseName() + "_STATE.sav" );
-        qCDebug( phxCore ) << file->fileName();
-
-        if( file->open( QIODevice::WriteOnly ) ) {
-            file->write( QByteArray( static_cast<char *>( data ), static_cast<int>( size ) ) );
-            qCDebug( phxCore ) << "Save State wrote to " << file->fileName();
-            file->close();
-            loaded = true;
-        }
-
-        delete file;
-
-    }
-
-    delete[] data;
-    return loaded;
-
-}*/
-
-void Core::saveSRAM() {
-
-    if( SRAMDataRaw == nullptr ) {
-        return;
-    }
-
-    QFile file( saveDirectory + phxGlobals.selectedGame().baseName() + ".srm" );
-    qCDebug( phxCore ) << "Saving SRAM to: " << file.fileName();
-
-    if( file.open( QIODevice::WriteOnly ) ) {
-        char *data = static_cast<char *>( SRAMDataRaw );
-        size_t size = symbols.retro_get_memory_size( RETRO_MEMORY_SAVE_RAM );
-        file.write( data, size );
-        file.close();
-    }
-
-}
-
-void Core::slotFrame() {
-
-    // Tell the core to run a frame
-    symbols.retro_run();
-
-    // This should never be used...
-    /*if( symbols.retro_audio ) {
-        symbols.retro_audio();
-    }*/
-
-}
-
-void Core::setSaveDirectory( QString save_dir ) {
-
-    saveDirectory = save_dir.toLocal8Bit();
-
-}
-
-void Core::setSystemDirectory( QString system_dir ) {
-
-    systemDirectory = system_dir.toLocal8Bit();
+    return 0;
 
 }
 
@@ -722,26 +768,3 @@ void Core::videoRefreshCallback( const void *data, unsigned width, unsigned heig
     return;
 
 }
-
-QString Core::stateToText( Core::State state ) {
-
-    switch( state ) {
-
-        case STATEUNINITIALIZED:
-            return "Uninitialized";
-
-        case STATEREADY:
-            return "Ready";
-
-        case STATEFINISHED:
-            return "Finished";
-
-        case STATEERROR:
-            return "Error";
-
-    }
-
-    return "Unknown";
-
-}
-

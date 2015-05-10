@@ -262,20 +262,22 @@ class Core: public QObject {
         // Struct containing libretro methods
         LibretroSymbols symbols;
 
+        // Used by environment callback
+        // Info about the OpenGL context provided by the Phoenix frontend
+        // for the core's internal use
+        retro_hw_render_callback openGLContext;
+
+        // Used by environment callback
+        QByteArray libraryFilename;
+
+        // Used by environment callback
+        void emitReadyState();
+
         // Used by audio callback
         void emitAudioDataReady( int16_t *data );
 
         // Used by video callback
         void emitVideoDataReady( uchar *data, unsigned width, unsigned height, size_t pitch );
-
-        // Used by environment callback
-        QByteArray libraryFilename;
-        void emitReadyState();
-
-        // Used by environment callback
-        // Info about the OpenGL context provided by the Phoenix frontend
-        // for the core's internal use
-        retro_hw_render_callback openGLContext;
 
     private:
 
@@ -341,14 +343,19 @@ class Core: public QObject {
         int videoBufferPoolIndex;
 
         //
+        // Save states
+        //
+
+        // bool loadGameState( QString save_path, QString game_name );
+        // bool saveGameState( QString save_path, QString game_name );
+
+        //
         // SRAM
         //
 
         void *SRAMDataRaw;
-        void saveSRAM();
         void loadSRAM();
-        // bool saveGameState( QString save_path, QString game_name );
-        // bool loadGameState( QString save_path, QString game_name );
+        void saveSRAM();
 
         //
         // Callbacks
