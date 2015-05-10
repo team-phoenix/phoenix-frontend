@@ -254,7 +254,7 @@ void AudioOutput::slotSetAudioActive( bool coreIsRunning ) {
 void AudioOutput::slotAudioOutputStateChanged( QAudio::State s ) {
 
     if( s == QAudio::IdleState && audioOutInterface->error() == QAudio::UnderrunError ) {
-        qWarning( phxAudioOutput ) << "audioOut underrun";
+        // qWarning( phxAudioOutput ) << "audioOut underrun";
         audioOutIODev = audioOutInterface->start();
     }
 
@@ -272,7 +272,7 @@ void AudioOutput::slotSetVolume( qreal level ) {
 
 void AudioOutput::slotHandleNotify() {
 
-    qCDebug( phxAudioOutput ) << "\t50ms consumed";
+    // qCDebug( phxAudioOutput ) << "\t50ms consumed";
     outputBufferPos -= audioFormatOut.bytesForDuration( 50 * 1000 );
 
 }

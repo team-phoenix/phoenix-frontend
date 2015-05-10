@@ -120,7 +120,7 @@ QString Core::stateToText( Core::State state ) {
 }
 
 //
-// Signals
+// Slots
 //
 
 void Core::slotLoadCore( QString path ) {
@@ -417,7 +417,7 @@ void Core::audioSampleCallback( int16_t left, int16_t right ) {
     core->audioBufferCurrentByte += 4;
 
     // Flush if index is now beyond buffer size
-    if( core->audioBufferCurrentByte >= ( core->avInfo->timing.sample_rate * 2 ) ) {
+    if( core->audioBufferCurrentByte > ( core->avInfo->timing.sample_rate * 4 ) ) {
 
         core->audioBufferCurrentByte = 0;
         core->emitAudioDataReady( core->audioBufferPool[core->audioBufferPoolIndex] );
@@ -427,7 +427,7 @@ void Core::audioSampleCallback( int16_t left, int16_t right ) {
 
 }
 
-size_t Core::audioSampleBatchCallback( const int16_t *data, size_t samples ) {
+size_t Core::audioSampleBatchCallback( const int16_t *data, size_t frames ) {
 
     Core *core = Core::core;
 
@@ -435,19 +435,23 @@ size_t Core::audioSampleBatchCallback( const int16_t *data, size_t samples ) {
     Q_ASSERT( core->audioBufferCurrentByte <= core->avInfo->timing.sample_rate * 4 );
 
     // Need to do a bit of pointer arithmetic to get the right offset (the buffer is counted in increments of 2 bytes)
-    memcpy( core->audioBufferPool[core->audioBufferPoolIndex] + ( core->audioBufferCurrentByte / 2 ), data, samples );
+    int16_t *dst_init = core->audioBufferPool[core->audioBufferPoolIndex];
+    int16_t *dst = dst_init + ( core->audioBufferCurrentByte / 2 );
 
-    // Each sample is 2 bytes (16-bit)
-    core->audioBufferCurrentByte += samples * 2;
+    // Copy the incoming data
+    memcpy( dst, data, frames * 4 );
+
+    // Each frame is 4 bytes (16-bit stereo)
+    core->audioBufferCurrentByte += frames * 4;
 
     // Flush if index is now beyond buffer size
-    if( core->audioBufferCurrentByte >= ( core->avInfo->timing.sample_rate * 2 ) ) {
+    if( core->audioBufferCurrentByte > ( core->avInfo->timing.sample_rate * 4 ) ) {
         core->audioBufferCurrentByte = 0;
         core->emitAudioDataReady( core->audioBufferPool[core->audioBufferPoolIndex] );
         core->audioBufferPoolIndex = ( core->audioBufferPoolIndex + 1 ) % 30;
     }
 
-    return samples;
+    return frames;
 
 }
 
