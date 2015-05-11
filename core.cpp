@@ -240,8 +240,12 @@ void Core::slotLoadGame( QString path ) {
     // Allocate buffers now that we know how large to make them
     // Assume 16-bit stereo audio, 32-bit video
     for( int i = 0; i < 30; i++ ) {
-        audioBufferPool[i] = ( int16_t * )calloc( 1, avInfo->timing.sample_rate * 4 );
+
+        // Allocate a bit extra as some cores' numbers do not add up...
+        audioBufferPool[i] = ( int16_t * )calloc( 1, avInfo->timing.sample_rate * 5 );
+
         videoBufferPool[i] = ( uchar * )calloc( 1, avInfo->geometry.max_width * avInfo->geometry.max_height * 4 );
+
     }
 
     core->emitReadyState();
@@ -274,9 +278,9 @@ void Core::emitReadyState() {
 
 }
 
-void Core::emitAudioDataReady( int16_t *data ) {
+void Core::emitAudioDataReady( int16_t *data , int bytes ) {
 
-    emit signalAudioData( data );
+    emit signalAudioData( data, bytes );
 
 }
 
@@ -407,23 +411,14 @@ void Core::audioSampleCallback( int16_t left, int16_t right ) {
     Core *core = Core::core;
 
     // Sanity check
-    Q_ASSERT( core->audioBufferCurrentByte <= core->avInfo->timing.sample_rate * 4 );
+    Q_ASSERT( core->audioBufferCurrentByte < core->avInfo->timing.sample_rate * 4 );
 
     // Stereo audio is interleaved, left then right
     core->audioBufferPool[core->audioBufferPoolIndex][core->audioBufferCurrentByte / 2] = left;
     core->audioBufferPool[core->audioBufferPoolIndex][core->audioBufferCurrentByte / 2 + 1] = right;
 
-    // Two 16-bit samples is 4 bytes
+    // Each frame is 4 bytes (16-bit stereo)
     core->audioBufferCurrentByte += 4;
-
-    // Flush if index is now beyond buffer size
-    if( core->audioBufferCurrentByte > ( core->avInfo->timing.sample_rate * 4 ) ) {
-
-        core->audioBufferCurrentByte = 0;
-        core->emitAudioDataReady( core->audioBufferPool[core->audioBufferPoolIndex] );
-        core->audioBufferPoolIndex = ( core->audioBufferPoolIndex + 1 ) % 30;
-
-    }
 
 }
 
@@ -432,7 +427,7 @@ size_t Core::audioSampleBatchCallback( const int16_t *data, size_t frames ) {
     Core *core = Core::core;
 
     // Sanity check
-    Q_ASSERT( core->audioBufferCurrentByte <= core->avInfo->timing.sample_rate * 4 );
+    Q_ASSERT( core->audioBufferCurrentByte < core->avInfo->timing.sample_rate * 4 );
 
     // Need to do a bit of pointer arithmetic to get the right offset (the buffer is counted in increments of 2 bytes)
     int16_t *dst_init = core->audioBufferPool[core->audioBufferPoolIndex];
@@ -443,13 +438,6 @@ size_t Core::audioSampleBatchCallback( const int16_t *data, size_t frames ) {
 
     // Each frame is 4 bytes (16-bit stereo)
     core->audioBufferCurrentByte += frames * 4;
-
-    // Flush if index is now beyond buffer size
-    if( core->audioBufferCurrentByte > ( core->avInfo->timing.sample_rate * 4 ) ) {
-        core->audioBufferCurrentByte = 0;
-        core->emitAudioDataReady( core->audioBufferPool[core->audioBufferPoolIndex] );
-        core->audioBufferPoolIndex = ( core->audioBufferPoolIndex + 1 ) % 30;
-    }
 
     return frames;
 
@@ -768,6 +756,11 @@ void Core::videoRefreshCallback( const void *data, unsigned width, unsigned heig
         core->emitVideoDataReady( core->videoBufferPool[core->videoBufferPoolIndex], width, height, pitch );
 
     }
+
+    // Flush the audio used so far
+    core->emitAudioDataReady( core->audioBufferPool[core->audioBufferPoolIndex], core->audioBufferCurrentByte );
+    core->audioBufferCurrentByte = 0;
+    core->audioBufferPoolIndex = ( core->audioBufferPoolIndex + 1 ) % 30;
 
     return;
 

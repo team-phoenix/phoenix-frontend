@@ -34,7 +34,7 @@ class AudioOutput : public QObject {
         void slotAudioFormat( int sampleRate, double coreFPS, double hostFPS );
 
         // Output incoming video frame of audio data to the audio output
-        void slotAudioData( int16_t *data );
+        void slotAudioData( int16_t *data, int bytes );
 
         // Respond to the core running or not by keeping audio output active or not
         // AKA Pause if core is paused
@@ -84,7 +84,7 @@ class AudioOutput : public QObject {
 
         int outputBufferPos;
 
-        char silence[3000] = {0};
+        char silence[30000] = {0};
 
 };
 

@@ -236,7 +236,7 @@ class Core: public QObject {
 
         void signalCoreStateChanged( Core::State newState, Core::Error error );
         void signalAVFormat( retro_system_av_info avInfo, retro_pixel_format pixelFormat );
-        void signalAudioData( int16_t *data );
+        void signalAudioData( int16_t *data, int bytes );
         void signalVideoData( uchar *data, unsigned width, unsigned height, int pitch );
 
     public slots:
@@ -274,7 +274,7 @@ class Core: public QObject {
         void emitReadyState();
 
         // Used by audio callback
-        void emitAudioDataReady( int16_t *data );
+        void emitAudioDataReady( int16_t *data, int bytes );
 
         // Used by video callback
         void emitVideoDataReady( uchar *data, unsigned width, unsigned height, size_t pitch );

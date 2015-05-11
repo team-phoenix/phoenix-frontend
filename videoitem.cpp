@@ -12,7 +12,7 @@ VideoItem::VideoItem() :
     // Place the objects under VideoItem's control into their own threads
 
     core.moveToThread( &coreThread );
-    audioOutput.moveToThread( &coreThread );
+    audioOutput.moveToThread( &audioOutputThread );
 
     // Connect controller signals and slots
 
@@ -139,8 +139,7 @@ void VideoItem::slotCoreAVFormat( retro_system_av_info avInfo, retro_pixel_forma
 
 void VideoItem::setCore( QString libretroCore ) {
 
-    libretroCore = QUrl( libretroCore ).toLocalFile();
-    corePath = libretroCore;
+    corePath = QUrl( libretroCore ).toLocalFile();
 
     // qCDebug( phxController ) << "emit signalLoadCore(" << corePath << ")";
     emit signalLoadCore( corePath );
@@ -149,8 +148,7 @@ void VideoItem::setCore( QString libretroCore ) {
 
 void VideoItem::setGame( QString game ) {
 
-    game = QUrl( game ).toLocalFile();
-    gamePath = game;
+    gamePath = QUrl( game ).toLocalFile();
 
     // qCDebug( phxController ) << "emit signalLoadGame(" << gamePath << ")";
     emit signalLoadGame( gamePath );
@@ -176,6 +174,7 @@ void VideoItem::slotVideoData( uchar *data, unsigned width, unsigned height, int
 
     if( texture ) {
         texture->deleteLater();
+        texture = nullptr;
     }
 
     QImage::Format frame_format = retroToQImageFormat( pixelFormat );
