@@ -327,7 +327,7 @@ class Core: public QObject {
 
         // Buffer pool. Since each buffer holds one frame, depending on core, 30 frames = ~500ms
         int16_t *audioBufferPool[30];
-        int audioBufferPoolIndex;
+        int audioPoolCurrentBuffer;
 
         // Amount audioBufferPool[ audioBufferPoolIndex ] has been filled
         // Each frame, exactly ( sampleRate * 4 ) bytes should be copied to

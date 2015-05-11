@@ -7,6 +7,7 @@
 #include <QTimer>
 #include <QAudioOutput>
 #include <QDebug>
+#include <QBuffer>
 
 #include <memory>
 #include <atomic>
@@ -34,7 +35,7 @@ class AudioOutput : public QObject {
         void slotAudioFormat( int sampleRate, double coreFPS, double hostFPS );
 
         // Output incoming video frame of audio data to the audio output
-        void slotAudioData( int16_t *data, int bytes );
+        void slotAudioData( int16_t *data, int inputBytes );
 
         // Respond to the core running or not by keeping audio output active or not
         // AKA Pause if core is paused
@@ -80,11 +81,12 @@ class AudioOutput : public QObject {
 
         QAudioOutput *audioOutInterface;
 
-        QIODevice *audioOutIODev;
-
         int outputBufferPos;
 
         char silence[30000] = {0};
+
+        QByteArray outputBuffer;
+        QBuffer outputBufferIODev;
 
 };
 

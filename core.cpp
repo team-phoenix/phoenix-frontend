@@ -48,7 +48,7 @@ Core::Core()
     avInfo = new retro_system_av_info;
     systemInfo = new retro_system_info;
 
-    audioBufferPoolIndex = 0;
+    audioPoolCurrentBuffer = 0;
     audioBufferCurrentByte = 0;
     videoBufferPoolIndex = 0;
 
@@ -414,8 +414,8 @@ void Core::audioSampleCallback( int16_t left, int16_t right ) {
     Q_ASSERT( core->audioBufferCurrentByte < core->avInfo->timing.sample_rate * 4 );
 
     // Stereo audio is interleaved, left then right
-    core->audioBufferPool[core->audioBufferPoolIndex][core->audioBufferCurrentByte / 2] = left;
-    core->audioBufferPool[core->audioBufferPoolIndex][core->audioBufferCurrentByte / 2 + 1] = right;
+    core->audioBufferPool[core->audioPoolCurrentBuffer][core->audioBufferCurrentByte / 2] = left;
+    core->audioBufferPool[core->audioPoolCurrentBuffer][core->audioBufferCurrentByte / 2 + 1] = right;
 
     // Each frame is 4 bytes (16-bit stereo)
     core->audioBufferCurrentByte += 4;
@@ -430,7 +430,7 @@ size_t Core::audioSampleBatchCallback( const int16_t *data, size_t frames ) {
     Q_ASSERT( core->audioBufferCurrentByte < core->avInfo->timing.sample_rate * 4 );
 
     // Need to do a bit of pointer arithmetic to get the right offset (the buffer is counted in increments of 2 bytes)
-    int16_t *dst_init = core->audioBufferPool[core->audioBufferPoolIndex];
+    int16_t *dst_init = core->audioBufferPool[core->audioPoolCurrentBuffer];
     int16_t *dst = dst_init + ( core->audioBufferCurrentByte / 2 );
 
     // Copy the incoming data
@@ -758,9 +758,9 @@ void Core::videoRefreshCallback( const void *data, unsigned width, unsigned heig
     }
 
     // Flush the audio used so far
-    core->emitAudioDataReady( core->audioBufferPool[core->audioBufferPoolIndex], core->audioBufferCurrentByte );
+    core->emitAudioDataReady( core->audioBufferPool[core->audioPoolCurrentBuffer], core->audioBufferCurrentByte );
     core->audioBufferCurrentByte = 0;
-    core->audioBufferPoolIndex = ( core->audioBufferPoolIndex + 1 ) % 30;
+    core->audioPoolCurrentBuffer = ( core->audioPoolCurrentBuffer + 1 ) % 30;
 
     return;
 

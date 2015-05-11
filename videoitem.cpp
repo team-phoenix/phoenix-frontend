@@ -1,8 +1,8 @@
 #include "videoitem.h"
 
 VideoItem::VideoItem() :
-    core(), coreTimer(), coreThread(), coreState( Core::STATEUNINITIALIZED ),
     audioOutput(), audioOutputThread(),
+    core(), coreTimer(), coreThread(), coreState( Core::STATEUNINITIALIZED ),
     avInfo(), pixelFormat(),
     corePath( "" ), gamePath( "" ),
     width( 0 ), height( 0 ), pitch( 0 ), coreFPS( 0.0 ), hostFPS( 0.0 ),
