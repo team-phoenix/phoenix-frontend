@@ -3,8 +3,10 @@ import QtQuick.Controls 1.3
 import QtGraphicalEffects 1.0
 import libretro.video 1.0
 import QtQuick.Dialogs 1.2
+import QtQuick.Window 2.0
 
 ApplicationWindow {
+    id: phoenixWindow
     title: qsTr("Phoenix");
     width: 1333
     height: 1000
@@ -15,54 +17,10 @@ ApplicationWindow {
         return qsTr(str);
     }
 
-    PathWatcher {
-        id: pathWatcher;
-        Component.onCompleted: pathWatcher.start();
-    }
-
-    Connections {
-        target: pathWatcher;
-        onFileAdded: {
-            if ( pathWatcherModel.get( 0 ).path === "None" )
-                pathWatcherModel.set( 0, { path: file, name: baseName } );
-            else
-                pathWatcherModel.append( { path: file , name: baseName } );
-        }
-
-    }
-
-    ListModel {
-        id: pathWatcherModel;
-        ListElement {path: "None"; name: "None";}
-    }
-
-    FileDialog {
-        id: coreFolderDialog;
-        selectFolder: true;
-        onAccepted: {
-            pathWatcherModel.clear();
-            pathWatcherModel.append( { path: "None", name: "None" } )
-            pathWatcher.clear();
-            pathWatcher.slotSetCorePath(fileUrl);
-        }
-    }
-
-    FileDialog {
-        id: fileDialog;
-        property string type: "";
-        selectFolder: false;
-        selectMultiple: false;
-        onAccepted: {
-            if (type === "core")
-                videoItem.libretroCore = fileUrl;
-            else if (type === "game")
-                videoItem.game = fileUrl;
-        }
-    }
-
     menuBar: MenuBar {
         Menu {
             title: "Game";
+            enabled: phoenixWindow.visibility === Window.Windowed
             MouseArea {
                 anchors.fill: parent;
             }
@@ -80,6 +38,7 @@ ApplicationWindow {
 
         Menu {
             title: "Cores";
+            enabled: phoenixWindow.visibility === Window.Windowed
 
             Menu {
                 id: coresAvailable;
@@ -136,143 +95,168 @@ ApplicationWindow {
 
     }
 
-    /*
-
-    FastBlur {
-        anchors.fill: parent;
-        source: videoItem;
-        z: videoItem.z - 1;
-        radius: 8 * 8;
+    PathWatcher {
+        id: pathWatcher;
+        Component.onCompleted: pathWatcher.start();
     }
 
-    VideoItem {
-        id: videoItem;
-
-
-        focus: true;
-        anchors {
-           centerIn: parent;
-        }
-
-
-        height: parent.height;
-        width: stretchVideo ? parent.width : height * aspectRatio;
-
-        systemDirectory: phoenixGlobals.biosPath();
-        libcore: gameView.coreName;
-        game: gameView.gameName;
-        isRunning: gameView.isRunning;
-        volume: root.volumeLevel;
-        filtering: root.filtering;
-        stretchVideo: root.stretchVideo;
-
-        //property real ratio: width / height;
-
-        onRunChanged: {
-            if (isRunning)
-                headerBar.playIcon = "/assets/GameView/pause.png";
+    Connections {
+        target: pathWatcher;
+        onFileAdded: {
+            if ( pathWatcherModel.get( 0 ).path === "None" )
+                pathWatcherModel.set( 0, { path: file, name: baseName } );
             else
-                headerBar.playIcon = "/assets/GameView/play.png";
+                pathWatcherModel.append( { path: file , name: baseName } );
         }
 
+    }
 
-        onSetWindowedChanged: {
-            if (root.visibility == Window.FullScreen)
-                root.swapScreenSize();
-        }
+    ListModel {
+        id: pathWatcherModel;
+        ListElement {path: "None"; name: "None";}
+    }
 
-        Component.onDestruction: {
-            saveGameState();
+    FileDialog {
+        id: coreFolderDialog;
+        selectFolder: true;
+        onAccepted: {
+            pathWatcherModel.clear();
+            pathWatcherModel.append( { path: "None", name: "None" } )
+            pathWatcher.clear();
+            pathWatcher.slotSetCorePath(fileUrl);
         }
     }
 
-    */
+    FileDialog {
+        id: fileDialog;
+        property string type: "";
+        selectFolder: false;
+        selectMultiple: false;
+        onAccepted: {
+            if (type === "core")
+                videoItem.libretroCore = fileUrl;
+            else if (type === "game")
+                videoItem.game = fileUrl;
+        }
+    }
 
+    Rectangle {
 
+        id: videoOutput
+        anchors.fill: parent
 
-    VideoItem {
-        id: videoItem;
-        rotation: 180;
-        anchors {
-            top: parent.top;
-            bottom: parent.bottom;
-            horizontalCenter: parent.horizontalCenter;
+        /*FastBlur {
+            anchors.fill: parent;
+            source: videoItem;
+            z: videoItem.z - 1;
+            radius: 8 * 8;
+        }*/
+
+        MouseArea {
+
+            id: mouseArea
+            anchors.fill: parent
+            z: 10
+            hoverEnabled: true
+
+            onDoubleClicked: {
+
+                if (phoenixWindow.visibility === Window.FullScreen)
+                    phoenixWindow.visibility = Window.Windowed
+                else if (phoenixWindow.visibility === Window.Windowed)
+                    phoenixWindow.visibility = Window.FullScreen
+
+            }
+
         }
 
-        //libretroCore: "/Users/lee/Desktop/vbam_libretro.dylib";
-        //game: "/Users/lee/Desktop/GBA/Golden Sun.gba";
+        VideoItem {
 
-        width: height * 4/3;
-        Column {
-            visible: false;
-            spacing: 24;
-            anchors.centerIn: parent;
-            Rectangle {
-                color: "lightgray";
-                opacity: 0.6;
+            id: videoItem;
+            rotation: 180;
+            anchors {
+                top: parent.top;
+                bottom: parent.bottom;
+                horizontalCenter: parent.horizontalCenter;
+            }
 
-                border {
-                    color: "white"
-                    width: 2;
+            //libretroCore: "/Users/lee/Desktop/vbam_libretro.dylib";
+            //game: "/Users/lee/Desktop/GBA/Golden Sun.gba";
+
+            width: height * 4/3;
+            Column {
+                visible: false;
+                spacing: 24;
+                anchors.centerIn: parent;
+                Rectangle {
+                    color: "lightgray";
+                    opacity: 0.6;
+
+                    border {
+                        color: "white"
+                        width: 2;
+                    }
+
+                    height: 50;
+                    width: 175;
+
+                    Text {
+                        anchors.centerIn: parent;
+                        text: "Play | Pause";
+                        color: "white";
+                        font {
+                            pixelSize: 18;
+                            bold: true;
+                        }
+                    }
                 }
 
-                height: 50;
-                width: 175;
+                Rectangle {
+                    color: "lightgray";
+                    opacity: 0.6;
+                    border {
+                        color: "white"
+                        width: 2;
+                    }
 
-                Text {
-                    anchors.centerIn: parent;
-                    text: "Play | Pause";
-                    color: "white";
-                    font {
-                        pixelSize: 18;
-                        bold: true;
+                    height: 50;
+                    width: 175;
+
+                    Text {
+                        anchors.centerIn: parent;
+                        text: "Load Game";
+                        color: "white";
+                        font {
+                            pixelSize: 18;
+                            bold: true;
+                        }
+                    }
+                }
+
+                Rectangle {
+                    color: "lightgray";
+                    opacity: 0.6;
+                    border {
+                        color: "white"
+                        width: 2;
+                    }
+
+                    height: 50;
+                    width: 175;
+
+                    Text {
+                        anchors.centerIn: parent;
+                        text: "Mute Audio";
+                        color: "white";
+                        font {
+                            pixelSize: 18;
+                            bold: true;
+                        }
                     }
                 }
             }
 
-            Rectangle {
-                color: "lightgray";
-                opacity: 0.6;
-                border {
-                    color: "white"
-                    width: 2;
-                }
-
-                height: 50;
-                width: 175;
-
-                Text {
-                    anchors.centerIn: parent;
-                    text: "Load Game";
-                    color: "white";
-                    font {
-                        pixelSize: 18;
-                        bold: true;
-                    }
-                }
-            }
-
-            Rectangle {
-                color: "lightgray";
-                opacity: 0.6;
-                border {
-                    color: "white"
-                    width: 2;
-                }
-
-                height: 50;
-                width: 175;
-
-                Text {
-                    anchors.centerIn: parent;
-                    text: "Mute Audio";
-                    color: "white";
-                    font {
-                        pixelSize: 18;
-                        bold: true;
-                    }
-                }
-            }
         }
+
     }
 }

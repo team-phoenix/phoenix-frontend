@@ -2,7 +2,7 @@
 
 VideoItem::VideoItem() :
     audioOutput(), audioOutputThread(),
-    core(), coreTimer(), coreThread(), coreState( Core::STATEUNINITIALIZED ),
+    core(), /*coreTimer(),*/ coreThread(), coreState( Core::STATEUNINITIALIZED ),
     avInfo(), pixelFormat(),
     corePath( "" ), gamePath( "" ),
     width( 0 ), height( 0 ), pitch( 0 ), coreFPS( 0.0 ), hostFPS( 0.0 ),
@@ -13,6 +13,8 @@ VideoItem::VideoItem() :
 
     core.moveToThread( &coreThread );
     audioOutput.moveToThread( &audioOutputThread );
+    connect( this, &VideoItem::signalDestroy, &core, &Core::slotPullToThread, Qt::BlockingQueuedConnection );
+    connect( this, &VideoItem::signalDestroy, &audioOutput, &AudioOutput::slotPullToThread, Qt::BlockingQueuedConnection );
 
     // Connect controller signals and slots
 
@@ -43,11 +45,9 @@ VideoItem::VideoItem() :
 
 VideoItem::~VideoItem() {
 
-
-
     // Tell objects living in other threads it's time to shut down and be ready to get destroyed
     // Some of these connections are blocking to ensure they'll get properly stopped
-    emit signalDestroy();
+    emit signalDestroy( this->thread() );
 
     // Stop processing events in the other threads, then block the main thread until they're finished
 
@@ -82,6 +82,7 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             // Run a timer to make core produce a frame at regular intervals
             // Disabled at the moment due to the granulatiry being 1ms (not good enough)
 
+            /*
             // Set up and start the frame timer
             qCDebug( phxController ) << "\tcoreTimer.start(" << ( double )1 / ( avInfo.timing.fps / 1000 ) << "ms (core) =" << ( int )( 1 / ( avInfo.timing.fps / 1000 ) ) << "ms (actual) )";
 
@@ -98,7 +99,6 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             // Have the timer run in the same thread as Core
             // This will mean timeouts are blocking, preventing them from piling up if Core runs too slow
             coreTimer.moveToThread( &coreThread );
-            /*
             */
 
             qCDebug( phxController ) << "Begin emulation.";

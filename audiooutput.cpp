@@ -80,22 +80,6 @@ void AudioOutput::slotAudioFormat( int sampleRate, double coreFPS, double hostFP
 
 void AudioOutput::slotAudioData( int16_t *data, int inputBytes ) {
 
-    //
-    // TODO: Make these configurable
-    //
-
-    const int outputBufferLengthMs = 50;
-
-    // Make this large enough to ensure no underruns
-    const int outputBufferTargetMs = ( double )1 * ( 1000.0 / coreFPS );
-
-    // Max amount of stretching performed to compensate for output buffer position being off target
-    const double maxDeviation = 0.005;
-
-    //
-    // ---
-    //
-
     // Handle the situation where there is an error opening the audio device
     if( audioOutInterface->error() == QAudio::OpenError ) {
         qWarning( phxAudioOutput ) << "QAudio::OpenError, attempting reset...";
@@ -107,8 +91,8 @@ void AudioOutput::slotAudioData( int16_t *data, int inputBytes ) {
 
     // Max number of bytes/frames we can write to the output
     int outputBufferSize = audioFormatOut.bytesForDuration( outputBufferLengthMs * 1000 );
-    int outputBytesFree = 2 << 16; // We have a automatically resizing buffer
     outputBufferPos = outputBuffer.bytesAvailable();
+    int outputBytesFree = outputBufferSize - outputBufferPos;
     int outputFramesFree = audioFormatOut.framesForBytes( outputBytesFree );
     int outputSamplesFree = outputFramesFree * samplesPerFrame;
     Q_UNUSED( outputBufferSize );
@@ -158,31 +142,30 @@ void AudioOutput::slotAudioData( int16_t *data, int inputBytes ) {
     /*
     qCDebug( phxAudioOutput ) << "Output is" << ( ( ( double )( ( outputBufferSize - outputBytesFree ) ) / outputBufferSize ) * 100 )
                               << "% full"
-                              << "(outputBufferPos: " << ( ( ( double )( outputBufferPos ) / outputBufferSize ) * 100 )
-                              << "% full)"
                               << "DRCRatio =" << DRCRatio
                               << "audioOutInterface->bufferSize()" << audioOutInterface->bufferSize();
-    qCDebug( phxAudioOutput ) << "\toutputBufferPos =" << outputBufferPos
-                              << "Input bytes =" << inputBytes
+    qCDebug( phxAudioOutput ) << "\toutputBufferSize =" << outputBufferSize
+                              << "outputBufferPos =" << outputBufferPos
+                              << " outputBytesFree =" << outputBytesFree
+                              << "Input bytes =" << inputBytes;
                               // << "outputAudioRoomToStretch" << outputAudioRoomToStretch
                               // << "stretchRatio =" << stretchRatio
-                              << "bufferTargetCorrectionRatio =" << bufferTargetCorrectionRatio
-                              << "sampleRateRatio =" << sampleRateRatio
-                              << "adjustedSampleRateRatio =" << adjustedSampleRateRatio;
-    qCDebug( phxAudioOutput ) << "\tOutput: needed" << outputBufferVectorTargetToCurrent << "bytes, wrote" << outputBytesWritten << "bytes";
-    qCDebug( phxAudioOutput ) << "\toutputBytesFree =" << outputBytesFree
-                              << "outputBufferTargetByte =" << outputBufferTargetByte
-                              << "outputBufferVectorTargetToCurrent =" << outputBufferVectorTargetToCurrent;
-    qCDebug( phxAudioOutput ) << "\taudioOutInterface->bufferSize() =" << audioOutInterface->bufferSize()
-                              << "audioOutInterface->bytesFree() =" << audioOutInterface->bytesFree()
-                              << "audioOutputBuffer->bytesToWrite() =" << outputBuffer.bytesToWrite();
-    qCDebug( phxAudioOutput ) << "\toutputBufferIODev.bytesAvailable() =" << outputBuffer.bytesAvailable()
-                              << "outputBufferIODev.size() =" << outputBuffer.size()
-                              << "outputBufferIODev.pos() =" << outputBuffer.pos();
+                              // << "bufferTargetCorrectionRatio =" << bufferTargetCorrectionRatio
+                              // << "sampleRateRatio =" << sampleRateRatio
+                              // << "adjustedSampleRateRatio =" << adjustedSampleRateRatio;
     qCDebug( phxAudioOutput ) << "\tOutput buffer is" << audioFormatOut.durationForBytes( outputBufferSize ) / 1000
                               << "ms, buffer target is" << outputBufferTargetMs
                               << "ms (" << ( double )100.0 * ( ( double )outputBufferTargetMs / ( ( double )( audioFormatOut.durationForBytes( outputBufferSize ) ) / 1000.0 ) )
                               << "%)";
+    qCDebug( phxAudioOutput ) << "\tOutput: needed" << outputBufferVectorTargetToCurrent << "bytes, wrote" << outputBytesWritten << "bytes";
+    qCDebug( phxAudioOutput ) << "\toutputBufferTargetByte =" << outputBufferTargetByte
+                              << "outputBufferVectorTargetToCurrent =" << outputBufferVectorTargetToCurrent;
+    qCDebug( phxAudioOutput ) << "\taudioOutInterface->bufferSize() =" << audioOutInterface->bufferSize()
+                              << "audioOutInterface->bytesFree() =" << audioOutInterface->bytesFree()
+                              << "outputBuffer.bytesToWrite() =" << outputBuffer.bytesToWrite();
+    qCDebug( phxAudioOutput ) << "\toutputBuffer.bytesAvailable() =" << outputBuffer.bytesAvailable()
+                              << "outputBufferIODev.size() =" << outputBuffer.size()
+                              << "outputBufferIODev.pos() =" << outputBuffer.pos();
     qCDebug( phxAudioOutput ) << "\tState:" << audioOutInterface->state() << " error: " << audioOutInterface->error();
     */
 
@@ -216,6 +199,10 @@ void AudioOutput::slotSetVolume( qreal level ) {
     }
 }
 
+void AudioOutput::slotPullToThread( QThread *thread ) {
+    moveToThread( thread );
+}
+
 //
 // Private slots
 //
@@ -235,7 +222,7 @@ void AudioOutput::slotAudioOutputStateChanged( QAudio::State s ) {
         qWarning( phxAudioOutput ) << "audioOut underrun";
 
         if( audioOutInterface ) {
-            outputBuffer.write( silence, audioFormatOut.bytesForDuration( 20 * 1000 ) );
+            outputBuffer.write( silence, audioFormatOut.bytesForDuration( outputBufferTargetMs * 1000 ) );
             audioOutInterface->start( &outputBuffer );
         } else {
             // resetAudio();
@@ -325,7 +312,6 @@ void AudioOutput::resetAudio() {
 
     // Seed the output buffer with a bit of silence
 
-    outputBuffer.write( silence, 30000 );
-    outputBufferPos = 30000;
+    outputBuffer.write( silence, audioFormatOut.bytesForDuration( outputBufferTargetMs * 1000 ) );
 
 }

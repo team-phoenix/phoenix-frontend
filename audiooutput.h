@@ -44,6 +44,9 @@ class AudioOutput : public QObject {
         // Set volume level [0.0...1.0]
         void slotSetVolume( qreal level );
 
+        // Change thread affinity so the object can be safely destroyed
+        void slotPullToThread( QThread *thread );
+
     private slots:
 
         void slotHandleNotify();
@@ -85,9 +88,26 @@ class AudioOutput : public QObject {
 
         int outputBufferPos;
 
-        char silence[30000] = {0};
+        char silence[44100 * 4] = {0};
 
         AudioBuffer outputBuffer;
+
+        //
+        // TODO: Make these configurable
+        //
+
+        const int outputBufferLengthMs = 200;
+
+        // Make this large enough to ensure no underruns
+        const int outputBufferTargetMs = 100;
+
+        // Max amount of stretching performed to compensate for output buffer position being off target
+        const double maxDeviation = 0.005;
+
+        //
+        // ---
+        //
+
 
 };
 

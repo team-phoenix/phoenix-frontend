@@ -242,6 +242,9 @@ class Core: public QObject {
         // Run core for one frame
         void slotFrame();
 
+        // Change thread affinity so the object can be safely destroyed
+        void slotPullToThread( QThread *thread );
+
     protected:
 
         // Only staticly-linked callbacks may access this data/call these methods
