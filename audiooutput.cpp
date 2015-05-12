@@ -107,10 +107,11 @@ void AudioOutput::slotAudioData( int16_t *data, int inputBytes ) {
 
     // Max number of bytes/frames we can write to the output
     int outputBufferSize = audioFormatOut.bytesForDuration( outputBufferLengthMs * 1000 );
-    int outputBytesFree = 2 << 16;
+    int outputBytesFree = 2 << 16; // We have a automatically resizing buffer
     outputBufferPos = outputBuffer.bytesAvailable();
     int outputFramesFree = audioFormatOut.framesForBytes( outputBytesFree );
     int outputSamplesFree = outputFramesFree * samplesPerFrame;
+    Q_UNUSED( outputBufferSize );
     Q_UNUSED( outputSamplesFree );
 
     // Calculate how much the read data should be scaled (shrunk or stretched) to keep the buffer on target
