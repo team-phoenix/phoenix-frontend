@@ -62,6 +62,7 @@ class AudioOutput : public QObject {
         // Opaque pointer for libsamplerate
         SRC_STATE *resamplerState;
 
+        // Audio and video timing provided by Core via the controller
         int sampleRate;
         double coreFPS;
         double hostFPS;
@@ -76,6 +77,7 @@ class AudioOutput : public QObject {
 
         bool coreIsRunning;
 
+        // Input and output audio formats being used
         QAudioFormat audioFormatOut;
         QAudioFormat audioFormatIn;
 
@@ -85,8 +87,7 @@ class AudioOutput : public QObject {
 
         char silence[30000] = {0};
 
-        QByteArray outputBuffer;
-        QBuffer outputBufferIODev;
+        AudioBuffer outputBuffer;
 
 };
 

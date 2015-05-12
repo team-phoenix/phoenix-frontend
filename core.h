@@ -13,7 +13,6 @@
 #include <atomic>
 
 #include "libretro.h"
-#include "audiobuffer.h"
 #include "logging.h"
 
 /* Core is a class that manages the execution of a Libretro core and its associated game.
@@ -21,20 +20,13 @@
  * Core is a state machine, the normal lifecycle goes like this:
  * Core::UNINITIALIZED, Core::READY, Core::FINISHED
  *
- * Core provides signalStateChanged( newState, data ) to inform its controller that its state
+ * Core provides signalCoreStateChanged( newState, error ) to inform its controller that its state
  * changed.
- *
- * Contents of data:
- *   Core::UNINITIALIZED: nothing
- *   Core::READY: Data structure containing audio and video timing, format and dimensions
- *   Core::FINISHED: nothing
- *   Core::ERROR: Error enum
  *
  * Call Core's load methods with a valid path to a Libretro core and game, along with controller mappings,
  * then call slotInit() to begin loading the game and slot. Core should change to Core::READY. You
  * may now call slotDoFrame() to have the core emulate a video frame send out signals as data is produced.
  *
- * Currently, neither video nor audio signals are thread-safe. (TODO)
  */
 
 // Helper for resolving libretro methods

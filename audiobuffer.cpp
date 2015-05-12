@@ -1,89 +1,59 @@
+#include "audiobuffer.h"
 
-#include <audiobuffer.h>
+AudioBuffer::AudioBuffer( QObject *parent )
+    : QIODevice( parent ),
+      bufferPosition( 0 ) {
 
-
-AudioBuffer::AudioBuffer( size_t size )
-    : m_head( 0 ),
-      m_tail( 0 ),
-      m_size( size ) {
-    m_buffer = new char[m_size];
 }
 
 AudioBuffer::~AudioBuffer() {
-    delete [] m_buffer;
+
 }
 
-size_t AudioBuffer::write( const char *data, size_t size ) {
-    size_t wrote = 0;
-    size_t head, tail, nextHead;
+void AudioBuffer::start() {
 
-    //if ( this->size() + size >= m_size / 2 ) {
+    open( QIODevice::ReadWrite );
 
-    //qDebug() << "Total size: " << m_size
-    //         << " ::: Current size: " << this->size() << " ::: Projected size: " << this->size() + size;
-
-    //emit signalReadReady( this, wrote );
-
-
-    //}
-
-    while( wrote < size ) {
-        head = m_head.load( std::memory_order_relaxed );
-        nextHead = next( head );
-        tail = m_tail.load( std::memory_order_acquire );
-
-        if( nextHead == tail ) {
-            // buffer is full. let's just clear it.
-            // It probably means the core produces frames too fast (not
-            // clocked right) or audio backend stopped reading frames.
-            // In the first case, it might cause audio to skip a bit.
-            qCDebug( phxAudioOutput, "AudioBuffer full, dropping samples" );
-            clear();
-        }
-
-        m_buffer[ head ] = data[ wrote++ ];
-        m_head.store( nextHead, std::memory_order_release );
-
-    }
-
-    emit signalReadReady( this, wrote );
-
-    return wrote;
 }
 
-size_t AudioBuffer::read( char *data, size_t size ) {
-    size_t read = 0;
-    size_t head, tail;
+void AudioBuffer::stop() {
 
-    while( read < size ) {
-        tail = m_tail.load( std::memory_order_relaxed );
-        head = m_head.load( std::memory_order_acquire );
+    bufferPosition = 0;
+    close();
 
-        if( tail == head ) {
-            break;
-        }
-
-        data[ read++ ] = m_buffer[ tail ];
-        m_tail.store( next( tail ), std::memory_order_release );
-    }
-
-    return read;
 }
 
-size_t AudioBuffer::size_impl( size_t tail, size_t head ) const {
-    if( head < tail ) {
-        return head + ( m_size - tail );
+qint64 AudioBuffer::readData( char *data, qint64 bytesToRead ) {
+
+    if( buffer.size() > bytesToRead ) {
+
+        memcpy( data, buffer.constData(), bytesToRead );
+        buffer.remove( 0, bytesToRead );
+        return bytesToRead;
+
     } else {
-        return head - tail;
+
+        memcpy( data, buffer.constData(), buffer.size() );
+        int bytesRead = buffer.size();
+        buffer.clear();
+        return bytesRead;
+
     }
+
+    return 0;
+
 }
 
-size_t AudioBuffer::size() const {
-    size_t head = m_head.load( std::memory_order_relaxed );
-    size_t tail = m_tail.load( std::memory_order_relaxed );
-    return size_impl( tail, head );
+qint64 AudioBuffer::writeData( const char *data, qint64 len ) {
+
+    buffer.append( data, len );
+
+    return 0;
 }
 
-void AudioBuffer::clear() {
-    m_head.store( m_tail.load( std::memory_order_relaxed ), std::memory_order_relaxed );
+qint64 AudioBuffer::bytesAvailable() const {
+
+    return buffer.size() + QIODevice::bytesAvailable();
+
 }
+
