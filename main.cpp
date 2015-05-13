@@ -16,6 +16,7 @@ Q_DECLARE_METATYPE( Core::Error )
 void myMessageOutput( QtMsgType type, const QMessageLogContext &context, const QString &msg ) {
     if( QString( msg ).contains( "Timers cannot be stopped from another thread" ) ) {
         int breakPointOnThisLine( 0 );
+        Q_UNUSED( breakPointOnThisLine );
     }
 
     QByteArray localMsg = msg.toLocal8Bit();
