@@ -13,23 +13,29 @@ VideoItem::VideoItem() :
 
     core.moveToThread( &coreThread );
     audioOutput.moveToThread( &audioOutputThread );
-    connect( this, &VideoItem::signalDestroy, &core, &Core::slotPullToThread, Qt::BlockingQueuedConnection );
-    connect( this, &VideoItem::signalDestroy, &audioOutput, &AudioOutput::slotPullToThread, Qt::BlockingQueuedConnection );
+    connect( this, &VideoItem::signalPullToThread, &core, &Core::slotPullToThread, Qt::BlockingQueuedConnection );
+    connect( this, &VideoItem::signalPullToThread, &audioOutput, &AudioOutput::slotPullToThread, Qt::BlockingQueuedConnection );
 
     // Connect controller signals and slots
 
     // Run a timer to make core produce a frame at regular intervals, or at vsync
-    // Disabled at the moment due to the granulatiry being 1ms (not good enough)
-    // connect( &coreTimer, &QTimer::timeout, &core, &Core::slotFrame );
+    // connect( &coreTimer, &QTimer::timeout, &core, &Core::slotFrame ); // Disabled at the moment due to the granulatiry being 1ms (not good enough)
     connect( this, &VideoItem::signalFrame, &core, &Core::slotFrame );
 
+    // Do the next item in the core lifecycle when the state has changed
     connect( &core, &Core::signalCoreStateChanged, this, &VideoItem::slotCoreStateChanged );
+
+    // Load a core and a game
     connect( this, &VideoItem::signalLoadCore, &core, &Core::slotLoadCore );
     connect( this, &VideoItem::signalLoadGame, &core, &Core::slotLoadGame );
+
+    // Get the audio and video timing/format from core once a core and game are loaded, send the data out to each consumer for their own initialization
     connect( &core, &Core::signalAVFormat, this, &VideoItem::slotCoreAVFormat );
     connect( this, &VideoItem::signalAudioFormat, &audioOutput, &AudioOutput::slotAudioFormat );
-    connect( this, &VideoItem::signalRunChanged, &audioOutput, &AudioOutput::slotSetAudioActive );
     connect( this, &VideoItem::signalVideoFormat, this, &VideoItem::slotVideoFormat ); // Belongs in both categories
+
+    // Do the next item in the core lifecycle when its state changes
+    connect( this, &VideoItem::signalRunChanged, &audioOutput, &AudioOutput::slotSetAudioActive );
 
     // Connect consumer signals and slots
 
@@ -45,9 +51,8 @@ VideoItem::VideoItem() :
 
 VideoItem::~VideoItem() {
 
-    // Tell objects living in other threads it's time to shut down and be ready to get destroyed
-    // Some of these connections are blocking to ensure they'll get properly stopped
-    emit signalDestroy( this->thread() );
+    // Move VideoItem's objects that were placed in other threads back to this one
+    emit signalPullToThread( this->thread() );
 
     // Stop processing events in the other threads, then block the main thread until they're finished
 

@@ -20,7 +20,7 @@ ApplicationWindow {
     menuBar: MenuBar {
         Menu {
             title: "Game";
-            enabled: phoenixWindow.visibility === Window.Windowed
+            enabled: phoenixWindow.visibility === Window.Windowed | Window.Maximized
             MouseArea {
                 anchors.fill: parent;
             }
@@ -38,7 +38,7 @@ ApplicationWindow {
 
         Menu {
             title: "Cores";
-            enabled: phoenixWindow.visibility === Window.Windowed
+            enabled: phoenixWindow.visibility === Window.Windowed | Window.Maximized
 
             Menu {
                 id: coresAvailable;
@@ -163,7 +163,7 @@ ApplicationWindow {
 
                 if (phoenixWindow.visibility === Window.FullScreen)
                     phoenixWindow.visibility = Window.Windowed
-                else if (phoenixWindow.visibility === Window.Windowed)
+                else if (phoenixWindow.visibility === Window.Windowed | Window.Maximized)
                     phoenixWindow.visibility = Window.FullScreen
 
             }

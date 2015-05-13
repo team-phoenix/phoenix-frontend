@@ -40,7 +40,7 @@ class VideoItem : public QQuickItem {
         void signalAudioFormat( int sampleRate, double coreFPS, double hostFPS );
         void signalVideoFormat( retro_pixel_format pixelFormat, int width, int height, int pitch, double coreFPS, double hostFPS );
         void signalFrame();
-        void signalDestroy( QThread *thread = nullptr );
+        void signalPullToThread( QThread *thread = nullptr );
         void signalRunChanged( bool run );
 
     public slots:
@@ -77,7 +77,7 @@ class VideoItem : public QQuickItem {
         Core core;
 
         // The timer that makes the core produce frames at regular intervals
-        QTimer coreTimer;
+        // QTimer coreTimer;
 
         // Thread that keeps the emulation from blocking this UI thread
         QThread coreThread;

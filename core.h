@@ -266,13 +266,13 @@ class Core: public QObject {
         QByteArray libraryFilename;
 
         // Used by environment callback
-        void emitReadyState();
+        void emitStateReady();
 
         // Used by audio callback
-        void emitAudioDataReady( int16_t *data, int bytes );
+        void emitAudioData( int16_t *data, int bytes );
 
         // Used by video callback
-        void emitVideoDataReady( uchar *data, unsigned width, unsigned height, size_t pitch );
+        void emitVideoData( uchar *data, unsigned width, unsigned height, size_t pitch );
 
     private:
 

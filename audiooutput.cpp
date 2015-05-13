@@ -214,10 +214,9 @@ void AudioOutput::slotAudioOutputStateChanged( QAudio::State s ) {
         qWarning( phxAudioOutput ) << "audioOut underrun";
 
         if( outputAudioInterface ) {
-            // outputBuffer.write( silence, audioFormatOut.bytesForDuration( outputBufferTargetMs * 1000 ) );
             outputAudioInterface->start( &outputBuffer );
         } else {
-            // resetAudio();
+            resetAudio();
         }
     }
 

@@ -248,7 +248,7 @@ void Core::slotLoadGame( QString path ) {
 
     }
 
-    core->emitReadyState();
+    core->emitStateReady();
 
 }
 
@@ -277,20 +277,20 @@ void Core::slotPullToThread(QThread *thread ) {
 // Must always point to the last Core instance used
 Core *Core::core = nullptr;
 
-void Core::emitReadyState() {
+void Core::emitStateReady() {
 
     emit signalAVFormat( *avInfo, pixelFormat );
     emit signalCoreStateChanged( Core::STATEREADY, Core::CORENOERROR );
 
 }
 
-void Core::emitAudioDataReady( int16_t *data , int bytes ) {
+void Core::emitAudioData( int16_t *data , int bytes ) {
 
     emit signalAudioData( data, bytes );
 
 }
 
-void Core::emitVideoDataReady( uchar *data, unsigned width, unsigned height, size_t pitch ) {
+void Core::emitVideoData( uchar *data, unsigned width, unsigned height, size_t pitch ) {
 
     emit signalVideoData( data, width, height, pitch );
 
@@ -751,7 +751,7 @@ void Core::videoRefreshCallback( const void *data, unsigned width, unsigned heig
     if( data ) {
 
         memcpy( core->videoBufferPool[core->videoBufferPoolIndex], data, height * pitch );
-        core->emitVideoDataReady( core->videoBufferPool[core->videoBufferPoolIndex], width, height, pitch );
+        core->emitVideoData( core->videoBufferPool[core->videoBufferPoolIndex], width, height, pitch );
         core->videoBufferPoolIndex = ( core->videoBufferPoolIndex + 1 ) % 30;
 
     }
@@ -759,12 +759,12 @@ void Core::videoRefreshCallback( const void *data, unsigned width, unsigned heig
     // Current frame is a dupe, send the last actual frame again
     else {
 
-        core->emitVideoDataReady( core->videoBufferPool[core->videoBufferPoolIndex], width, height, pitch );
+        core->emitVideoData( core->videoBufferPool[core->videoBufferPoolIndex], width, height, pitch );
 
     }
 
     // Flush the audio used so far
-    core->emitAudioDataReady( core->audioBufferPool[core->audioPoolCurrentBuffer], core->audioBufferCurrentByte );
+    core->emitAudioData( core->audioBufferPool[core->audioPoolCurrentBuffer], core->audioBufferCurrentByte );
     core->audioBufferCurrentByte = 0;
     core->audioPoolCurrentBuffer = ( core->audioPoolCurrentBuffer + 1 ) % 30;
 
