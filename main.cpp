@@ -1,3 +1,4 @@
+#include <QtGlobal>
 #include <QApplication>
 #include <QtCore>
 #include <QQmlApplicationEngine>
@@ -12,7 +13,36 @@ Q_DECLARE_METATYPE( retro_pixel_format )
 Q_DECLARE_METATYPE( Core::State )
 Q_DECLARE_METATYPE( Core::Error )
 
+void myMessageOutput( QtMsgType type, const QMessageLogContext &context, const QString &msg ) {
+    if( QString( msg ).contains( "Timers cannot be stopped from another thread" ) ) {
+        int breakPointOnThisLine( 0 );
+    }
+
+    QByteArray localMsg = msg.toLocal8Bit();
+
+    switch( type ) {
+        case QtDebugMsg:
+            fprintf( stderr, "Debug: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function );
+            break;
+
+        case QtWarningMsg:
+            fprintf( stderr, "Warning: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function );
+            break;
+
+        case QtCriticalMsg:
+            fprintf( stderr, "Critical: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function );
+            break;
+
+        case QtFatalMsg:
+            fprintf( stderr, "Fatal: %s (%s:%u, %s)\n", localMsg.constData(), context.file, context.line, context.function );
+            abort();
+    }
+
+}
+
 int main( int argc, char *argv[] ) {
+
+    // qInstallMessageHandler( myMessageOutput );
 
     QApplication app( argc, argv );
 
