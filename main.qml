@@ -145,12 +145,14 @@ ApplicationWindow {
         id: videoOutput
         anchors.fill: parent
 
-        /*FastBlur {
+
+        FastBlur {
             anchors.fill: parent;
             source: videoItem;
-            z: videoItem.z - 1;
-            radius: 8 * 8;
-        }*/
+            //z: videoItem.z - 1;
+            radius: 32 * 2;
+            rotation: 180
+        }
 
         MouseArea {
 
@@ -180,11 +182,9 @@ ApplicationWindow {
                 horizontalCenter: parent.horizontalCenter;
             }
 
-            //libretroCore: "/Users/lee/Desktop/vbam_libretro.dylib";
-            //game: "/Users/lee/Desktop/GBA/Golden Sun.gba";
-
             width: height * 4/3;
-            Column {
+
+            /*Column {
                 visible: false;
                 spacing: 24;
                 anchors.centerIn: parent;
@@ -254,9 +254,10 @@ ApplicationWindow {
                         }
                     }
                 }
-            }
+            }*/
 
         }
 
     }
+
 }
