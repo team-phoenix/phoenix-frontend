@@ -35,7 +35,7 @@ class AudioOutput : public QObject {
         void slotAudioFormat( int sampleRate, double coreFPS, double hostFPS );
 
         // Output incoming video frame of audio data to the audio output
-        void slotAudioData(int16_t *inputData, int inputBytes );
+        void slotAudioData( int16_t *inputData, int inputBytes );
 
         // Respond to the core running or not by keeping audio output active or not
         // AKA Pause if core is paused
@@ -43,9 +43,6 @@ class AudioOutput : public QObject {
 
         // Set volume level [0.0...1.0]
         void slotSetVolume( qreal level );
-
-        // Change thread affinity so the object can be safely destroyed
-        void slotPullToThread( QThread *thread );
 
     private slots:
 

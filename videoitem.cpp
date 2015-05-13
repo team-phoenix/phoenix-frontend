@@ -1,8 +1,9 @@
 #include "videoitem.h"
 
-VideoItem::VideoItem() :
-    audioOutput(), audioOutputThread(),
-    core(), /*coreTimer(),*/ coreThread(), coreState( Core::STATEUNINITIALIZED ),
+VideoItem::VideoItem( QQuickItem *parent ) :
+    QQuickItem( parent ),
+    audioOutput( new AudioOutput() ), audioOutputThread( new QThread( this ) ),
+    core( new Core() ), /*coreTimer(),*/ coreThread( new QThread( this ) ), coreState( Core::STATEUNINITIALIZED ),
     avInfo(), pixelFormat(),
     corePath( "" ), gamePath( "" ),
     width( 0 ), height( 0 ), pitch( 0 ), coreFPS( 0.0 ), hostFPS( 0.0 ),
@@ -10,59 +11,63 @@ VideoItem::VideoItem() :
     frameTimer() {
 
     // Place the objects under VideoItem's control into their own threads
+    audioOutput->moveToThread( audioOutputThread );
+    core->moveToThread( coreThread );
 
-    core.moveToThread( &coreThread );
-    audioOutput.moveToThread( &audioOutputThread );
-    connect( this, &VideoItem::signalPullToThread, &core, &Core::slotPullToThread, Qt::BlockingQueuedConnection );
-    connect( this, &VideoItem::signalPullToThread, &audioOutput, &AudioOutput::slotPullToThread, Qt::BlockingQueuedConnection );
+    // Ensure the objects are destroyed once the thread is complete
+    connect( audioOutputThread, &QThread::finished, audioOutput, &AudioOutput::deleteLater );
+    connect( coreThread, &QThread::finished, core, &Core::deleteLater );
+
+    connect( QCoreApplication::instance(), &QCoreApplication::aboutToQuit, [ = ]() {
+
+    } );
 
     // Connect controller signals and slots
 
     // Run a timer to make core produce a frame at regular intervals, or at vsync
     // connect( &coreTimer, &QTimer::timeout, &core, &Core::slotFrame ); // Disabled at the moment due to the granulatiry being 1ms (not good enough)
-    connect( this, &VideoItem::signalFrame, &core, &Core::slotFrame );
+    connect( this, &VideoItem::signalFrame, core, &Core::slotFrame );
 
     // Do the next item in the core lifecycle when the state has changed
-    connect( &core, &Core::signalCoreStateChanged, this, &VideoItem::slotCoreStateChanged );
+    connect( core, &Core::signalCoreStateChanged, this, &VideoItem::slotCoreStateChanged );
 
     // Load a core and a game
-    connect( this, &VideoItem::signalLoadCore, &core, &Core::slotLoadCore );
-    connect( this, &VideoItem::signalLoadGame, &core, &Core::slotLoadGame );
+    connect( this, &VideoItem::signalLoadCore, core, &Core::slotLoadCore );
+    connect( this, &VideoItem::signalLoadGame, core, &Core::slotLoadGame );
 
     // Get the audio and video timing/format from core once a core and game are loaded, send the data out to each consumer for their own initialization
-    connect( &core, &Core::signalAVFormat, this, &VideoItem::slotCoreAVFormat );
-    connect( this, &VideoItem::signalAudioFormat, &audioOutput, &AudioOutput::slotAudioFormat );
+    connect( core, &Core::signalAVFormat, this, &VideoItem::slotCoreAVFormat );
+    connect( this, &VideoItem::signalAudioFormat, audioOutput, &AudioOutput::slotAudioFormat );
     connect( this, &VideoItem::signalVideoFormat, this, &VideoItem::slotVideoFormat ); // Belongs in both categories
 
     // Do the next item in the core lifecycle when its state changes
-    connect( this, &VideoItem::signalRunChanged, &audioOutput, &AudioOutput::slotSetAudioActive );
+    connect( this, &VideoItem::signalRunChanged, audioOutput, &AudioOutput::slotSetAudioActive );
 
     // Connect consumer signals and slots
 
-    connect( &core, &Core::signalAudioData, &audioOutput, &AudioOutput::slotAudioData );
-    connect( &core, &Core::signalVideoData, this, &VideoItem::slotVideoData );
+    connect( core, &Core::signalAudioData, audioOutput, &AudioOutput::slotAudioData );
+    connect( core, &Core::signalVideoData, this, &VideoItem::slotVideoData );
 
     // Start threads
 
-    coreThread.start();
-    audioOutputThread.start();
+    coreThread->start();
+    audioOutputThread->start();
 
 }
 
 VideoItem::~VideoItem() {
 
-    // Move VideoItem's objects that were placed in other threads back to this one
-    emit signalPullToThread( this->thread() );
-
     // Stop processing events in the other threads, then block the main thread until they're finished
 
     // Stop consumer threads first
-    audioOutputThread.exit();
-    audioOutputThread.wait();
+    audioOutputThread->exit();
+    audioOutputThread->wait();
+    audioOutputThread->deleteLater();
 
     // Stop the core thread
-    coreThread.exit();
-    coreThread.wait();
+    coreThread->exit();
+    coreThread->wait();
+    coreThread->deleteLater();
 
 }
 
@@ -136,7 +141,7 @@ void VideoItem::slotCoreAVFormat( retro_system_av_info avInfo, retro_pixel_forma
     this->pixelFormat = pixelFormat;
 
     // TODO: Set this properly, either with testing and averages (RA style) or via EDID (proposed)
-    double monitorRefreshRate = 60.002;
+    double monitorRefreshRate = QGuiApplication::primaryScreen()->refreshRate();
 
     emit signalAudioFormat( avInfo.timing.sample_rate, avInfo.timing.fps, monitorRefreshRate );
     emit signalVideoFormat( pixelFormat,

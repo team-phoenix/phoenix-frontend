@@ -11,7 +11,7 @@ AudioOutput::AudioOutput()
       coreIsRunning( false ),
       outputAudioInterface( nullptr ),
       outputCurrentByte( 0 ),
-      outputBuffer(),
+      outputBuffer( this ),
       outputLengthMs( 200 ), outputTargetMs( 32 ), maxDeviation( 0.005 ) {
 
     outputBuffer.start();
@@ -21,7 +21,8 @@ AudioOutput::AudioOutput()
 AudioOutput::~AudioOutput() {
 
     if( outputAudioInterface ) {
-        outputAudioInterface->deleteLater();
+        outputAudioInterface->stop();
+        delete outputAudioInterface;
         outputAudioInterface = nullptr;
     }
 
@@ -195,12 +196,6 @@ void AudioOutput::slotSetVolume( qreal level ) {
     if( outputAudioInterface ) {
         outputAudioInterface->setVolume( level );
     }
-
-}
-
-void AudioOutput::slotPullToThread( QThread *thread ) {
-
-    this->moveToThread( thread );
 
 }
 

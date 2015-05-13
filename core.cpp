@@ -264,12 +264,6 @@ void Core::slotFrame() {
 
 }
 
-void Core::slotPullToThread(QThread *thread ) {
-
-    this->moveToThread( thread );
-
-}
-
 //
 // Protected
 //

@@ -15,6 +15,9 @@
 #include <QFileInfo>
 #include <QLibrary>
 #include <QSGSimpleTextureNode>
+#include <QApplication>
+#include <QGuiApplication>
+#include <QScreen>
 
 #include <memory>
 
@@ -29,7 +32,7 @@ class VideoItem : public QQuickItem {
 
     public:
 
-        VideoItem();
+        VideoItem( QQuickItem *parent = 0 );
         ~VideoItem();
 
     signals:
@@ -40,7 +43,7 @@ class VideoItem : public QQuickItem {
         void signalAudioFormat( int sampleRate, double coreFPS, double hostFPS );
         void signalVideoFormat( retro_pixel_format pixelFormat, int width, int height, int pitch, double coreFPS, double hostFPS );
         void signalFrame();
-        void signalPullToThread( QThread *thread = nullptr );
+        void signalVideoItemDestructor();
         void signalRunChanged( bool run );
 
     public slots:
@@ -68,19 +71,19 @@ class VideoItem : public QQuickItem {
         // NOTE: All consumers must be declared before Core
 
         // Audio output on the system's default audio output device
-        AudioOutput audioOutput;
+        AudioOutput *audioOutput;
 
         // Resampling is an expensive operation, keep it on a seperate thread, too
-        QThread audioOutputThread;
+        QThread *audioOutputThread;
 
         // The emulator itself, a libretro core
-        Core core;
+        Core *core;
 
         // The timer that makes the core produce frames at regular intervals
         // QTimer coreTimer;
 
         // Thread that keeps the emulation from blocking this UI thread
-        QThread coreThread;
+        QThread *coreThread;
 
         // Core's 'current' state (since core lives on another thread, it could be in a different state)
         Core::State coreState;
