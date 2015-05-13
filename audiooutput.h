@@ -35,7 +35,7 @@ class AudioOutput : public QObject {
         void slotAudioFormat( int sampleRate, double coreFPS, double hostFPS );
 
         // Output incoming video frame of audio data to the audio output
-        void slotAudioData( int16_t *data, int inputBytes );
+        void slotAudioData(int16_t *inputData, int inputBytes );
 
         // Respond to the core running or not by keeping audio output active or not
         // AKA Pause if core is paused
@@ -49,7 +49,6 @@ class AudioOutput : public QObject {
 
     private slots:
 
-        void slotHandleNotify();
         void slotAudioOutputStateChanged( QAudio::State state );
 
     public:
@@ -81,14 +80,12 @@ class AudioOutput : public QObject {
         bool coreIsRunning;
 
         // Input and output audio formats being used
-        QAudioFormat audioFormatOut;
-        QAudioFormat audioFormatIn;
+        QAudioFormat outputAudioFormat;
+        QAudioFormat inputAudioFormat;
 
-        QAudioOutput *audioOutInterface;
+        QAudioOutput *outputAudioInterface;
 
-        int outputBufferPos;
-
-        char silence[44100 * 4] = {0};
+        int outputCurrentByte;
 
         AudioBuffer outputBuffer;
 
@@ -96,13 +93,13 @@ class AudioOutput : public QObject {
         // TODO: Make these configurable
         //
 
-        const int outputBufferLengthMs = 200;
+        int outputLengthMs;
 
         // Make this large enough to ensure no underruns
-        const int outputBufferTargetMs = 100;
+        int outputTargetMs;
 
         // Max amount of stretching performed to compensate for output buffer position being off target
-        const double maxDeviation = 0.005;
+        double maxDeviation;
 
         //
         // ---

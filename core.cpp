@@ -266,7 +266,7 @@ void Core::slotFrame() {
 
 void Core::slotPullToThread(QThread *thread ) {
 
-    moveToThread( thread );
+    this->moveToThread( thread );
 
 }
 
