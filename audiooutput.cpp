@@ -65,6 +65,9 @@ void AudioOutput::slotAudioFormat( int sampleRate, double coreFPS, double hostFP
         outputAudioFormat = info.preferredFormat();
     }
 
+    // Force 16-bit audio (for now)
+    outputAudioFormat.setSampleSize( 16 );
+
     sampleRateRatio = ( qreal )outputAudioFormat.sampleRate()  / inputAudioFormat.sampleRate();
 
     qCDebug( phxAudioOutput ) << "audioFormatIn" << inputAudioFormat;
@@ -266,7 +269,7 @@ void AudioOutput::resetAudio() {
 
     // Reallocate space for scratch space conversion buffers
 
-    auto outputBufferSizeSamples = outputAudioInterface->bufferSize() * 2;
+    auto outputBufferSizeSamples = outputAudioFormat.bytesForDuration( outputLengthMs * 1000 );
     qCDebug( phxAudioOutput ) << "Allocated" << outputBufferSizeSamples * 2 * 2 / 1024 << "kb for conversion.";
 
     if( inputDataFloat ) {
