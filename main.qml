@@ -8,9 +8,11 @@ import QtQuick.Window 2.0
 ApplicationWindow {
     id: phoenixWindow
     title: qsTr("Phoenix");
-    width: 1333
+    width: 1000 * ratio
     height: 1000
     visible: true
+
+    property real ratio: 4/3
 
     function qstr(str)
     {
@@ -144,13 +146,13 @@ ApplicationWindow {
 
         id: videoOutput
         anchors.fill: parent
-
+        color: "black"
 
         FastBlur {
-            anchors.fill: parent;
-            source: videoItem;
-            //z: videoItem.z - 1;
-            radius: 32 * 2;
+            height: parent.height
+            width: parent.width
+            source: videoItem
+            radius: 64
             rotation: 180
         }
 
@@ -174,15 +176,15 @@ ApplicationWindow {
 
         VideoItem {
 
-            id: videoItem;
-            rotation: 180;
+            id: videoItem
+            rotation: 180
             anchors {
-                top: parent.top;
-                bottom: parent.bottom;
-                horizontalCenter: parent.horizontalCenter;
+                top: parent.top
+                bottom: parent.bottom
+                horizontalCenter: parent.horizontalCenter
             }
 
-            width: height * 4/3;
+            width: height * phoenixWindow.ratio
 
             /*Column {
                 visible: false;

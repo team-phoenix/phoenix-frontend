@@ -3,7 +3,8 @@
 VideoItem::VideoItem( QQuickItem *parent ) :
     QQuickItem( parent ),
     audioOutput( new AudioOutput() ), audioOutputThread( new QThread( this ) ),
-    core( new Core() ), /*coreTimer(),*/ coreThread( new QThread( this ) ), coreState( Core::STATEUNINITIALIZED ),
+    core( new Core() ), /*coreTimer(),*/
+    coreThread( new QThread( this ) ), coreState( Core::STATEUNINITIALIZED ),
     avInfo(), pixelFormat(),
     corePath( "" ), gamePath( "" ),
     width( 0 ), height( 0 ), pitch( 0 ), coreFPS( 0.0 ), hostFPS( 0.0 ),
@@ -14,18 +15,39 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     audioOutput->moveToThread( audioOutputThread );
     core->moveToThread( coreThread );
 
-    // Ensure the objects are destroyed once the thread is complete
+    // Ensure the objects are cleaned up when it's time to quit and destroyed once their thread is done
+    connect( this, &VideoItem::signalShutdown, audioOutput, &AudioOutput::slotShutdown );
+    connect( this, &VideoItem::signalShutdown, core, &Core::slotShutdown );
     connect( audioOutputThread, &QThread::finished, audioOutput, &AudioOutput::deleteLater );
     connect( coreThread, &QThread::finished, core, &Core::deleteLater );
 
+    // Catch the exit signal and clean up
     connect( QCoreApplication::instance(), &QCoreApplication::aboutToQuit, [ = ]() {
+
+        qCDebug( phxController ) << "===========QCoreApplication::aboutToQuit()===========";
+
+        // Shut down Core and the consumers
+        emit signalShutdown();
+
+        // Stop processing events in the other threads, then block the main thread until they're finished
+
+        // Stop consumer threads first
+        audioOutputThread->exit();
+        audioOutputThread->wait();
+        audioOutputThread->deleteLater();
+
+        // Stop the core thread
+        coreThread->exit();
+        coreThread->wait();
+        coreThread->deleteLater();
 
     } );
 
     // Connect controller signals and slots
 
     // Run a timer to make core produce a frame at regular intervals, or at vsync
-    // connect( &coreTimer, &QTimer::timeout, &core, &Core::slotFrame ); // Disabled at the moment due to the granulatiry being 1ms (not good enough)
+    // coreTimer disabled at the moment due to the granulatiry being 1ms (not good enough)
+    // connect( &coreTimer, &QTimer::timeout, &core, &Core::slotFrame );
     connect( this, &VideoItem::signalFrame, core, &Core::slotFrame );
 
     // Do the next item in the core lifecycle when the state has changed
@@ -35,7 +57,8 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     connect( this, &VideoItem::signalLoadCore, core, &Core::slotLoadCore );
     connect( this, &VideoItem::signalLoadGame, core, &Core::slotLoadGame );
 
-    // Get the audio and video timing/format from core once a core and game are loaded, send the data out to each consumer for their own initialization
+    // Get the audio and video timing/format from core once a core and game are loaded,
+    // send the data out to each consumer for their own initialization
     connect( core, &Core::signalAVFormat, this, &VideoItem::slotCoreAVFormat );
     connect( this, &VideoItem::signalAudioFormat, audioOutput, &AudioOutput::slotAudioFormat );
     connect( this, &VideoItem::signalVideoFormat, this, &VideoItem::slotVideoFormat ); // Belongs in both categories
@@ -56,18 +79,6 @@ VideoItem::VideoItem( QQuickItem *parent ) :
 }
 
 VideoItem::~VideoItem() {
-
-    // Stop processing events in the other threads, then block the main thread until they're finished
-
-    // Stop consumer threads first
-    audioOutputThread->exit();
-    audioOutputThread->wait();
-    audioOutputThread->deleteLater();
-
-    // Stop the core thread
-    coreThread->exit();
-    coreThread->wait();
-    coreThread->deleteLater();
 
 }
 
@@ -94,7 +105,10 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
 
             /*
             // Set up and start the frame timer
-            qCDebug( phxController ) << "\tcoreTimer.start(" << ( double )1 / ( avInfo.timing.fps / 1000 ) << "ms (core) =" << ( int )( 1 / ( avInfo.timing.fps / 1000 ) ) << "ms (actual) )";
+            qCDebug( phxController ) << "\tcoreTimer.start("
+                                     << ( double )1 / ( avInfo.timing.fps / 1000 )
+                                     << "ms (core) =" << ( int )( 1 / ( avInfo.timing.fps / 1000 ) )
+                                     << "ms (actual) )";
 
             // Stop when the program stops
             connect( this, &VideoItem::signalDestroy, &coreTimer, &QTimer::stop, Qt::BlockingQueuedConnection );
@@ -177,6 +191,9 @@ void VideoItem::setGame( QString game ) {
 
 void VideoItem::slotVideoFormat( retro_pixel_format pixelFormat, int width, int height, int pitch, double coreFPS, double hostFPS ) {
 
+    qCDebug( phxVideo() ) << "pixelformat =" << pixelFormat << "width =" << width << "height =" << height
+                          << "pitch =" << pitch << "coreFPS =" << coreFPS << "hostFPS =" << hostFPS;
+
     this->pixelFormat = pixelFormat;
     this->width = width;
     this->height = height;
@@ -194,17 +211,18 @@ void VideoItem::slotVideoData( uchar *data, unsigned width, unsigned height, int
     }
 
     QImage::Format frame_format = retroToQImageFormat( pixelFormat );
-    texture = window()->createTextureFromImage( QImage( data,
-              width,
-              height,
-              pitch,
-              frame_format )
-              , QQuickWindow::TextureOwnsGLTexture );
+    QImage image = QImage( data, width, height, pitch, frame_format );
+
+//    if( frame_format == QImage::Format_RGB32 ) {
+//        image = image.convertToFormat( QImage::Format_RGB16 );
+//    }
+
+    texture = window()->createTextureFromImage( image, QQuickWindow::TextureOwnsGLTexture );
 
     texture->moveToThread( window()->openglContext()->thread() );
 
     // One half of the vsync render loop
-    // Invoke a window redraw now that the texture is changed
+    // Invoke a window redraw now that the texture has changed
     update();
 
 }
@@ -290,7 +308,9 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
     if( timeStamp != -1 ) {
 
         qreal calculatedFrameRate = ( 1 / ( timeStamp / 1000000.0 ) ) * 1000.0;
-        int difference = calculatedFrameRate > coreFPS ? calculatedFrameRate - coreFPS : coreFPS - calculatedFrameRate;
+        int difference = calculatedFrameRate > coreFPS ?
+                         calculatedFrameRate - coreFPS :
+                         coreFPS - calculatedFrameRate;
         Q_UNUSED( difference );
 
     }
@@ -301,7 +321,8 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
     textureNode->setTexture( texture );
     textureNode->setRect( boundingRect() );
     textureNode->setFiltering( QSGTexture::Linear );
-    textureNode->setTextureCoordinatesTransform( QSGSimpleTextureNode::MirrorVertically | QSGSimpleTextureNode::MirrorHorizontally );
+    textureNode->setTextureCoordinatesTransform( QSGSimpleTextureNode::MirrorVertically |
+            QSGSimpleTextureNode::MirrorHorizontally );
 
     // One half of the vsync loop
     // Now that the texture is sent out to be drawn, tell core to make a new frame

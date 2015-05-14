@@ -66,35 +66,6 @@ Core::Core()
 
 Core::~Core() {
 
-    emit signalCoreStateChanged( STATEFINISHED, CORENOERROR );
-
-    // saveSRAM();
-
-    // symbols.retro_audio is the first symbol set to null in the constructor, so check that one
-    if( symbols.retro_audio ) {
-        symbols.retro_unload_game();
-        symbols.retro_deinit();
-    }
-
-    gameData.clear();
-    libretroCore.unload();
-    libraryFilename.clear();
-
-    delete avInfo;
-    delete systemInfo;
-
-    for( int i = 0; i < 30; i++ ) {
-
-        if( audioBufferPool[i] ) {
-            free( audioBufferPool[i] );
-        }
-
-        if( videoBufferPool[i] ) {
-            free( videoBufferPool[i] );
-        }
-
-    }
-
 }
 
 QString Core::stateToText( Core::State state ) {
@@ -261,6 +232,43 @@ void Core::slotFrame() {
     /*if( symbols.retro_audio ) {
         symbols.retro_audio();
     }*/
+
+}
+
+void Core::slotShutdown() {
+
+    qCDebug( phxCore ) << "slotShutdown() start";
+
+    // saveSRAM();
+
+    // symbols.retro_audio is the first symbol set to null in the constructor, so check that one
+    if( symbols.retro_audio ) {
+        symbols.retro_unload_game();
+        symbols.retro_deinit();
+    }
+
+    gameData.clear();
+    libretroCore.unload();
+    libraryFilename.clear();
+
+    delete avInfo;
+    delete systemInfo;
+
+    for( int i = 0; i < 30; i++ ) {
+
+        if( audioBufferPool[i] ) {
+            free( audioBufferPool[i] );
+        }
+
+        if( videoBufferPool[i] ) {
+            free( videoBufferPool[i] );
+        }
+
+    }
+
+    emit signalCoreStateChanged( STATEFINISHED, CORENOERROR );
+
+    qCDebug( phxCore ) << "slotShutdown() end";
 
 }
 

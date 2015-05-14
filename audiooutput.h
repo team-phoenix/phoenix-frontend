@@ -17,13 +17,11 @@
 
 #include "samplerate.h"
 
-/* The Audio class writes audio data to connected audio device.
- * All of the audio functionality lives in side of this class.
- * Any errors starting with "[phoenix.audio]" correspond to this class.
- *
- * The audio class is instantiated inside of the videoitem.cpp class.
- * The Audio class uses the AudioBuffer class, which lives in the audiobuffer.cpp class, as a temporary audio buffer
- * that can be written has a whole chunk to the audio output.
+/* The AudioOutput class writes data to the default output device. Its internal buffers must be set
+ * by calling slotAudioFormat() with the proper arguments before any data can be passed to it with
+ * slotAudioData(). In addition, it has the ability to pause and resume whether or not it 'expects'
+ * audio with slotSetAudioActive(). Make this match whether or not the core is paused and you'll not
+ * have any underruns (hopefully). Set the volume (from 0 to 1 inclusive) with slotSetVolume().
  */
 
 class AudioOutput : public QObject {
@@ -43,6 +41,8 @@ class AudioOutput : public QObject {
 
         // Set volume level [0.0...1.0]
         void slotSetVolume( qreal level );
+
+        void slotShutdown();
 
     private slots:
 
@@ -67,32 +67,37 @@ class AudioOutput : public QObject {
         double hostFPS;
         double sampleRateRatio;
 
-        int audioInBytesNeeded;
+        // Internal buffers used for resampling
         float *inputDataFloat;
         char *inputDataChar;
         float *outputDataFloat;
         short *outputDataShort;
 
-
+        // Set to true if the core is currently running
         bool coreIsRunning;
 
         // Input and output audio formats being used
         QAudioFormat outputAudioFormat;
         QAudioFormat inputAudioFormat;
 
+        // An interface to the output device
         QAudioOutput *outputAudioInterface;
 
+        // Size of outputBuffer's unconsumed data
         int outputCurrentByte;
 
+        // A buffer that removes data from itself once it's read
         AudioBuffer outputBuffer;
 
         //
         // TODO: Make these configurable
         //
 
+        // Size of the outputBuffer. Currently doesn't really mean much, as outputBuffer can grow
+        // to an unlimited size
         int outputLengthMs;
 
-        // Make this large enough to ensure no underruns
+        // Ideal amount of data in the output buffer. Make this large enough to ensure no underruns
         int outputTargetMs;
 
         // Max amount of stretching performed to compensate for output buffer position being off target

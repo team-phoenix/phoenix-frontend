@@ -43,7 +43,7 @@ class VideoItem : public QQuickItem {
         void signalAudioFormat( int sampleRate, double coreFPS, double hostFPS );
         void signalVideoFormat( retro_pixel_format pixelFormat, int width, int height, int pitch, double coreFPS, double hostFPS );
         void signalFrame();
-        void signalVideoItemDestructor();
+        void signalShutdown();
         void signalRunChanged( bool run );
 
     public slots:

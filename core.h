@@ -17,16 +17,21 @@
 
 /* Core is a class that manages the execution of a Libretro core and its associated game.
  *
- * Core is a state machine, the normal lifecycle goes like this:
+ * Core is a state machine whose normal lifecycle goes like this:
  * Core::UNINITIALIZED, Core::READY, Core::FINISHED
  *
  * Core provides signalCoreStateChanged( newState, error ) to inform its controller that its state
  * changed.
  *
  * Call Core's load methods with a valid path to a Libretro core and game, along with controller mappings,
- * then call slotInit() to begin loading the game and slot. Core should change to Core::READY. You
- * may now call slotDoFrame() to have the core emulate a video frame send out signals as data is produced.
+ * then call slotInit() to begin loading the game and slot. Core should change to Core::READY and
+ * emit signalAVFormat() to inform the controller and all consumers about what kind of data to expect
+ * from Core.
  *
+ * You may now call slotFrame() to have the core emulate a video frame send out signals as data is produced.
+ *
+ * Call slotShutdown() to de-init the core and write any save games to disk. Core will then be in
+ * Core::FINISHED.
  */
 
 // Helper for resolving libretro methods
@@ -242,6 +247,9 @@ class Core: public QObject {
         // Run core for one frame
         void slotFrame();
 
+        // Write save games to disk and free memory
+        void slotShutdown();
+
     protected:
 
         // Only staticly-linked callbacks may access this data/call these methods
@@ -285,7 +293,7 @@ class Core: public QObject {
         retro_system_av_info *avInfo;
         retro_pixel_format pixelFormat;
 
-        // Information about how the core does stuff
+        // Information about the core
         retro_system_info *systemInfo;
         bool fullPathNeeded;
 

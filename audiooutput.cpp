@@ -20,22 +20,6 @@ AudioOutput::AudioOutput()
 
 AudioOutput::~AudioOutput() {
 
-    if( outputAudioInterface ) {
-        outputAudioInterface->stop();
-        delete outputAudioInterface;
-        outputAudioInterface = nullptr;
-    }
-
-    if( outputDataFloat ) {
-        delete outputDataFloat;
-        outputDataFloat = nullptr;
-    }
-
-    if( outputDataShort ) {
-        delete outputDataShort;
-        outputDataShort = nullptr;
-    }
-
 }
 
 //
@@ -196,6 +180,30 @@ void AudioOutput::slotSetVolume( qreal level ) {
     if( outputAudioInterface ) {
         outputAudioInterface->setVolume( level );
     }
+
+}
+
+void AudioOutput::slotShutdown() {
+
+    qCDebug( phxAudioOutput ) << "slotShutdown() start";
+
+    if( outputAudioInterface ) {
+        outputAudioInterface->stop();
+        delete outputAudioInterface;
+        outputAudioInterface = nullptr;
+    }
+
+    if( outputDataFloat ) {
+        delete outputDataFloat;
+        outputDataFloat = nullptr;
+    }
+
+    if( outputDataShort ) {
+        delete outputDataShort;
+        outputDataShort = nullptr;
+    }
+
+    qCDebug( phxAudioOutput ) << "slotShutdown() end";
 
 }
 
