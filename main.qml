@@ -148,13 +148,13 @@ ApplicationWindow {
         anchors.fill: parent
         color: "black"
 
-        FastBlur {
-            height: parent.height
-            width: parent.width
-            source: videoItem
-            radius: 64
-            rotation: 180
-        }
+//        FastBlur {
+//            height: parent.height
+//            width: parent.width
+//            source: videoItem
+//            radius: 64
+//            rotation: 180
+//        }
 
         MouseArea {
 
@@ -186,77 +186,77 @@ ApplicationWindow {
 
             width: height * phoenixWindow.ratio
 
-            /*Column {
-                visible: false;
-                spacing: 24;
-                anchors.centerIn: parent;
-                Rectangle {
-                    color: "lightgray";
-                    opacity: 0.6;
+//            Column {
+//                visible: false;
+//                spacing: 24;
+//                anchors.centerIn: parent;
+//                Rectangle {
+//                    color: "lightgray";
+//                    opacity: 0.6;
 
-                    border {
-                        color: "white"
-                        width: 2;
-                    }
+//                    border {
+//                        color: "white"
+//                        width: 2;
+//                    }
 
-                    height: 50;
-                    width: 175;
+//                    height: 50;
+//                    width: 175;
 
-                    Text {
-                        anchors.centerIn: parent;
-                        text: "Play | Pause";
-                        color: "white";
-                        font {
-                            pixelSize: 18;
-                            bold: true;
-                        }
-                    }
-                }
+//                    Text {
+//                        anchors.centerIn: parent;
+//                        text: "Play | Pause";
+//                        color: "white";
+//                        font {
+//                            pixelSize: 18;
+//                            bold: true;
+//                        }
+//                    }
+//                }
 
-                Rectangle {
-                    color: "lightgray";
-                    opacity: 0.6;
-                    border {
-                        color: "white"
-                        width: 2;
-                    }
+//                Rectangle {
+//                    color: "lightgray";
+//                    opacity: 0.6;
+//                    border {
+//                        color: "white"
+//                        width: 2;
+//                    }
 
-                    height: 50;
-                    width: 175;
+//                    height: 50;
+//                    width: 175;
 
-                    Text {
-                        anchors.centerIn: parent;
-                        text: "Load Game";
-                        color: "white";
-                        font {
-                            pixelSize: 18;
-                            bold: true;
-                        }
-                    }
-                }
+//                    Text {
+//                        anchors.centerIn: parent;
+//                        text: "Load Game";
+//                        color: "white";
+//                        font {
+//                            pixelSize: 18;
+//                            bold: true;
+//                        }
+//                    }
+//                }
 
-                Rectangle {
-                    color: "lightgray";
-                    opacity: 0.6;
-                    border {
-                        color: "white"
-                        width: 2;
-                    }
+//                Rectangle {
+//                    color: "lightgray";
+//                    opacity: 0.6;
+//                    border {
+//                        color: "white"
+//                        width: 2;
+//                    }
 
-                    height: 50;
-                    width: 175;
+//                    height: 50;
+//                    width: 175;
 
-                    Text {
-                        anchors.centerIn: parent;
-                        text: "Mute Audio";
-                        color: "white";
-                        font {
-                            pixelSize: 18;
-                            bold: true;
-                        }
-                    }
-                }
-            }*/
+//                    Text {
+//                        anchors.centerIn: parent;
+//                        text: "Mute Audio";
+//                        color: "white";
+//                        font {
+//                            pixelSize: 18;
+//                            bold: true;
+//                        }
+//                    }
+//                }
+//            }
 
         }
 

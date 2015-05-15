@@ -272,7 +272,7 @@ void AudioOutput::resetAudio() {
     // Reallocate space for scratch space conversion buffers
 
     auto outputBufferSizeSamples = outputAudioFormat.bytesForDuration( outputLengthMs * 1000 );
-    qCDebug( phxAudioOutput ) << "Allocated" << outputBufferSizeSamples * 2 * 2 / 1024 << "kb for conversion.";
+    qCDebug( phxAudioOutput ) << "Allocated" << outputBufferSizeSamples * 2 * 2 / 1024 << "kb for resampling.";
 
     if( inputDataFloat ) {
         delete [] inputDataFloat;
