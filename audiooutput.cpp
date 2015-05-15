@@ -126,8 +126,8 @@ void AudioOutput::slotAudioData( int16_t *inputDataShort, int inputBytes ) {
     Q_UNUSED( outputBytesWritten );
     outputCurrentByte += outputBytesWritten;
 
-    /*
-    qCDebug( phxAudioOutput ) << "Output is" << ( ( ( double )( ( outputTotalBytes - outputFreeBytes ) ) / outputTotalBytes ) * 100 )
+    qCDebug( phxAudioOutput ) << "Output is" << ( ( ( double )( ( outputTotalBytes - outputFreeBytes ) ) /
+                              outputTotalBytes ) * 100 )
                               << "% full"
                               << "DRCRatio =" << DRCRatio
                               << "outputAudioInterface->bufferSize()" << outputAudioInterface->bufferSize();
@@ -137,9 +137,12 @@ void AudioOutput::slotAudioData( int16_t *inputDataShort, int inputBytes ) {
                               << "inputBytes =" << inputBytes;
     qCDebug( phxAudioOutput ) << "\tOutput buffer is" << outputAudioFormat.durationForBytes( outputTotalBytes ) / 1000
                               << "ms, target =" << outputTargetMs
-                              << "ms (" << ( double )100.0 * ( ( double )outputTargetMs / ( ( double )( outputAudioFormat.durationForBytes( outputTotalBytes ) ) / 1000.0 ) )
+                              << "ms (" << ( double )100.0 * ( ( double )outputTargetMs / (
+                                          ( double )( outputAudioFormat.durationForBytes(
+                                                  outputTotalBytes ) ) / 1000.0 ) )
                               << "%)";
-    qCDebug( phxAudioOutput ) << "\tOutput: needed" << outputVectorTargetToCurrent << "bytes, wrote" << outputBytesWritten << "bytes";
+    qCDebug( phxAudioOutput ) << "\tOutput: needed" << outputVectorTargetToCurrent << "bytes, wrote"
+                              << outputBytesWritten << "bytes";
     qCDebug( phxAudioOutput ) << "\toutputTargetByte =" << outputTargetByte
                               << "outputVectorTargetToCurrent =" << outputVectorTargetToCurrent;
     qCDebug( phxAudioOutput ) << "\toutputAudioInterface->bufferSize() =" << outputAudioInterface->bufferSize()
@@ -148,8 +151,8 @@ void AudioOutput::slotAudioData( int16_t *inputDataShort, int inputBytes ) {
     qCDebug( phxAudioOutput ) << "\toutputBuffer.bytesAvailable() =" << outputBuffer.bytesAvailable()
                               << "outputBuffer.size() =" << outputBuffer.size()
                               << "outputBuffer.pos() =" << outputBuffer.pos();
-    qCDebug( phxAudioOutput ) << "\tState:" << outputAudioInterface->state() << " error: " << outputAudioInterface->error();
-    */
+    qCDebug( phxAudioOutput ) << "\tState:" << outputAudioInterface->state()
+                              << " error: " << outputAudioInterface->error();
 
 }
 

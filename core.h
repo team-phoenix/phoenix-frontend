@@ -20,18 +20,15 @@
  * Core is a state machine whose normal lifecycle goes like this:
  * Core::UNINITIALIZED, Core::READY, Core::FINISHED
  *
- * Core provides signalCoreStateChanged( newState, error ) to inform its controller that its state
- * changed.
+ * Core provides signalCoreStateChanged( newState, error ) to inform its controller that its state changed.
  *
- * Call Core's load methods with a valid path to a Libretro core and game, along with controller mappings,
- * then call slotInit() to begin loading the game and slot. Core should change to Core::READY and
- * emit signalAVFormat() to inform the controller and all consumers about what kind of data to expect
- * from Core.
+ * Call Core's load methods with a valid path to a Libretro core and game, along with controller mappings, then call
+ * slotInit() to begin loading the game and slot. Core should change to Core::READY and emit signalAVFormat() to inform
+ * the controller and all consumers about what kind of data to expect from Core.
  *
  * You may now call slotFrame() to have the core emulate a video frame send out signals as data is produced.
  *
- * Call slotShutdown() to de-init the core and write any save games to disk. Core will then be in
- * Core::FINISHED.
+ * Call slotShutdown() to de-init the core and write any save games to disk. Core will then be in Core::FINISHED.
  */
 
 // Helper for resolving libretro methods

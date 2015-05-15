@@ -189,7 +189,8 @@ void VideoItem::setGame( QString game ) {
 // Consumer methods
 //
 
-void VideoItem::slotVideoFormat( retro_pixel_format pixelFormat, int width, int height, int pitch, double coreFPS, double hostFPS ) {
+void VideoItem::slotVideoFormat( retro_pixel_format pixelFormat,
+                                 int width, int height, int pitch, double coreFPS, double hostFPS ) {
 
     qCDebug( phxVideo() ) << "pixelformat =" << pixelFormat << "width =" << width << "height =" << height
                           << "pitch =" << pitch << "coreFPS =" << coreFPS << "hostFPS =" << hostFPS;
@@ -213,9 +214,9 @@ void VideoItem::slotVideoData( uchar *data, unsigned width, unsigned height, int
     QImage::Format frame_format = retroToQImageFormat( pixelFormat );
     QImage image = QImage( data, width, height, pitch, frame_format );
 
-//    if( frame_format == QImage::Format_RGB32 ) {
-//        image = image.scaled( QSize( width / 2, height / 2 ) );
-//    }
+    //    if( frame_format == QImage::Format_RGB32 ) {
+    //        image = image.scaled( QSize( width / 2, height / 2 ) );
+    //    }
 
     texture = window()->createTextureFromImage( image, QQuickWindow::TextureOwnsGLTexture );
 

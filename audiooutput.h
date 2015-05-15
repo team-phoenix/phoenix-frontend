@@ -17,11 +17,11 @@
 
 #include "samplerate.h"
 
-/* The AudioOutput class writes data to the default output device. Its internal buffers must be set
- * by calling slotAudioFormat() with the proper arguments before any data can be passed to it with
- * slotAudioData(). In addition, it has the ability to pause and resume whether or not it 'expects'
- * audio with slotSetAudioActive(). Make this match whether or not the core is paused and you'll not
- * have any underruns (hopefully). Set the volume (from 0 to 1 inclusive) with slotSetVolume().
+/* The AudioOutput class writes data to the default output device. Its internal buffers must be set by calling
+ * slotAudioFormat() with the proper arguments before any data can be passed to it with slotAudioData(). In addition,
+ * it has the ability to pause and resume whether or not it 'expects' audio with slotSetAudioActive(). Make this match
+ * whether or not the core is paused and you'll not have any underruns (hopefully). Set the volume (from 0 to 1
+ * inclusive) with slotSetVolume().
  */
 
 class AudioOutput : public QObject {

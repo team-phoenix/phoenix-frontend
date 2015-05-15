@@ -41,7 +41,8 @@ class VideoItem : public QQuickItem {
         void signalLoadCore( QString path );
         void signalLoadGame( QString path );
         void signalAudioFormat( int sampleRate, double coreFPS, double hostFPS );
-        void signalVideoFormat( retro_pixel_format pixelFormat, int width, int height, int pitch, double coreFPS, double hostFPS );
+        void signalVideoFormat( retro_pixel_format pixelFormat,
+                                int width, int height, int pitch, double coreFPS, double hostFPS );
         void signalFrame();
         void signalShutdown();
         void signalRunChanged( bool run );
@@ -53,7 +54,8 @@ class VideoItem : public QQuickItem {
         void slotCoreAVFormat( retro_system_av_info avInfo, retro_pixel_format pixelFormat );
 
         // Consumer
-        void slotVideoFormat( retro_pixel_format pixelFormat, int width, int height, int pitch, double coreFPS, double hostFPS );
+        void slotVideoFormat( retro_pixel_format pixelFormat,
+                              int width, int height, int pitch, double coreFPS, double hostFPS );
         void slotVideoData( uchar *data, unsigned width, unsigned height, int pitch );
 
     private slots:
@@ -112,8 +114,8 @@ class VideoItem : public QQuickItem {
         // The texture that will hold video frames from core
         QSGTexture *texture;
 
-        // Applies texture to the QML item. Since this is called during vsync, we can rely on this being called at approximately the refresh rate of the monitor
-        // Thus, we'll emit the render signal to core here
+        // Applies texture to the QML item. Since this is called during vsync, we can rely on this being called at
+        // approximately the refresh rate of the monitor. Thus, we'll emit the render signal to core here
         QSGNode *updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintData );
 
         // QML item has finished loading, ready to start displaying frames

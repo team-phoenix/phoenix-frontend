@@ -43,7 +43,8 @@ void PathWatcher::clear() {
 
 void PathWatcher::slotHandleStarted() {
 
-    QDirIterator dirIter( corePath, QStringList( { "*.so", "*.dylib", "*.dll" } ), QDir::Files, QDirIterator::NoIteratorFlags );
+    QDirIterator dirIter( corePath, QStringList( { "*.so", "*.dylib", "*.dll" } ),
+                          QDir::Files, QDirIterator::NoIteratorFlags );
 
     int fileCount = 0;
 
