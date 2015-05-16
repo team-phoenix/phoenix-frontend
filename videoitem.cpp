@@ -4,7 +4,7 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     QQuickItem( parent ),
     audioOutput( new AudioOutput() ), audioOutputThread( new QThread( this ) ),
     core( new Core() ), // coreTimer( new QTimer() ),
-    coreThread( new QThread( this ) ), coreState( Core::STATEUNINITIALIZED ),
+    coreThread( nullptr ), coreState( Core::STATEUNINITIALIZED ),
     avInfo(), pixelFormat(),
     corePath( "" ), gamePath( "" ),
     width( 0 ), height( 0 ), pitch( 0 ), coreFPS( 0.0 ), hostFPS( 0.0 ),
@@ -13,13 +13,11 @@ VideoItem::VideoItem( QQuickItem *parent ) :
 
     // Place the objects under VideoItem's control into their own threads
     audioOutput->moveToThread( audioOutputThread );
-    core->moveToThread( coreThread );
 
     // Ensure the objects are cleaned up when it's time to quit and destroyed once their thread is done
     connect( this, &VideoItem::signalShutdown, audioOutput, &AudioOutput::slotShutdown );
     connect( this, &VideoItem::signalShutdown, core, &Core::slotShutdown );
     connect( audioOutputThread, &QThread::finished, audioOutput, &AudioOutput::deleteLater );
-    connect( coreThread, &QThread::finished, core, &Core::deleteLater );
 
     // Catch the exit signal and clean up
     connect( QCoreApplication::instance(), &QCoreApplication::aboutToQuit, [ = ]() {
@@ -31,15 +29,10 @@ VideoItem::VideoItem( QQuickItem *parent ) :
 
         // Stop processing events in the other threads, then block the main thread until they're finished
 
-        // Stop consumer threads first
+        // Stop consumer threads
         audioOutputThread->exit();
         audioOutputThread->wait();
         audioOutputThread->deleteLater();
-
-        // Stop the core thread
-        coreThread->exit();
-        coreThread->wait();
-        coreThread->deleteLater();
 
     } );
 
@@ -73,7 +66,6 @@ VideoItem::VideoItem( QQuickItem *parent ) :
 
     // Start threads
 
-    coreThread->start();
     audioOutputThread->start();
 
 }
@@ -100,11 +92,14 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
         // Time to run the game
         case Core::STATEREADY:
 
+            // This is mixing control (coreThread) and consumer (render thread) members...
+            coreThread = window()->openglContext()->thread();
+
             // Run a timer to make core produce a frame at regular intervals
             // Disabled at the moment due to the granulatiry being 1ms (not good enough)
 
 //            // Set up and start the frame timer
-//            qCDebug( phxController ) << "\tcoreTimer.start("
+//            qCDebug( phxController ) << "coreTimer.start("
 //                                     << ( double )1 / ( avInfo.timing.fps / 1000 )
 //                                     << "ms (core) =" << ( int )( 1 / ( avInfo.timing.fps / 1000 ) )
 //                                     << "ms (actual) )";
@@ -123,6 +118,12 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
 //            // This will mean timeouts are blocking, preventing them from piling up if Core runs too slow
 //            coreTimer->moveToThread( coreThread );
 //            connect( coreThread, &QThread::finished, coreTimer, &QTimer::deleteLater );
+
+            // Place Core into the render thread
+            // Mandatory for OpenGL cores
+            // Also prevents massive overhead/performance loss caused by QML effects (like FastBlur)
+            core->moveToThread( coreThread );
+            connect( coreThread, &QThread::finished, core, &Core::deleteLater );
 
             qCDebug( phxController ) << "Begin emulation.";
 

@@ -148,13 +148,13 @@ ApplicationWindow {
         anchors.fill: parent
         color: "black"
 
-//        FastBlur {
-//            height: parent.height
-//            width: parent.width
-//            source: videoItem
-//            radius: 64
-//            rotation: 180
-//        }
+        FastBlur {
+            height: parent.height
+            width: parent.width
+            source: videoItem
+            radius: 64
+            rotation: 180
+        }
 
         MouseArea {
 
