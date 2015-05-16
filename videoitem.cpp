@@ -103,27 +103,25 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             // Run a timer to make core produce a frame at regular intervals
             // Disabled at the moment due to the granulatiry being 1ms (not good enough)
 
-            /*
-            // Set up and start the frame timer
-            qCDebug( phxController ) << "\tcoreTimer.start("
-                                     << ( double )1 / ( avInfo.timing.fps / 1000 )
-                                     << "ms (core) =" << ( int )( 1 / ( avInfo.timing.fps / 1000 ) )
-                                     << "ms (actual) )";
+//            // Set up and start the frame timer
+//            qCDebug( phxController ) << "\tcoreTimer.start("
+//                                     << ( double )1 / ( avInfo.timing.fps / 1000 )
+//                                     << "ms (core) =" << ( int )( 1 / ( avInfo.timing.fps / 1000 ) )
+//                                     << "ms (actual) )";
 
-            // Stop when the program stops
-            connect( this, &VideoItem::signalDestroy, &coreTimer, &QTimer::stop, Qt::BlockingQueuedConnection );
+//            // Stop when the program stops
+//            connect( this, &VideoItem::signalDestroy, &coreTimer, &QTimer::stop, Qt::BlockingQueuedConnection );
 
-            // Millisecond accuracy on Unix (OS X/Linux)
-            // Multimedia timer accuracy on Windows (better?)
-            coreTimer.setTimerType( Qt::PreciseTimer );
+//            // Millisecond accuracy on Unix (OS X/Linux)
+//            // Multimedia timer accuracy on Windows (better?)
+//            coreTimer.setTimerType( Qt::PreciseTimer );
 
-            // Granulatiry is in the integer range :(
-            coreTimer.start( ( int )( 1 / ( avInfo.timing.fps / 1000 ) ) );
+//            // Granulatiry is in the integer range :(
+//            coreTimer.start( ( int )( 1 / ( avInfo.timing.fps / 1000 ) ) );
 
-            // Have the timer run in the same thread as Core
-            // This will mean timeouts are blocking, preventing them from piling up if Core runs too slow
-            coreTimer.moveToThread( &coreThread );
-            */
+//            // Have the timer run in the same thread as Core
+//            // This will mean timeouts are blocking, preventing them from piling up if Core runs too slow
+//            coreTimer.moveToThread( &coreThread );
 
             qCDebug( phxController ) << "Begin emulation.";
 
@@ -161,8 +159,7 @@ void VideoItem::slotCoreAVFormat( retro_system_av_info avInfo, retro_pixel_forma
     emit signalVideoFormat( pixelFormat,
                             avInfo.geometry.max_width,
                             avInfo.geometry.max_height,
-                            avInfo.geometry.max_width
-                            * ( pixelFormat == RETRO_PIXEL_FORMAT_XRGB8888 ? 4 : 2 ),
+                            avInfo.geometry.max_width * ( pixelFormat == RETRO_PIXEL_FORMAT_XRGB8888 ? 4 : 2 ),
                             avInfo.timing.fps, monitorRefreshRate );
 
 }
@@ -189,8 +186,8 @@ void VideoItem::setGame( QString game ) {
 // Consumer methods
 //
 
-void VideoItem::slotVideoFormat( retro_pixel_format pixelFormat,
-                                 int width, int height, int pitch, double coreFPS, double hostFPS ) {
+void VideoItem::slotVideoFormat( retro_pixel_format pixelFormat, int width, int height, int pitch,
+                                 double coreFPS, double hostFPS ) {
 
     qCDebug( phxVideo() ) << "pixelformat =" << pixelFormat << "width =" << width << "height =" << height
                           << "pitch =" << pitch << "coreFPS =" << coreFPS << "hostFPS =" << hostFPS;

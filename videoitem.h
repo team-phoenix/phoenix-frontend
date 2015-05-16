@@ -41,8 +41,8 @@ class VideoItem : public QQuickItem {
         void signalLoadCore( QString path );
         void signalLoadGame( QString path );
         void signalAudioFormat( int sampleRate, double coreFPS, double hostFPS );
-        void signalVideoFormat( retro_pixel_format pixelFormat,
-                                int width, int height, int pitch, double coreFPS, double hostFPS );
+        void signalVideoFormat( retro_pixel_format pixelFormat, int width, int height, int pitch,
+                                double coreFPS, double hostFPS );
         void signalFrame();
         void signalShutdown();
         void signalRunChanged( bool run );
@@ -54,8 +54,8 @@ class VideoItem : public QQuickItem {
         void slotCoreAVFormat( retro_system_av_info avInfo, retro_pixel_format pixelFormat );
 
         // Consumer
-        void slotVideoFormat( retro_pixel_format pixelFormat,
-                              int width, int height, int pitch, double coreFPS, double hostFPS );
+        void slotVideoFormat( retro_pixel_format pixelFormat, int width, int height, int pitch,
+                              double coreFPS, double hostFPS );
         void slotVideoData( uchar *data, unsigned width, unsigned height, int pitch );
 
     private slots:
