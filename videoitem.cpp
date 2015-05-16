@@ -3,7 +3,7 @@
 VideoItem::VideoItem( QQuickItem *parent ) :
     QQuickItem( parent ),
     audioOutput( new AudioOutput() ), audioOutputThread( new QThread( this ) ),
-    core( new Core() ), /*coreTimer(),*/
+    core( new Core() ), // coreTimer( new QTimer() ),
     coreThread( new QThread( this ) ), coreState( Core::STATEUNINITIALIZED ),
     avInfo(), pixelFormat(),
     corePath( "" ), gamePath( "" ),
@@ -110,18 +110,19 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
 //                                     << "ms (actual) )";
 
 //            // Stop when the program stops
-//            connect( this, &VideoItem::signalDestroy, &coreTimer, &QTimer::stop, Qt::BlockingQueuedConnection );
+//            connect( this, &VideoItem::signalShutdown, coreTimer, &QTimer::stop );
 
 //            // Millisecond accuracy on Unix (OS X/Linux)
 //            // Multimedia timer accuracy on Windows (better?)
-//            coreTimer.setTimerType( Qt::PreciseTimer );
+//            coreTimer->setTimerType( Qt::PreciseTimer );
 
 //            // Granulatiry is in the integer range :(
-//            coreTimer.start( ( int )( 1 / ( avInfo.timing.fps / 1000 ) ) );
+//            coreTimer->start( ( int )( 1 / ( avInfo.timing.fps / 1000 ) ) );
 
 //            // Have the timer run in the same thread as Core
 //            // This will mean timeouts are blocking, preventing them from piling up if Core runs too slow
-//            coreTimer.moveToThread( &coreThread );
+//            coreTimer->moveToThread( coreThread );
+//            connect( coreThread, &QThread::finished, coreTimer, &QTimer::deleteLater );
 
             qCDebug( phxController ) << "Begin emulation.";
 

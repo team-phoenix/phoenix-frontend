@@ -82,7 +82,7 @@ class VideoItem : public QQuickItem {
         Core *core;
 
         // The timer that makes the core produce frames at regular intervals
-        // QTimer coreTimer;
+        // QTimer *coreTimer;
 
         // Thread that keeps the emulation from blocking this UI thread
         QThread *coreThread;
