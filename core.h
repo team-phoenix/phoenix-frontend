@@ -118,7 +118,7 @@ class Core: public QObject {
         Core();
         ~Core();
 
-        QOpenGLContext *glContext;
+        QOpenGLContext *glContext = nullptr;
 
         static uintptr_t currentFrameBuffer()
         {
@@ -129,7 +129,7 @@ class Core: public QObject {
 
         static retro_proc_address_t getProcAddress( const char *sym )
         {
-            return core->glContext->getProcAddress( sym );
+            return core->glContext->getProcAddress( QByteArray(sym) );
         }
 
 

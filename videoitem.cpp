@@ -178,7 +178,7 @@ void VideoItem::setGame( QString game ) {
 
     gamePath = QUrl( game ).toLocalFile();
 
-    if (!window()->openglContext())
+    if (!core->glContext)
         core->glContext = window()->openglContext();
 
     // qCDebug( phxController ) << "emit signalLoadGame(" << gamePath << ")";
