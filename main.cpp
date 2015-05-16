@@ -13,10 +13,14 @@ Q_DECLARE_METATYPE( retro_pixel_format )
 Q_DECLARE_METATYPE( Core::State )
 Q_DECLARE_METATYPE( Core::Error )
 
-void myMessageOutput( QtMsgType type, const QMessageLogContext &context, const QString &msg ) {
+void phoenixDebugMessageHandler( QtMsgType type, const QMessageLogContext &context, const QString &msg ) {
+
+    // Change this QString to reflect the message you want to get a stack trace for
     if( QString( msg ).contains( "Timers cannot be stopped from another thread" ) ) {
+
         int breakPointOnThisLine( 0 );
         Q_UNUSED( breakPointOnThisLine );
+
     }
 
     QByteArray localMsg = msg.toLocal8Bit();
@@ -47,7 +51,7 @@ void myMessageOutput( QtMsgType type, const QMessageLogContext &context, const Q
 
 int main( int argc, char *argv[] ) {
 
-    // qInstallMessageHandler( myMessageOutput );
+    // qInstallMessageHandler( phoenixDebugMessageHandler );
 
     QApplication app( argc, argv );
 
