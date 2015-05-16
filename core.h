@@ -9,6 +9,7 @@
 #include <QMap>
 #include <QLibrary>
 #include <QObject>
+#include <QOpenGLContext>
 
 #include <atomic>
 
@@ -116,6 +117,21 @@ class Core: public QObject {
 
         Core();
         ~Core();
+
+        QOpenGLContext *glContext;
+
+        static uintptr_t currentFrameBuffer()
+        {
+            // Just default for 0 for simplicity, on some platforms 0 is not
+            // the correct value.
+            return 0;
+        }
+
+        static retro_proc_address_t getProcAddress( const char *sym )
+        {
+            return core->glContext->getProcAddress( sym );
+        }
+
 
         typedef enum : int {
             STATEUNINITIALIZED,

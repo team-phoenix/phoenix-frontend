@@ -225,6 +225,8 @@ void Core::slotLoadGame( QString path ) {
 
 void Core::slotFrame() {
 
+    qDebug() << "Current fbo: " << core->openGLContext.get_current_framebuffer();
+    qDebug() << "proc addr: " << core->openGLContext.get_proc_address("glEnable");
     // Tell the core to run a frame
     symbols.retro_run();
 
@@ -551,10 +553,13 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
 
                 default:
                     qCritical() << "RETRO_HW_CONTEXT: " << Core::core->openGLContext.context_type << " was not handled";
-                    break;
+                    return false;
             }
 
-            break;
+            core->openGLContext.get_current_framebuffer = core->currentFrameBuffer;
+            core->openGLContext.get_proc_address = core->getProcAddress;
+
+            return true;
 
         case RETRO_ENVIRONMENT_GET_VARIABLE: { // 15
             auto *rv = static_cast<struct retro_variable *>( data );

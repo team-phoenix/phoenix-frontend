@@ -13,7 +13,7 @@ VideoItem::VideoItem( QQuickItem *parent ) :
 
     // Place the objects under VideoItem's control into their own threads
     audioOutput->moveToThread( audioOutputThread );
-    core->moveToThread( coreThread );
+    //core->moveToThread( coreThread );
 
     // Ensure the objects are cleaned up when it's time to quit and destroyed once their thread is done
     connect( this, &VideoItem::signalShutdown, audioOutput, &AudioOutput::slotShutdown );
@@ -177,6 +177,9 @@ void VideoItem::setCore( QString libretroCore ) {
 void VideoItem::setGame( QString game ) {
 
     gamePath = QUrl( game ).toLocalFile();
+
+    if (!window()->openglContext())
+        core->glContext = window()->openglContext();
 
     // qCDebug( phxController ) << "emit signalLoadGame(" << gamePath << ")";
     emit signalLoadGame( gamePath );
