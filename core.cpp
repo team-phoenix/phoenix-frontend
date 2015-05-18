@@ -38,9 +38,12 @@ LibretroSymbols::LibretroSymbols()
 
 Core::Core()
     : pixelFormat( RETRO_PIXEL_FORMAT_RGB565 ),
-      SRAMDataRaw( nullptr ) {
+      SRAMDataRaw( nullptr )
+{
 
     Core::core = this;
+    libretroCore.setParent( nullptr );
+
 
     setSaveDirectory( phxGlobals.savePath() );
     setSystemDirectory( phxGlobals.biosPath() );
@@ -219,16 +222,24 @@ void Core::slotLoadGame( QString path ) {
 
     }
 
+    libretroCore.moveToThread( core->glContext->thread() );
+
     core->emitStateReady();
 
 }
 
 void Core::slotFrame() {
 
-    qDebug() << "Current fbo: " << core->openGLContext.get_current_framebuffer();
-    qDebug() << "proc addr: " << core->openGLContext.get_proc_address("glEnable");
+
+
+    Q_ASSERT( libretroCore.thread() == this->thread() );
+    Q_ASSERT( this->thread() == core->glContext->thread() );
+   // core->openGLContext.context_reset();
+
     // Tell the core to run a frame
+    //symbols.retro_run();
     symbols.retro_run();
+
 
     // This should never be used...
     /*if( symbols.retro_audio ) {

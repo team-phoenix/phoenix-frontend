@@ -13,7 +13,6 @@ VideoItem::VideoItem( QQuickItem *parent ) :
 
     // Place the objects under VideoItem's control into their own threads
     audioOutput->moveToThread( audioOutputThread );
-    //core->moveToThread( coreThread );
 
     // Ensure the objects are cleaned up when it's time to quit and destroyed once their thread is done
     connect( this, &VideoItem::signalShutdown, audioOutput, &AudioOutput::slotShutdown );
@@ -127,9 +126,11 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             qCDebug( phxController ) << "Begin emulation.";
 
             // Get core to immediately (sorta) produce the first frame
-            emit signalFrame();
 
             // Let all the consumers know emulation began
+
+            core->moveToThread( window()->openglContext()->thread() );
+            emit signalFrame();
             emit signalRunChanged( true );
 
             break;
@@ -254,6 +255,7 @@ void VideoItem::handleWindowChanged( QQuickWindow *window ) {
 
     connect( window, &QQuickWindow::frameSwapped, this, &QQuickItem::update );
 
+
 }
 
 void VideoItem::handleOpenGLContextCreated( QOpenGLContext *GLContext ) {
@@ -299,7 +301,14 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
     // then display it next time.
     if( !texture ) {
 
+        qDebug() << "First emit";
+        qDebug() << "Default fbo: " << window()->openglContext()->defaultFramebufferObject();
+
+        //core->openGLContext.context_reset();
         emit signalFrame();
+
+
+        //emit signalFrame();
         generateSimpleTextureNode( Qt::black, textureNode );
         return textureNode;
 
@@ -329,6 +338,7 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
     // One half of the vsync loop
     // Now that the texture is sent out to be drawn, tell core to make a new frame
     if( coreState == Core::STATEREADY ) {
+
         emit signalFrame();
     }
 

@@ -118,6 +118,10 @@ class Core: public QObject {
         Core();
         ~Core();
 
+        retro_hw_render_callback openGLContext;
+        LibretroSymbols symbols;
+
+
         QOpenGLContext *glContext = nullptr;
 
         static uintptr_t currentFrameBuffer()
@@ -273,12 +277,10 @@ class Core: public QObject {
         static Core *core;
 
         // Struct containing libretro methods
-        LibretroSymbols symbols;
 
         // Used by environment callback
         // Info about the OpenGL context provided by the Phoenix frontend
         // for the core's internal use
-        retro_hw_render_callback openGLContext;
 
         // Used by environment callback
         QByteArray libraryFilename;
