@@ -130,6 +130,9 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             // Get core to immediately (sorta) produce the first frame
             emit signalFrame();
 
+            // Force an update to keep the render thread from pausing
+            update();
+
             // Let all the consumers know emulation began
             emit signalRunChanged( true );
 
