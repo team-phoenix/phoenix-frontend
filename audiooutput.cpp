@@ -12,7 +12,7 @@ AudioOutput::AudioOutput()
       outputAudioInterface( nullptr ),
       outputCurrentByte( 0 ),
       outputBuffer( this ),
-      outputLengthMs( 200 ), outputTargetMs( 32 ), maxDeviation( 0.005 ) {
+      outputLengthMs( 64 ), outputTargetMs( 32 ), maxDeviation( 0.005 ) {
 
     outputBuffer.start();
 
@@ -128,8 +128,8 @@ void AudioOutput::slotAudioData( int16_t *inputDataShort, int inputBytes ) {
 
 //    qCDebug( phxAudioOutput ) << "Output is" << ( ( ( double )( ( outputTotalBytes - outputFreeBytes ) ) /
 //                              outputTotalBytes ) * 100 )
-//                              << "% full"
-//                              << "DRCRatio =" << DRCRatio
+//                              << "% full" << "(target:" << ( ( double )outputTargetMs / outputLengthMs ) * 100 << "%)";
+//    qCDebug( phxAudioOutput ) << "DRCRatio =" << DRCRatio
 //                              << "outputAudioInterface->bufferSize()" << outputAudioInterface->bufferSize();
 //    qCDebug( phxAudioOutput ) << "\toutputTotalBytes =" << outputTotalBytes
 //                              << "outputCurrentByte =" << outputCurrentByte
