@@ -38,7 +38,10 @@ LibretroSymbols::LibretroSymbols()
 
 Core::Core()
     : pixelFormat( RETRO_PIXEL_FORMAT_RGB565 ),
-      SRAMDataRaw( nullptr ) {
+      SRAMDataRaw( nullptr ),
+      currentFrameBuffer( nullptr ),
+      currentOpenGLContext( nullptr )
+{
 
     Core::core = this;
 
@@ -527,34 +530,43 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
             qDebug() << "\tRETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE (13)";
             break;
 
-        case RETRO_ENVIRONMENT_SET_HW_RENDER: // 14
+        case RETRO_ENVIRONMENT_SET_HW_RENDER: {// 14
             qDebug() << "\tRETRO_ENVIRONMENT_SET_HW_RENDER (14) (handled)";
-            Core::core->openGLContext = *( retro_hw_render_callback * )data;
+            auto *cb = ( retro_hw_render_callback * )data;
 
-            switch( Core::core->openGLContext.context_type ) {
+            switch( cb->context_type ) {
                 case RETRO_HW_CONTEXT_NONE:
                     qDebug() << "No hardware context was selected";
                     break;
 
                 case RETRO_HW_CONTEXT_OPENGL:
                     qDebug() << "OpenGL 2 context was selected";
+                    cb->version_major = 2;
+                    cb->version_minor = 0;
                     break;
 
                 case RETRO_HW_CONTEXT_OPENGLES2:
                     qDebug() << "OpenGL ES 2 context was selected";
-                    Core::core->openGLContext.context_type = RETRO_HW_CONTEXT_OPENGLES2;
+                    cb->context_type = RETRO_HW_CONTEXT_OPENGLES2;
                     break;
 
                 case RETRO_HW_CONTEXT_OPENGLES3:
                     qDebug() << "OpenGL 3 context was selected";
+                    cb->version_major = 3;
+                    cb->version_minor = 0;
                     break;
 
                 default:
-                    qCritical() << "RETRO_HW_CONTEXT: " << Core::core->openGLContext.context_type << " was not handled";
-                    break;
+                    qCritical() << "RETRO_HW_CONTEXT: " << cb->context_type << " was not handled";
+                    return false;
             }
 
-            break;
+            cb->get_current_framebuffer = core->currentFrameBufferID;
+            cb->get_proc_address = core->procAddress;
+            Core::core->openGLContext = *cb;
+
+            return true;
+        }
 
         case RETRO_ENVIRONMENT_GET_VARIABLE: { // 15
             auto *rv = static_cast<struct retro_variable *>( data );

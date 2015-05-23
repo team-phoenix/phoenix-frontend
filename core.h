@@ -9,6 +9,8 @@
 #include <QMap>
 #include <QLibrary>
 #include <QObject>
+#include <QOpenGLFramebufferObject>
+#include <QOpenGLContext>
 
 #include <atomic>
 
@@ -226,6 +228,24 @@ class Core: public QObject {
         // State to text helper
         static QString stateToText( State state );
 
+        // Do not delete these pointers, the core does not own them.
+        QOpenGLContext *currentOpenGLContext;
+        QOpenGLFramebufferObject *currentFrameBuffer;
+
+
+        static uintptr_t currentFrameBufferID()
+        {
+            return (uintptr_t)core->currentFrameBuffer->handle();
+        }
+
+        static retro_proc_address_t procAddress( const char *sym )
+        {
+            return core->currentOpenGLContext->getProcAddress( sym );
+        }
+
+
+
+
     signals:
 
         void signalCoreStateChanged( Core::State newState, Core::Error error );
@@ -255,6 +275,10 @@ class Core: public QObject {
         // for the callbacks as required by libretro.h. Thanks to this, at this time we can only
         // have a single instance of Core running at any time.
         static Core *core;
+
+
+
+
 
         // Struct containing libretro methods
         LibretroSymbols symbols;
