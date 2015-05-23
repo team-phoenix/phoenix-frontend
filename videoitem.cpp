@@ -1,7 +1,123 @@
 #include "videoitem.h"
 
+class VideoRenderer : public QQuickFramebufferObject::Renderer {
+    const QQuickFramebufferObject *parent;
+public:
+    VideoRenderer( const QQuickFramebufferObject *_parent )
+        : parent( _parent )
+    {
+    }
+
+    QOpenGLFramebufferObject *createFramebufferObject(const QSize &size)
+    {
+        qDebug() << size;
+        QOpenGLFramebufferObjectFormat format;
+        format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
+        //format.setSamples(8);
+
+        // optionally enable multisampling by doing format.setSamples(4);
+        return new QOpenGLFramebufferObject(size, format);
+    }
+
+    void render()
+    {
+        /* create viewing cone with near and far clipping planes */
+                    glMatrixMode(GL_PROJECTION);
+                    glLoadIdentity();
+                    glFrustum( -1.0, 1.0, -1.0, 1.0, 5.0, 30.0);
+
+                    glMatrixMode( GL_MODELVIEW );
+
+
+
+
+                //delete color and depth buffer
+                   //glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+
+
+                        glLoadIdentity();
+                        glTranslatef(0.0f,0.0f,-20.0f); //move along z-axis
+                        glRotatef(30.0,0.0,1.0,0.0); //rotate 30 degress around y-axis
+                        glRotatef(15.0,1.0,0.0,0.0); //rotate 15 degress around x-axis
+
+
+                    /* create 3D-Cube */
+                    glBegin(GL_QUADS);
+
+                        //front
+                        glColor3f(1.0,0.0,0.0);
+
+                        glVertex3f(1.0,1.0,1.0);
+                        glVertex3f(-1.0,1.0,1.0);
+                        glVertex3f(-1.0,-1.0,1.0);
+                        glVertex3f(1.0,-1.0,1.0);
+
+
+                        //back
+
+                        glColor3f(0.0,1.0,0.0);
+
+                        glVertex3f(1.0,1.0,-1.0);
+                        glVertex3f(-1.0,1.0,-1.0);
+                        glVertex3f(-1.0,-1.0,-1.0);
+                        glVertex3f(1.0,-1.0,-1.0);
+
+
+                        //top
+                        glColor3f(0.0,0.0,1.0);
+
+                        glVertex3f(-1.0,1.0,1.0);
+                        glVertex3f(1.0,1.0,1.0);
+                        glVertex3f(1.0,1.0,-1.0);
+                        glVertex3f(-1.0,1.0,-1.0);
+
+
+                        //bottom
+                        glColor3f(0.0,1.0,1.0);
+
+                        glVertex3f(1.0,-1.0,1.0);
+                        glVertex3f(1.0,-1.0,-1.0);
+                        glVertex3f(-1.0,-1.0,-1.0);
+                        glVertex3f(-1.0,-1.0,1.0);
+
+                        //right
+                        glColor3f(1.0,0.0,1.0);
+
+                        glVertex3f(1.0,1.0,1.0);
+                        glVertex3f(1.0,-1.0,1.0);
+                        glVertex3f(1.0,-1.0,-1.0);
+                        glVertex3f(1.0,1.0,-1.0);
+
+
+                        //left
+                        glColor3f(0.2, 0.3,0.1);
+
+                        glVertex3f(-1.0,1.0,1.0);
+                        glVertex3f(-1.0,-1.0,1.0);
+                        glVertex3f(-1.0,-1.0,-1.0);
+                        glVertex3f(-1.0,1.0,-1.0);
+
+
+                    glEnd();
+                update();
+                parent->window()->resetOpenGLState();
+    }
+
+    void synchronize( QQuickFramebufferObject *fbo )
+    {
+
+    }
+
+};
+
+QQuickFramebufferObject::Renderer *VideoItem::createRenderer() const
+{
+    return new VideoRenderer( this );
+}
+
 VideoItem::VideoItem( QQuickItem *parent ) :
-    QQuickItem( parent ),
+    QQuickFramebufferObject( parent ),
     audioOutput( new AudioOutput() ), audioOutputThread( new QThread( this ) ),
     core( new Core() ), // coreTimer( new QTimer() ),
     coreThread( nullptr ), coreState( Core::STATEUNINITIALIZED ),
@@ -10,6 +126,7 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     width( 0 ), height( 0 ), pitch( 0 ), coreFPS( 0.0 ), hostFPS( 0.0 ),
     texture( nullptr ),
     frameTimer() {
+
 
     // Place the objects under VideoItem's control into their own threads
     audioOutput->moveToThread( audioOutputThread );
@@ -328,6 +445,8 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
     if( coreState == Core::STATEREADY ) {
         emit signalFrame();
     }
+
+    //return QQuickFramebufferObject::updatePaintNode()
 
     return textureNode;
 

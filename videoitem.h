@@ -18,6 +18,7 @@
 #include <QApplication>
 #include <QGuiApplication>
 #include <QScreen>
+#include <QQuickFramebufferObject>
 
 #include <memory>
 
@@ -25,7 +26,9 @@
 #include "core.h"
 #include "audiooutput.h"
 
-class VideoItem : public QQuickItem {
+class VideoRenderer;
+
+class VideoItem : public QQuickFramebufferObject {
         Q_OBJECT
         Q_PROPERTY( QString libretroCore MEMBER corePath WRITE setCore )
         Q_PROPERTY( QString game MEMBER gamePath WRITE setGame )
@@ -34,6 +37,8 @@ class VideoItem : public QQuickItem {
 
         VideoItem( QQuickItem *parent = 0 );
         ~VideoItem();
+
+        QQuickFramebufferObject::Renderer *createRenderer() const;
 
     signals:
 
