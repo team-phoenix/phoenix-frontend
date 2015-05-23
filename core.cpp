@@ -537,7 +537,7 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
             switch( cb->context_type ) {
                 case RETRO_HW_CONTEXT_NONE:
                     qDebug() << "No hardware context was selected";
-                    break;
+                    return false;
 
                 case RETRO_HW_CONTEXT_OPENGL:
                     qDebug() << "OpenGL 2 context was selected";
@@ -563,7 +563,7 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
 
             cb->get_current_framebuffer = core->currentFrameBufferID;
             cb->get_proc_address = core->procAddress;
-            Core::core->openGLContext = *cb;
+            Core::core->libretroOpenGLCallback = *cb;
 
             return true;
         }

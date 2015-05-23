@@ -286,7 +286,7 @@ class Core: public QObject {
         // Used by environment callback
         // Info about the OpenGL context provided by the Phoenix frontend
         // for the core's internal use
-        retro_hw_render_callback openGLContext;
+        retro_hw_render_callback libretroOpenGLCallback;
 
         // Used by environment callback
         QByteArray libraryFilename;
