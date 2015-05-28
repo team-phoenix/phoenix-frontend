@@ -116,10 +116,37 @@ QQuickFramebufferObject::Renderer *VideoItem::createRenderer() const
     return new VideoRenderer( this );
 }
 
+void VideoItem::setCore(Core *core)
+{
+    qmlCore = core;
+
+    // Run a timer to make core produce a frame at regular intervals, or at vsync
+    // coreTimer disabled at the moment due to the granulatiry being 1ms (not good enough)
+    // connect( &coreTimer, &QTimer::timeout, &core, &Core::slotFrame );
+    connect( this, &VideoItem::signalFrame, core, &Core::slotFrame );
+
+    // Do the next item in the core lifecycle when the state has changed
+    connect( core, &Core::signalCoreStateChanged, this, &VideoItem::slotCoreStateChanged );
+    connect( this, &VideoItem::signalShutdown, core, &Core::slotShutdown );
+
+    // Load a core and a game
+    connect( this, &VideoItem::signalLoadCore, core, &Core::slotLoadCore );
+    connect( this, &VideoItem::signalLoadGame, core, &Core::slotLoadGame );
+
+    // Get the audio and video timing/format from core once a core and game are loaded,
+    // send the data out to each consumer for their own initialization
+    connect( core, &Core::signalAVFormat, this, &VideoItem::slotCoreAVFormat );
+
+    connect( core, &Core::signalAudioData, audioOutput, &AudioOutput::slotAudioData );
+    connect( core, &Core::signalVideoData, this, &VideoItem::slotVideoData );
+
+    emit coreChanged();
+}
+
 VideoItem::VideoItem( QQuickItem *parent ) :
     QQuickFramebufferObject( parent ),
     audioOutput( new AudioOutput() ), audioOutputThread( new QThread( this ) ),
-    core( new Core() ), // coreTimer( new QTimer() ),
+    //core( new Core() ), // coreTimer( new QTimer() ),
     coreThread( nullptr ), coreState( Core::STATEUNINITIALIZED ),
     avInfo(), pixelFormat(),
     corePath( "" ), gamePath( "" ),
@@ -133,7 +160,6 @@ VideoItem::VideoItem( QQuickItem *parent ) :
 
     // Ensure the objects are cleaned up when it's time to quit and destroyed once their thread is done
     connect( this, &VideoItem::signalShutdown, audioOutput, &AudioOutput::slotShutdown );
-    connect( this, &VideoItem::signalShutdown, core, &Core::slotShutdown );
     connect( audioOutputThread, &QThread::finished, audioOutput, &AudioOutput::deleteLater );
 
     // Catch the exit signal and clean up
@@ -158,18 +184,12 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     // Run a timer to make core produce a frame at regular intervals, or at vsync
     // coreTimer disabled at the moment due to the granulatiry being 1ms (not good enough)
     // connect( &coreTimer, &QTimer::timeout, &core, &Core::slotFrame );
-    connect( this, &VideoItem::signalFrame, core, &Core::slotFrame );
 
     // Do the next item in the core lifecycle when the state has changed
-    connect( core, &Core::signalCoreStateChanged, this, &VideoItem::slotCoreStateChanged );
 
-    // Load a core and a game
-    connect( this, &VideoItem::signalLoadCore, core, &Core::slotLoadCore );
-    connect( this, &VideoItem::signalLoadGame, core, &Core::slotLoadGame );
 
     // Get the audio and video timing/format from core once a core and game are loaded,
     // send the data out to each consumer for their own initialization
-    connect( core, &Core::signalAVFormat, this, &VideoItem::slotCoreAVFormat );
     connect( this, &VideoItem::signalAudioFormat, audioOutput, &AudioOutput::slotAudioFormat );
     connect( this, &VideoItem::signalVideoFormat, this, &VideoItem::slotVideoFormat ); // Belongs in both categories
 
@@ -177,9 +197,6 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     connect( this, &VideoItem::signalRunChanged, audioOutput, &AudioOutput::slotSetAudioActive );
 
     // Connect consumer signals and slots
-
-    connect( core, &Core::signalAudioData, audioOutput, &AudioOutput::slotAudioData );
-    connect( core, &Core::signalVideoData, this, &VideoItem::slotVideoData );
 
     // Start threads
 
@@ -239,8 +256,8 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             // Place Core into the render thread
             // Mandatory for OpenGL cores
             // Also prevents massive overhead/performance loss caused by QML effects (like FastBlur)
-            core->moveToThread( coreThread );
-            connect( coreThread, &QThread::finished, core, &Core::deleteLater );
+            core()->moveToThread( coreThread );
+            connect( coreThread, &QThread::finished, core(), &Core::deleteLater );
 
             qCDebug( phxController ) << "Begin emulation.";
 
@@ -286,7 +303,7 @@ void VideoItem::slotCoreAVFormat( retro_system_av_info avInfo, retro_pixel_forma
 
 }
 
-void VideoItem::setCore( QString libretroCore ) {
+void VideoItem::setLibretroCore( const QString libretroCore ) {
 
     corePath = QUrl( libretroCore ).toLocalFile();
 
@@ -295,11 +312,10 @@ void VideoItem::setCore( QString libretroCore ) {
 
 }
 
-void VideoItem::setGame( QString game ) {
+void VideoItem::setGame( const QString game ) {
 
     gamePath = QUrl( game ).toLocalFile();
 
-    // qCDebug( phxController ) << "emit signalLoadGame(" << gamePath << ")";
     emit signalLoadGame( gamePath );
 
 }

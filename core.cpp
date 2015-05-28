@@ -1,7 +1,8 @@
 #include "core.h"
 #include "phoenixglobals.h"
 
-QDebug operator<<( QDebug debug, const Core::Variable &var ) {
+/*
+QDebug operator<<( QDebug debug, const CoreVariable &var ) {
 
     // join a QVector of std::strings. (Really, C++ ?)
     auto &choices = var.choices();
@@ -17,12 +18,15 @@ QDebug operator<<( QDebug debug, const Core::Variable &var ) {
 
     auto QStr = QString::fromStdString; // shorter alias
 
+
+
     debug << qPrintable( QString( "Core::Variable(%1=%2, description=\"%3\", choices=[%4])" ).
                          arg( QStr( var.key() ) ).arg( QStr( var.value( "<not set>" ) ) ).
                          arg( QStr( var.description() ) ).arg( QStr( joinedchoices ) ) );
     return debug;
 
 }
+*/
 
 LibretroSymbols::LibretroSymbols()
     : retro_audio( nullptr ),
@@ -40,7 +44,8 @@ Core::Core()
     : pixelFormat( RETRO_PIXEL_FORMAT_RGB565 ),
       SRAMDataRaw( nullptr ),
       currentFrameBuffer( nullptr ),
-      currentOpenGLContext( nullptr )
+      currentOpenGLContext( nullptr ),
+      updateCoreVariables( false )
 {
 
     Core::core = this;
@@ -254,6 +259,8 @@ void Core::slotShutdown() {
     libretroCore.unload();
     libraryFilename.clear();
 
+    // Make sure the CoreVariables are pointers, or else this will segfault.
+
     delete avInfo;
     delete systemInfo;
 
@@ -272,6 +279,20 @@ void Core::slotShutdown() {
     emit signalCoreStateChanged( STATEFINISHED, CORENOERROR );
 
     qCDebug( phxCore ) << "slotShutdown() end";
+
+}
+
+void Core::setVariable(const QString key, const QString value)
+{
+    if ( variables.contains( key ) ) {
+        auto vari = variables[ key ];
+        vari.setValue( value );
+
+        variables[key] = vari;
+
+        updateCoreVariables = true;
+
+    }
 
 }
 
@@ -502,7 +523,7 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
 
                 case RETRO_PIXEL_FORMAT_RGB565:
                     qDebug() << "\t\tPixel format: RGB565\n";
-                    return true;
+
 
                 case RETRO_PIXEL_FORMAT_XRGB8888:
                     qDebug() << "\t\tPixel format: XRGB8888\n";
@@ -572,32 +593,45 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
             auto *rv = static_cast<struct retro_variable *>( data );
 
             if( core->variables.contains( rv->key ) ) {
-                const auto &var = core->variables[rv->key];
+                const auto var = core->variables[rv->key];
 
                 if( var.isValid() ) {
-                    rv->value = var.value().c_str();
+                    rv->value = var.value().toStdString().c_str();
                 }
             }
 
-            break;
+            return true;
         }
 
         case RETRO_ENVIRONMENT_SET_VARIABLES: { // 16
             qCDebug( phxCore ) << "SET_VARIABLES:";
             auto *rv = static_cast<const struct retro_variable *>( data );
 
+            int i = 0;
             for( ; rv->key != NULL; rv++ ) {
-                Core::Variable v( rv );
+                CoreVariable v( rv );
                 core->variables.insert( v.key(), v );
-                qCDebug( phxCore ) << "\t" << v;
+                core->emitUpdateVariables( v.key(), v.value(), v.description(), v.choices(), i );
+                //qCDebug( phxCore ) << "\t" << v;
+                i++;
             }
 
-            break;
+            return true;
         }
 
-        case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE: // 17
-            // qDebug() << "\tRETRO_ENVIRONMENT_GET_VARIABLE_UPDATE (17)";
-            break;
+        case RETRO_ENVIRONMENT_GET_VARIABLE_UPDATE: {// 17
+            //qDebug() << "\tRETRO_ENVIRONMENT_GET_VARIABLE_UPDATE (17)";
+            bool *update = static_cast<bool *>( data );
+
+            if ( core->updateCoreVariables ) {
+                *update = true;
+                core->updateCoreVariables = false;
+                return true;
+            }
+
+            *update = false;
+            return false;
+        }
 
         case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME: // 18
             qDebug() << "\tRETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME (18)";

@@ -1,9 +1,10 @@
-import QtQuick 2.4
+import QtQuick 2.2
 import QtQuick.Controls 1.3
 import QtGraphicalEffects 1.0
-import libretro.video 1.0
 import QtQuick.Dialogs 1.2
 import QtQuick.Window 2.0
+import QtQuick.Layouts 1.1
+import Phoenix 1.0
 
 ApplicationWindow {
     id: phoenixWindow
@@ -19,13 +20,31 @@ ApplicationWindow {
         return qsTr(str);
     }
 
+
+    statusBar: StatusBar {
+        RowLayout {
+            anchors.fill: parent;
+            Button {
+                text: "Options";
+                anchors {
+                    right: parent.right;
+                    rightMargin: 24;
+                }
+
+                onClicked: {
+                    if ( optionsDialog.visible )
+                        optionsDialog.close();
+                    else
+                        optionsDialog.open();
+                }
+            }
+        }
+    }
+
     menuBar: MenuBar {
         Menu {
             title: "Game";
             enabled: phoenixWindow.visibility === Window.Windowed | Window.Maximized
-            MouseArea {
-                anchors.fill: parent;
-            }
 
 
             MenuItem {
@@ -40,7 +59,8 @@ ApplicationWindow {
 
         Menu {
             title: "Cores";
-            enabled: phoenixWindow.visibility === Window.Windowed | Window.Maximized
+            enabled: phoenixWindow.visibility === Window.Windowed | Window.Maximized;
+
 
             Menu {
                 id: coresAvailable;
@@ -70,8 +90,6 @@ ApplicationWindow {
                         pathWatcher.clear();
                     }
                 }
-
-
             }
 
             MenuItem {
@@ -85,6 +103,11 @@ ApplicationWindow {
             }
 
             MenuItem {
+                text: "Options...";
+                onTriggered: optionsDialog.open();
+            }
+
+            MenuItem {
                 text: "Load Core...";
                 onTriggered: {
                     fileDialog.type = "core";
@@ -94,7 +117,6 @@ ApplicationWindow {
 
 
         }
-
     }
 
     PathWatcher {
@@ -117,6 +139,70 @@ ApplicationWindow {
         id: pathWatcherModel;
         ListElement {path: "None"; name: "None";}
     }
+
+    ListModel {
+        id: coreVariableModel;
+        ListElement { key: ""; value: ""; description: ""; choices: [
+            ListElement {choice: ""}
+            ]}
+    }
+
+    Dialog {
+        id: optionsDialog;
+        standardButtons: StandardButton.Close;
+        modality: Qt.NonModal;
+        height: listView.height;
+        width: listView.width;
+
+        ListView {
+            id: listView;
+            height: 500;
+            width: 400;
+            x: 12;
+            spacing: 3;
+            model: coreVariableModel;
+            delegate: RowLayout {
+                anchors {
+                    left: parent.left;
+                    right: parent.right;
+                    rightMargin: 12;
+                }
+
+                height: 25;
+
+                Label {
+                    anchors.verticalCenter: parent.verticalCenter;
+                    text: description;
+                }
+
+                ComboBox {
+                    anchors {
+                        right: parent.right;
+                    }
+
+                    model: choices;
+                    onActivated: {
+                        currentIndex = index;
+                    }
+                    onCurrentTextChanged: {
+                        core.setVariable( key, currentText );
+                    }
+
+
+                }
+
+            }
+        }
+/*
+        contentItem: Rectangle {
+            height: 300;
+            width: 200;
+
+
+        }
+        */
+    }
+
 
     FileDialog {
         id: coreFolderDialog;
@@ -164,7 +250,6 @@ ApplicationWindow {
             hoverEnabled: true
 
             onDoubleClicked: {
-
                 if (phoenixWindow.visibility === Window.FullScreen)
                     phoenixWindow.visibility = Window.Windowed
                 else if (phoenixWindow.visibility === Window.Windowed | Window.Maximized)
@@ -184,7 +269,34 @@ ApplicationWindow {
                 horizontalCenter: parent.horizontalCenter
             }
 
-            width: height * phoenixWindow.ratio
+            width: height * phoenixWindow.ratio;
+
+
+
+            core: Core {
+                id: core;
+
+                onSignalUpdateVariables: {
+                    var k = key;
+                    var v = value;
+                    var d = description;
+                    var item = coreVariableModel.get(0);
+                    if ( item && item.key === "" ) {
+                        coreVariableModel.clear();
+                    }
+
+
+                    var c = choices;
+                    var list = [];
+                    for ( var i=0; i < c.length; ++i ) {
+                        list.push( { "choice": c[i] } )
+                    }
+
+                    coreVariableModel.insert( index, {key: k, value: v, description: d, choices: list  } );
+
+                }
+            }
+
 
 //            Column {
 //                visible: false;

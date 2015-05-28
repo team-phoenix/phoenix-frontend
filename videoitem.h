@@ -29,9 +29,11 @@
 class VideoRenderer;
 
 class VideoItem : public QQuickFramebufferObject {
-        Q_OBJECT
-        Q_PROPERTY( QString libretroCore MEMBER corePath WRITE setCore )
-        Q_PROPERTY( QString game MEMBER gamePath WRITE setGame )
+    Q_OBJECT
+    Q_PROPERTY( QString libretroCore MEMBER corePath WRITE setLibretroCore )
+    Q_PROPERTY( QString game MEMBER gamePath WRITE setGame )
+    Q_PROPERTY( Core *core READ core WRITE setCore NOTIFY coreChanged)
+
 
     public:
 
@@ -39,6 +41,13 @@ class VideoItem : public QQuickFramebufferObject {
         ~VideoItem();
 
         QQuickFramebufferObject::Renderer *createRenderer() const;
+
+        void setCore( Core *core );
+
+        Core *core() const
+        {
+            return qmlCore;
+        }
 
     signals:
 
@@ -51,6 +60,8 @@ class VideoItem : public QQuickFramebufferObject {
         void signalFrame();
         void signalShutdown();
         void signalRunChanged( bool run );
+
+        void coreChanged();
 
     public slots:
 
@@ -84,7 +95,7 @@ class VideoItem : public QQuickFramebufferObject {
         QThread *audioOutputThread;
 
         // The emulator itself, a libretro core
-        Core *core;
+        Core *qmlCore;
 
         // The timer that makes the core produce frames at regular intervals
         // QTimer *coreTimer;
@@ -105,8 +116,9 @@ class VideoItem : public QQuickFramebufferObject {
         // The setters invoke the core directly, both must be called to start emulation
         QString corePath;
         QString gamePath;
-        void setGame( QString game );
-        void setCore( QString libretroCore );
+
+        void setGame( const QString game );
+        void setLibretroCore( const QString libretroCore );
 
         //
         // Consumer

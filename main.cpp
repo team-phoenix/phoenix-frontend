@@ -61,8 +61,9 @@ int main( int argc, char *argv[] ) {
     QObject::connect( &engine, &QQmlApplicationEngine::quit, &app, &QApplication::quit );
 
     // Make C++ classes visible to QML
-    qmlRegisterType<VideoItem>( "libretro.video", 1, 0, "VideoItem" );
-    qmlRegisterType<PathWatcher>( "libretro.video", 1, 0, "PathWatcher" );
+    qmlRegisterType<VideoItem>( "Phoenix", 1, 0, "VideoItem" );
+    qmlRegisterType<Core>( "Phoenix", 1, 0, "Core" );
+    qmlRegisterType<PathWatcher>( "Phoenix", 1, 0, "PathWatcher" );
 
     // Don't let the Qt police find out we're declaring these structs as metatypes
     // without proper constructors/destructors declared/written
