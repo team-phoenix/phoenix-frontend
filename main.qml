@@ -149,22 +149,28 @@ ApplicationWindow {
 
     Dialog {
         id: optionsDialog;
-        standardButtons: StandardButton.Close;
-        modality: Qt.NonModal;
-        height: listView.height;
-        width: listView.width;
+        height: ( coreVariableModel.count * ( 25 + 3 ) ) + 60;
+        width: 400;
+
+        onHeightChanged: listView.height = height;
+        onWidthChanged: listView.width = width;
 
         ListView {
             id: listView;
-            height: 500;
-            width: 400;
-            x: 12;
+
             spacing: 3;
-            model: coreVariableModel;
+            model: {
+                if ( coreVariableModel.count === 1 && coreVariableModel.get(0).description === "" )
+                    return undefined;
+                return coreVariableModel;
+            }
+
+
             delegate: RowLayout {
                 anchors {
                     left: parent.left;
                     right: parent.right;
+                    leftMargin: 12;
                     rightMargin: 12;
                 }
 
@@ -178,9 +184,17 @@ ApplicationWindow {
                 ComboBox {
                     anchors {
                         right: parent.right;
+                        rightMargin: 12;
+                        verticalCenter: parent.verticalCenter;
                     }
 
-                    model: choices;
+                    model: {
+                        if ( choices.count === 1 && choices.get(0).choice === "" ) {
+                            return undefined;
+                        }
+                        return choices;
+                    }
+
                     onActivated: {
                         currentIndex = index;
                     }
@@ -188,19 +202,11 @@ ApplicationWindow {
                         core.setVariable( key, currentText );
                     }
 
-
                 }
 
             }
         }
-/*
-        contentItem: Rectangle {
-            height: 300;
-            width: 200;
 
-
-        }
-        */
     }
 
 
