@@ -9,7 +9,8 @@ SOURCES += main.cpp \
     phoenixglobals.cpp \
     pathwatcher.cpp \
     audiooutput.cpp \
-    logging.cpp
+    logging.cpp	    \
+    corevariable.cpp
 
 RESOURCES += qml.qrc
 
@@ -22,6 +23,9 @@ macx {
 }
 
 CONFIG += c++11
+
+# I sure hate those initializer list warnings! Get rid of em!
+QMAKE_CXXFLAGS_WARN_ON += -Wno-reorder
 
 # Additional import path used to resolve QML modules in Qt Creator's code model
 QML_IMPORT_PATH =
@@ -37,4 +41,5 @@ HEADERS += \
     audiobuffer.h \
     phoenixglobals.h \
     pathwatcher.h \
-    audiooutput.h
+    audiooutput.h \
+    corevariable.h
