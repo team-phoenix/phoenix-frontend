@@ -454,7 +454,7 @@ void Core::audioSampleCallback( int16_t left, int16_t right ) {
 size_t Core::audioSampleBatchCallback( const int16_t *data, size_t frames ) {
 
     Core *core = Core::core;
-
+/*
     // Sanity check
     Q_ASSERT( core->audioBufferCurrentByte < core->avInfo->timing.sample_rate * 4 );
 
@@ -467,7 +467,7 @@ size_t Core::audioSampleBatchCallback( const int16_t *data, size_t frames ) {
 
     // Each frame is 4 bytes (16-bit stereo)
     core->audioBufferCurrentByte += frames * 4;
-
+*/
     return frames;
 
 }

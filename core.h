@@ -240,7 +240,8 @@ class Core: public QObject {
 
         static uintptr_t currentFrameBufferID()
         {
-            return (uintptr_t)core->currentFrameBuffer->handle();
+            //auto id = (uintptr_t)core->currentFrameBuffer->handle();
+            return 1;
         }
 
         static retro_proc_address_t procAddress( const char *sym )

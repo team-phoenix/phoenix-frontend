@@ -4,34 +4,49 @@
 
 class VideoRenderer : public QQuickFramebufferObject::Renderer {
     const VideoItem *parent;
+    QOpenGLFramebufferObject *fbo;
+    QSize renderSize;
+
 public:
     VideoRenderer( const VideoItem *_parent )
         : parent( _parent )
     {
+
     }
+
 
     QOpenGLFramebufferObject *createFramebufferObject(const QSize &size)
     {
-        auto *fbo = parent->core()->getCurrentFramebuffer();
-        if ( fbo )
-            delete fbo;
-        qDebug() << size;
+
+
         QOpenGLFramebufferObjectFormat format;
         format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
         // optionally enable multisampling by doing format.setSamples(4);
 
         //format.setSamples(4);
 
-        fbo = new QOpenGLFramebufferObject( size, format );
+        fbo = new QOpenGLFramebufferObject( QSize( 1000, 1000), format );
 
-        qDebug() << "IM IN THE RENDERER";
+
+        qDebug() << "IM IN THE RENDERER: handle: " << fbo->handle();
+
 
         return fbo;
     }
 
     void render()
     {
-        /* create viewing cone with near and far clipping planes */
+        /*
+
+        glMatrixMode(GL_PROJECTION);
+
+        glMatrixMode( GL_MODELVIEW );
+        //glViewport(0, 0, 1920, 1080);
+        glLoadIdentity();
+        glTranslatef(0.0f,0.0f,-20.0f); //move along z-axis
+        glRotatef(30.0,0.0,1.0,0.0); //rotate 30 degress around y-axis
+        glRotatef(15.0,1.0,0.0,0.0); //rotate 15 degress around x-axis
+        //create viewing cone with near and far clipping planes
                     glMatrixMode(GL_PROJECTION);
                     glLoadIdentity();
                     glFrustum( -1.0, 1.0, -1.0, 1.0, 5.0, 30.0);
@@ -46,13 +61,10 @@ public:
 
 
 
-                        glLoadIdentity();
-                        glTranslatef(0.0f,0.0f,-20.0f); //move along z-axis
-                        glRotatef(30.0,0.0,1.0,0.0); //rotate 30 degress around y-axis
-                        glRotatef(15.0,1.0,0.0,0.0); //rotate 15 degress around x-axis
 
 
-                    /* create 3D-Cube */
+
+                    //create 3D-Cube
                     glBegin(GL_QUADS);
 
                         //front
@@ -109,14 +121,21 @@ public:
                         glVertex3f(-1.0,1.0,-1.0);
 
 
-                    glEnd();
+                    glEnd();*/
+        if ( parent->run) {
+            parent->core()->slotFrame();
+        }
                 update();
-                parent->window()->resetOpenGLState();
+                //parent->window()->resetOpenGLState();
     }
 
-    void synchronize( QQuickFramebufferObject *fbo )
+    void synchronize( QQuickFramebufferObject *frameBuf )
     {
-        Q_UNUSED( fbo )
+        auto *videoItem = static_cast<VideoItem *>( frameBuf );
+        videoItem->core()->currentFrameBuffer = fbo;
+
+        renderSize = QSize( videoItem->boundingRect().size().toSize() );
+
     }
 
 };
@@ -163,6 +182,7 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     texture( nullptr ),
     frameTimer() {
 
+    setTextureFollowsItemSize(false);
 
     // Place the objects under VideoItem's control into their own threads
     audioOutput->moveToThread( audioOutputThread );
@@ -244,6 +264,7 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             core()->retroHwCallback()->context_reset();
             }
 
+
             // Run a timer to make core produce a frame at regular intervals
             // Disabled at the moment due to the granulatiry being 1ms (not good enough)
 
@@ -285,6 +306,7 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
 
             // Let all the consumers know emulation began
             emit signalRunChanged( true );
+            run = true;
 
             break;
 
@@ -407,9 +429,24 @@ void VideoItem::handleOpenGLContextCreated( QOpenGLContext *GLContext ) {
 
 }
 
+
+
 QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintData ) {
     Q_UNUSED( paintData );
 
+    auto *textureNode = static_cast<QSGSimpleTextureNode *>( node );
+    if ( !textureNode || !core()->getCurrentFramebuffer() )
+        return QQuickFramebufferObject::updatePaintNode( node, paintData );
+    textureNode->setFiltering( QSGTexture::Nearest );
+    textureNode->setRect( boundingRect() );
+
+    auto image = core()->getCurrentFramebuffer()->toImage();
+    image = image.scaled((int)boundingRect().width(), (int)boundingRect().height());
+    textureNode->setTexture( window()->createTextureFromImage( image ) );
+    //qDebug() << "RETURNING TEXTURE: " << core()->getCurrentFramebuffer()->toImage();
+    return textureNode;
+
+/*
     if ( core()->renderType() == Core::RenderType::OpenGL ) {
         qDebug() << "Render 3d";
         auto *tex = textureProvider()->texture();
@@ -470,11 +507,12 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
         emit signalFrame();
     }
 
-    //return QQuickFramebufferObject::updatePaintNode()
 
     return textureNode;
+    */
 
 }
+
 
 void VideoItem::componentComplete() {
 

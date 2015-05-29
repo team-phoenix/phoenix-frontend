@@ -47,6 +47,17 @@ class VideoItem : public QQuickFramebufferObject {
             return qmlCore;
         }
 
+        bool run = false;
+
+        int getWidth() const
+        {
+            return width;
+        }
+
+        int getHeight() const
+        {
+            return height;
+        }
     signals:
 
         // Controller
