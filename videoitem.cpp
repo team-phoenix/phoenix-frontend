@@ -1,22 +1,32 @@
 #include "videoitem.h"
 
+#include <QSGTextureProvider>
+
 class VideoRenderer : public QQuickFramebufferObject::Renderer {
-    const QQuickFramebufferObject *parent;
+    const VideoItem *parent;
 public:
-    VideoRenderer( const QQuickFramebufferObject *_parent )
+    VideoRenderer( const VideoItem *_parent )
         : parent( _parent )
     {
     }
 
     QOpenGLFramebufferObject *createFramebufferObject(const QSize &size)
     {
+        auto *fbo = parent->core()->getCurrentFramebuffer();
+        if ( fbo )
+            delete fbo;
         qDebug() << size;
         QOpenGLFramebufferObjectFormat format;
         format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
-        //format.setSamples(8);
-
         // optionally enable multisampling by doing format.setSamples(4);
-        return new QOpenGLFramebufferObject(size, format);
+
+        //format.setSamples(4);
+
+        fbo = new QOpenGLFramebufferObject( size, format );
+
+        qDebug() << "IM IN THE RENDERER";
+
+        return fbo;
     }
 
     void render()
@@ -106,7 +116,7 @@ public:
 
     void synchronize( QQuickFramebufferObject *fbo )
     {
-
+        Q_UNUSED( fbo )
     }
 
 };
@@ -120,6 +130,9 @@ void VideoItem::setCore(Core *core)
 {
     qmlCore = core;
 
+    //qmlCore->setParent( nullptr );
+
+
     // Run a timer to make core produce a frame at regular intervals, or at vsync
     // coreTimer disabled at the moment due to the granulatiry being 1ms (not good enough)
     // connect( &coreTimer, &QTimer::timeout, &core, &Core::slotFrame );
@@ -128,10 +141,6 @@ void VideoItem::setCore(Core *core)
     // Do the next item in the core lifecycle when the state has changed
     connect( core, &Core::signalCoreStateChanged, this, &VideoItem::slotCoreStateChanged );
     connect( this, &VideoItem::signalShutdown, core, &Core::slotShutdown );
-
-    // Load a core and a game
-    connect( this, &VideoItem::signalLoadCore, core, &Core::slotLoadCore );
-    connect( this, &VideoItem::signalLoadGame, core, &Core::slotLoadGame );
 
     // Get the audio and video timing/format from core once a core and game are loaded,
     // send the data out to each consumer for their own initialization
@@ -229,6 +238,12 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             // This is mixing control (coreThread) and consumer (render thread) members...
             coreThread = window()->openglContext()->thread();
 
+            if ( core()->renderType() == Core::RenderType::OpenGL ) {
+
+            core()->currentOpenGLContext = window()->openglContext();
+            core()->retroHwCallback()->context_reset();
+            }
+
             // Run a timer to make core produce a frame at regular intervals
             // Disabled at the moment due to the granulatiry being 1ms (not good enough)
 
@@ -256,6 +271,7 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             // Place Core into the render thread
             // Mandatory for OpenGL cores
             // Also prevents massive overhead/performance loss caused by QML effects (like FastBlur)
+            core()->setParent( nullptr );
             core()->moveToThread( coreThread );
             connect( coreThread, &QThread::finished, core(), &Core::deleteLater );
 
@@ -273,6 +289,8 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             break;
 
         case Core::STATEFINISHED:
+            core()->setParent( nullptr );
+            core()->moveToThread( this->thread() );
             break;
 
         case Core::STATEERROR:
@@ -300,23 +318,6 @@ void VideoItem::slotCoreAVFormat( retro_system_av_info avInfo, retro_pixel_forma
                             avInfo.geometry.max_height,
                             avInfo.geometry.max_width * ( pixelFormat == RETRO_PIXEL_FORMAT_XRGB8888 ? 4 : 2 ),
                             avInfo.timing.fps, monitorRefreshRate );
-
-}
-
-void VideoItem::setLibretroCore( const QString libretroCore ) {
-
-    corePath = QUrl( libretroCore ).toLocalFile();
-
-    // qCDebug( phxController ) << "emit signalLoadCore(" << corePath << ")";
-    emit signalLoadCore( corePath );
-
-}
-
-void VideoItem::setGame( const QString game ) {
-
-    gamePath = QUrl( game ).toLocalFile();
-
-    emit signalLoadGame( gamePath );
 
 }
 
@@ -408,6 +409,13 @@ void VideoItem::handleOpenGLContextCreated( QOpenGLContext *GLContext ) {
 
 QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintData ) {
     Q_UNUSED( paintData );
+
+    if ( core()->renderType() == Core::RenderType::OpenGL ) {
+        qDebug() << "Render 3d";
+        auto *tex = textureProvider()->texture();
+        qDebug() << " Texutre is " << tex;
+        return QQuickFramebufferObject::updatePaintNode( node, paintData );
+    }
 
     QSGSimpleTextureNode *textureNode = static_cast<QSGSimpleTextureNode *>( node );
 

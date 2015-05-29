@@ -30,8 +30,6 @@ class VideoRenderer;
 
 class VideoItem : public QQuickFramebufferObject {
     Q_OBJECT
-    Q_PROPERTY( QString libretroCore MEMBER corePath WRITE setLibretroCore )
-    Q_PROPERTY( QString game MEMBER gamePath WRITE setGame )
     Q_PROPERTY( Core *core READ core WRITE setCore NOTIFY coreChanged)
 
 
@@ -52,8 +50,6 @@ class VideoItem : public QQuickFramebufferObject {
     signals:
 
         // Controller
-        void signalLoadCore( QString path );
-        void signalLoadGame( QString path );
         void signalAudioFormat( int sampleRate, double coreFPS, double hostFPS );
         void signalVideoFormat( retro_pixel_format pixelFormat, int width, int height, int pitch,
                                 double coreFPS, double hostFPS );
@@ -116,9 +112,6 @@ class VideoItem : public QQuickFramebufferObject {
         // The setters invoke the core directly, both must be called to start emulation
         QString corePath;
         QString gamePath;
-
-        void setGame( const QString game );
-        void setLibretroCore( const QString libretroCore );
 
         //
         // Consumer

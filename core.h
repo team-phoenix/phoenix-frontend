@@ -113,12 +113,60 @@ struct LibretroSymbols {
 };
 
 class Core: public QObject {
-        Q_OBJECT
+    Q_OBJECT
+
+    Q_PROPERTY( RenderType renderType READ renderType NOTIFY renderTypeChanged )
+    Q_PROPERTY( QString saveDirectory READ saveDirectory WRITE setSaveDirectory NOTIFY saveDirectoryChanged)
+    Q_PROPERTY( QString systemDirectory READ systemDirectory WRITE setSystemDirectory NOTIFY systemDirectoryChanged )
+    Q_PROPERTY( bool needsGame READ needsGame )
+
+    bool qmlNeedsGame;
+    QString qmlSaveDirectory;
+    QString qmlSystemDirectory;
+
+    void setNeedsGame( const bool need )
+    {
+        qmlNeedsGame = need;
+        emit needsGameChanged();
+    }
 
     public:
 
         Core();
         ~Core();
+
+        bool needsGame() const
+        {
+            return qmlNeedsGame;
+        }
+
+        QString saveDirectory() const
+        {
+            return qmlSaveDirectory;
+        }
+
+        QString systemDirectory() const
+        {
+            return qmlSystemDirectory;
+        }
+
+        void setSaveDirectory( const QString saveDirectory )
+        {
+            qmlSaveDirectory = saveDirectory;
+            emit saveDirectoryChanged();
+        }
+
+        void setSystemDirectory( const QString systemDirectory )
+        {
+            qmlSystemDirectory = systemDirectory;
+            emit systemDirectoryChanged();
+        }
+
+        enum RenderType {
+            OpenGL = 0,
+            Software,
+        };
+        Q_ENUMS( RenderType )
 
         typedef enum : int {
             STATEUNINITIALIZED,
@@ -161,12 +209,33 @@ class Core: public QObject {
 
         } Error;
 
+        RenderType renderType() const
+        {
+            return qmlRenderType;
+        }
+
+        void setRenderType( RenderType type )
+        {
+            qmlRenderType = type;
+            emit renderTypeChanged();
+        }
+
         // State to text helper
         static QString stateToText( State state );
 
         // Do not delete these pointers, the core does not own them.
         QOpenGLContext *currentOpenGLContext;
         QOpenGLFramebufferObject *currentFrameBuffer;
+
+        retro_hw_render_callback *retroHwCallback()
+        {
+            return &libretroOpenGLCallback;
+        }
+
+        QOpenGLFramebufferObject *getCurrentFramebuffer()
+        {
+            return currentFrameBuffer;
+        }
 
 
         static uintptr_t currentFrameBufferID()
@@ -189,7 +258,10 @@ class Core: public QObject {
 
 
     signals:
-
+        void needsGameChanged();
+        void saveDirectoryChanged();
+        void systemDirectoryChanged();
+        void renderTypeChanged();
         void signalCoreStateChanged( Core::State newState, Core::Error error );
         void signalAVFormat( retro_system_av_info avInfo, retro_pixel_format pixelFormat );
         void signalAudioData( int16_t *data, int bytes );
@@ -202,10 +274,10 @@ class Core: public QObject {
     public slots:
 
         // Load the libretro core at the given path
-        void slotLoadCore( QString path );
+        void slotLoadCore( const QString path );
 
         // Load the game at the given path
-        void slotLoadGame( QString path );
+        void slotLoadGame( const QString path );
 
         // Run core for one frame
         void slotFrame();
@@ -258,6 +330,7 @@ class Core: public QObject {
 
     private:
 
+        RenderType qmlRenderType;
         // Wrapper around shared library file (.dll, .dylib, .so)
         QLibrary libretroCore;
         QString libraryPath;
@@ -278,15 +351,6 @@ class Core: public QObject {
         // For use with controller setting UIs
         // TODO: Make this an array, we'll be getting many of these mappings, each with different button ids/labels
         retro_input_descriptor retropadToStringMap;
-
-        //
-        // Paths
-        //
-
-        QByteArray systemDirectory;
-        QByteArray saveDirectory;
-        void setSystemDirectory( QString systemDirectory );
-        void setSaveDirectory( QString saveDirectory );
 
         //
         // Game

@@ -45,7 +45,9 @@ Core::Core()
       SRAMDataRaw( nullptr ),
       currentFrameBuffer( nullptr ),
       currentOpenGLContext( nullptr ),
-      updateCoreVariables( false )
+      updateCoreVariables( false ),
+      qmlRenderType( RenderType::Software ),
+      qmlNeedsGame( true )
 {
 
     Core::core = this;
@@ -69,6 +71,7 @@ Core::Core()
     }
 
     emit signalCoreStateChanged( STATEUNINITIALIZED, CORENOERROR );
+
 
 }
 
@@ -104,7 +107,7 @@ QString Core::stateToText( Core::State state ) {
 
 void Core::slotLoadCore( QString path ) {
 
-    libraryPath = path;
+    libraryPath = QUrl( path ).toLocalFile();
 
     qCDebug( phxCore ) << "slotLoadCore(" << libraryPath << ")";
 
@@ -160,6 +163,12 @@ void Core::slotLoadCore( QString path ) {
         symbols.retro_get_system_info( systemInfo );
         fullPathNeeded = systemInfo->need_fullpath;
 
+        if ( !needsGame() ) {
+            symbols.retro_load_game( nullptr );
+            symbols.retro_get_system_av_info( avInfo );
+            core->emitStateReady();
+        }
+
     }
 
     else {
@@ -168,14 +177,15 @@ void Core::slotLoadCore( QString path ) {
 
 }
 
-void Core::slotLoadGame( QString path ) {
+void Core::slotLoadGame( const QString path ) {
 
-    gamePath = path;
+    gamePath = QUrl( path ).toLocalFile();
+
+    retro_game_info gameInfo;
 
     qCDebug( phxCore ) << "slotLoadGame(" << gamePath << ")";
 
     // Argument struct for symbols.retro_load_game()
-    retro_game_info gameInfo;
 
     QFileInfo info( gamePath );
 
@@ -326,19 +336,6 @@ void Core::emitVideoData( uchar *data, unsigned width, unsigned height, size_t p
 // Private
 //
 
-// Paths
-
-void Core::setSaveDirectory( QString save_dir ) {
-
-    saveDirectory = save_dir.toLocal8Bit();
-
-}
-
-void Core::setSystemDirectory( QString system_dir ) {
-
-    systemDirectory = system_dir.toLocal8Bit();
-
-}
 
 // Save states
 
@@ -346,7 +343,7 @@ void Core::loadSRAM() {
 
     SRAMDataRaw = symbols.retro_get_memory_data( RETRO_MEMORY_SAVE_RAM );
 
-    QFile file( saveDirectory + phxGlobals.selectedGame().baseName() + ".srm" );
+    QFile file( saveDirectory() + phxGlobals.selectedGame().baseName() + ".srm" );
 
     if( file.open( QIODevice::ReadOnly ) ) {
         QByteArray data = file.readAll();
@@ -364,7 +361,7 @@ void Core::saveSRAM() {
         return;
     }
 
-    QFile file( saveDirectory + phxGlobals.selectedGame().baseName() + ".srm" );
+    QFile file( saveDirectory() + phxGlobals.selectedGame().baseName() + ".srm" );
     qCDebug( phxCore ) << "Saving SRAM to: " << file.fileName();
 
     if( file.open( QIODevice::WriteOnly ) ) {
@@ -505,10 +502,12 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
             qDebug() << "\tRETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL (8)";
             break;
 
-        case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY: // 9
-            qCDebug( phxCore ) << "\tRETRO_ENVIRONMENT_GET_systemDirectory (9)";
-            *static_cast<const char **>( data ) = core->systemDirectory.constData();
+        case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY: {// 9
+            qCDebug( phxCore ) << "\tRETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY (9)";
+            auto saveDir = core->systemDirectory().toLocal8Bit();
+            *static_cast<const char **>( data ) = saveDir.constData();
             return true;
+        }
 
         case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT: { // 10
             qDebug() << "\tRETRO_ENVIRONMENT_SET_PIXEL_FORMAT (10) (handled)";
@@ -554,6 +553,8 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
         case RETRO_ENVIRONMENT_SET_HW_RENDER: {// 14
             qDebug() << "\tRETRO_ENVIRONMENT_SET_HW_RENDER (14) (handled)";
             auto *cb = ( retro_hw_render_callback * )data;
+
+            core->setRenderType( OpenGL );
 
             switch( cb->context_type ) {
                 case RETRO_HW_CONTEXT_NONE:
@@ -635,6 +636,7 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
 
         case RETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME: // 18
             qDebug() << "\tRETRO_ENVIRONMENT_SET_SUPPORT_NO_GAME (18)";
+            core->setNeedsGame( !*static_cast<bool *>( data ) );
             break;
 
         case RETRO_ENVIRONMENT_GET_LIBRETRO_PATH: // 19
@@ -648,9 +650,12 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
             Core::core->symbols.retro_frame_time = ( decltype( LibretroSymbols::retro_frame_time ) )data;
             break;
 
-        case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK: // 22
+        case RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK: {// 22
+            retro_audio_callback *cb = static_cast<retro_audio_callback *>( data );
+            Q_UNUSED( cb )
             qDebug() << "\tRETRO_ENVIRONMENT_SET_AUDIO_CALLBACK (22)";
             break;
+        }
 
         case RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE: // 23
             qDebug() << "\tRETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE (23)";
@@ -675,23 +680,37 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
             return true;
         }
 
-        case RETRO_ENVIRONMENT_GET_PERF_INTERFACE: // 28
+        case RETRO_ENVIRONMENT_GET_PERF_INTERFACE: {// 28
+            retro_perf_callback *cb = static_cast<retro_perf_callback *>( data );
+            cb->get_cpu_features = 0;
+            cb->get_perf_counter = 0;
+            cb->get_time_usec = 0;
+            cb->perf_log = 0;
+            cb->perf_register = 0;
+            cb->perf_start = 0;
+            cb->perf_stop = 0;
             qDebug() << "\tRETRO_ENVIRONMENT_GET_PERF_INTERFACE (28)";
             break;
+        }
 
         case RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE: // 29
             qDebug() << "\tRETRO_ENVIRONMENT_GET_LOCATION_INTERFACE (29)";
             break;
 
-        case RETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY: // 30
+        case RETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY: {// 30
+            auto dir = core->systemDirectory().toLocal8Bit();
+            *static_cast<const char **>( data ) = dir.constData();
             qDebug() << "\tRETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY (30)";
             break;
+        }
 
-        case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY: // 31
+        case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY: {// 31
             qCDebug( phxCore ) << "\tRETRO_ENVIRONMENT_GET_saveDirectory (31) (handled)";
-            *static_cast<const char **>( data ) = core->saveDirectory.constData();
-            qCDebug( phxCore ) << "Save Directory: " << core->saveDirectory;
-            break;
+            auto byteArray = core->saveDirectory().toLocal8Bit();
+            *static_cast<const char **>( data ) = byteArray.constData();
+            qCDebug( phxCore ) << "Save Directory: " << byteArray;
+            return true;
+        }
 
         case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO: // 32
             qDebug() << "\tRETRO_ENVIRONMENT_SET_systemAVInfo (32)";

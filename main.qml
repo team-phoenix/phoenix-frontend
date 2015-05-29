@@ -13,6 +13,7 @@ ApplicationWindow {
     height: 1000
     visible: true
 
+
     property real ratio: 4/3
 
     function qstr(str)
@@ -71,7 +72,7 @@ ApplicationWindow {
                     MenuItem {
                         text: name;
                         onTriggered: {
-                            videoItem.libretroCore = path;
+                            videoItem.core.slotLoadCore(path);
                         }
                     }
 
@@ -228,9 +229,9 @@ ApplicationWindow {
         selectMultiple: false;
         onAccepted: {
             if (type === "core")
-                videoItem.libretroCore = fileUrl;
+                videoItem.core.slotLoadCore( fileUrl );
             else if (type === "game")
-                videoItem.game = fileUrl;
+                videoItem.core.slotLoadGame( fileUrl );
         }
     }
 
