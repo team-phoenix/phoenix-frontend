@@ -49,15 +49,8 @@ class VideoItem : public QQuickFramebufferObject {
 
         bool run = false;
 
-        int getWidth() const
-        {
-            return width;
-        }
+        QSize renderSize;
 
-        int getHeight() const
-        {
-            return height;
-        }
     signals:
 
         // Controller
@@ -85,7 +78,6 @@ class VideoItem : public QQuickFramebufferObject {
 
         // For future consumer use?
         void handleWindowChanged( QQuickWindow *window );
-        void handleOpenGLContextCreated( QOpenGLContext *GLContext );
 
     private:
 
@@ -138,19 +130,14 @@ class VideoItem : public QQuickFramebufferObject {
         // Applies texture to the QML item. Since this is called during vsync, we can rely on this being called at
         // approximately the refresh rate of the monitor. Thus, we'll emit the render signal to core here
         QSGNode *updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintData );
+        QSGNode *update3DNode( QSGSimpleTextureNode *textureNode, UpdatePaintNodeData *paintData );
+        QSGNode *update2DNode( QSGSimpleTextureNode *textureNode, UpdatePaintNodeData *paintData );
 
         // QML item has finished loading, ready to start displaying frames
         void componentComplete();
 
         // Timer used to measure FPS of core
         QElapsedTimer frameTimer;
-
-        //
-        // Consumer helpers
-        //
-
-        // Create a single-color texture
-        void generateSimpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTextureNode *textureNode );
 
         // Small helper method to convert Libretro image format types to their Qt equivalent
         inline QImage::Format retroToQImageFormat( enum retro_pixel_format fmt );

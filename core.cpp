@@ -812,11 +812,13 @@ int16_t Core::inputStateCallback( unsigned port, unsigned device, unsigned index
 
 void Core::videoRefreshCallback( const void *data, unsigned width, unsigned height, size_t pitch ) {
 
-    Q_UNUSED( width );
+    // No need to emit a signal when the hardware callback is used.
+    if ( data == RETRO_HW_FRAME_BUFFER_VALID ) {
+        return;
+    }
 
     // Current frame exists, send it on its way
-    if( data ) {
-
+    else if( data ) {
         memcpy( core->videoBufferPool[core->videoBufferPoolIndex], data, height * pitch );
         core->emitVideoData( core->videoBufferPool[core->videoBufferPoolIndex], width, height, pitch );
         core->videoBufferPoolIndex = ( core->videoBufferPoolIndex + 1 ) % 30;
