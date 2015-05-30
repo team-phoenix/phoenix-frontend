@@ -242,6 +242,7 @@ ApplicationWindow {
         color: "black"
 
         FastBlur {
+            visible: false;
             height: parent.height
             width: parent.width
             source: videoItem
