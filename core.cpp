@@ -419,7 +419,7 @@ void Core::audioSampleCallback( int16_t left, int16_t right ) {
     Core *core = Core::core;
 
     // Sanity check
-    Q_ASSERT( core->audioBufferCurrentByte < core->avInfo->timing.sample_rate * 4 );
+    Q_ASSERT( core->audioBufferCurrentByte < core->avInfo->timing.sample_rate * 5 );
 
     // Stereo audio is interleaved, left then right
     core->audioBufferPool[core->audioPoolCurrentBuffer][core->audioBufferCurrentByte / 2] = left;
@@ -435,7 +435,7 @@ size_t Core::audioSampleBatchCallback( const int16_t *data, size_t frames ) {
     Core *core = Core::core;
 
     // Sanity check
-    Q_ASSERT( core->audioBufferCurrentByte < core->avInfo->timing.sample_rate * 4 );
+    Q_ASSERT( core->audioBufferCurrentByte < core->avInfo->timing.sample_rate * 5 );
 
     // Need to do a bit of pointer arithmetic to get the right offset (the buffer is counted in increments of 2 bytes)
     int16_t *dst_init = core->audioBufferPool[core->audioPoolCurrentBuffer];
