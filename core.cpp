@@ -682,7 +682,7 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
 
         case RETRO_ENVIRONMENT_GET_PERF_INTERFACE: {// 28
             retro_perf_callback *cb = static_cast<retro_perf_callback *>( data );
-            cb->get_cpu_features = 0;
+            cb->get_cpu_features = core->cpuFeatures;
             cb->get_perf_counter = 0;
             cb->get_time_usec = 0;
             cb->perf_log = 0;
@@ -690,7 +690,7 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
             cb->perf_start = 0;
             cb->perf_stop = 0;
             qDebug() << "\tRETRO_ENVIRONMENT_GET_PERF_INTERFACE (28)";
-            break;
+            return true;
         }
 
         case RETRO_ENVIRONMENT_GET_LOCATION_INTERFACE: // 29

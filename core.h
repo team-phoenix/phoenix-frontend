@@ -237,6 +237,10 @@ class Core: public QObject {
             return currentFrameBuffer;
         }
 
+        static uint64_t cpuFeatures()
+        {
+            return 0;
+        }
 
         static uintptr_t currentFrameBufferID()
         {
