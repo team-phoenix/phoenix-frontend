@@ -39,8 +39,4 @@ HEADERS += \
     pathwatcher.h \
     audiooutput.h
 
-DISTFILES += \
-    phoenix.ico \
-    phoenix.rc
-
 RC_FILE = phoenix.rc
