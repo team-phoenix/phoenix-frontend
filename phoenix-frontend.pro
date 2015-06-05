@@ -38,3 +38,8 @@ HEADERS += \
     phoenixglobals.h \
     pathwatcher.h \
     audiooutput.h
+
+DISTFILES += \
+    phoenix.ico \
+    myapp.rc
+RC_FILE = myapp.rc
