@@ -41,5 +41,6 @@ HEADERS += \
 
 DISTFILES += \
     phoenix.ico \
-    myapp.rc
-RC_FILE = myapp.rc
+    phoenix.rc
+
+RC_FILE = phoenix.rc
