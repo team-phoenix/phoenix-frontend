@@ -43,3 +43,5 @@ HEADERS += \
     pathwatcher.h \
     audiooutput.h \
     corevariable.h
+
+RC_FILE = phoenix.rc
