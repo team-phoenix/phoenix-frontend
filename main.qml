@@ -288,6 +288,7 @@ ApplicationWindow {
                         if ( mapIndex > 15) {
                             console.log( "Finished Mapping" );
                             currentItem.editMode = false;
+                            return;
                         }
                         currentItem.insertMappingValue( event.value, input.mapIndex );
                         //input.insertMappingValue( event.value, )// This is available in all editors.

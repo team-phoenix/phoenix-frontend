@@ -17,7 +17,7 @@
 
 // Use alias so we don't have to type this out every time. :/
 using InputStateMap = QHash<InputDeviceEvent::Event, int16_t>;
-using InputDeviceMapping = QMap< int, InputDeviceEvent::Event >;
+using InputDeviceMapping = QHash< int, InputDeviceEvent::Event >;
 
 class InputDevice : public QObject {
     Q_OBJECT
@@ -113,8 +113,6 @@ public slots:
 
             auto val = mapping().value( event->value(), InputDeviceEvent::Unknown );
             if ( val != InputDeviceEvent::Unknown ) {
-                qDebug() << "Event: " << event->value()  << " State: " << event->state();
-
                 insert( val, event->state() );
             }
         }
@@ -127,31 +125,32 @@ public slots:
     void insertMappingValue( const int button, const int event )
     {
         auto ev = (InputDeviceEvent::Event)event;
-        if ( deviceMapping.value( button ) == event ) {
+        if ( mapping().value( button, InputDeviceEvent::Unknown ) == event
+             || ev == InputDeviceEvent::Unknown ) {
 
                 //qCDebug(phxInput) << "The button is already set, ABORT!";
         }
 
             // Remove last key value of button;
         else {
-           // qCDebug( phxInput ) << button  << " already exits at " << InputDeviceEvent::toString(mapping()[ button ]) << ", will override.";
-            qDebug() << InputDeviceEvent::toString( ev ) << button;
             bool foundMatch = false;
             for ( auto &key : mapping().keys() ) {
                 auto value = mapping()[ key ];
                 if ( value == ev) {
                     foundMatch = true;
-                    qDebug() << InputDeviceEvent::toString( ev ) << " used to be " << key;
+                    //qDebug() << InputDeviceEvent::toString( ev ) << " used to be " << key;
                     mapping().remove( key );
                     mapping().insert( button, value );
-                    qDebug() << InputDeviceEvent::toString( mapping()[button] ) << " is now " << button;
+                    //qDebug() << InputDeviceEvent::toString( mapping()[button] ) << " is now " << button;
 
                     break;
                 }
             }
 
-            if ( !foundMatch )
+            if ( !foundMatch ) {
+
                 mapping().insert( button, ev );
+            }
 
         }
 /*
