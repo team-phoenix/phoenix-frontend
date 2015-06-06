@@ -130,22 +130,18 @@ ApplicationWindow {
 
         function handleEvent( event ) {
             if ( event.state > 0 ) {
-                if ( inputDialog.mapIndex == 15) {
-                    input.currentItem.inputDeviceEventChanged.disconnect( inputDialog.handleEvent );
-                    inputDialog.text = "Finished!";
+                if ( mapIndex == maxIndex ) {
+                    input.currentItem.inputDeviceEventChanged.disconnect( handleEvent );
                     inputDialog.close();
                     return;
                 }
                 input.currentItem.insertMappingValue( event.value, inputDialog.mapIndex );
-                inputDialog.mapIndex++;
-                inputDialog.text = "Press the button for <b>"
-                        + inputDialog.mapValues[ inputDialog.mapIndex ] + "</b>";
-
+                mapIndex++;
             }
         }
 
-        property string text: "<b>Change player " + input.currentIndex + " mapping?</b>";
         property int mapIndex: 0;
+        property int maxIndex: 15;
         property var mapValues: [
             "B", "X", "Select",
             "Start", "Up", "Down", "Left", "Right",
@@ -157,9 +153,58 @@ ApplicationWindow {
             //height: 250;
             //width: 600;
             color: systemPalette.light;
+            visible: inputDialog.visible;
+            onVisibleChanged: {
+                if ( visible ) {
+                    background.state = "resetMapping";
+                }
+            }
+
+            states: [
+                State {
+                    name: "resetMapping";
+                    PropertyChanges {
+                        target: rowLayout;
+                        visible: true;
+                    }
+
+                    PropertyChanges {
+                        target: dialogLabel;
+                        text: "Edit mapping for <b>port " + inputDialog.mapIndex + "</b>?";
+
+                    }
+                },
+
+                State {
+                    name: "startMapping";
+
+                    PropertyChanges {
+                        target: inputDialog;
+                        mapIndex: 0;
+                    }
+
+                    PropertyChanges {
+                        target: rowLayout;
+                        visible: false;
+                    }
+                    PropertyChanges {
+                        target: dialogLabel;
+                        text: "Press the button for <b>"
+                              + inputDialog.mapValues[ inputDialog.mapIndex ]
+                              + "</b>";
+                    }
+
+                    PropertyChanges {
+                        target: input.currentItem;
+                        editMode: true;
+
+                    }
+                }
+
+            ]
             Label {
+                id: dialogLabel;
                 anchors.centerIn: parent;
-                text: inputDialog.text;
             }
 
 
@@ -174,7 +219,6 @@ ApplicationWindow {
                 }
 
                 height: 50;
-
                 spacing: 12;
 
                 Button {
@@ -198,11 +242,8 @@ ApplicationWindow {
 
 
                     onClicked: {
-                        rowLayout.visible = false;
-                        input.currentItem.editMode = true;
                         input.currentItem.inputDeviceEventChanged.connect( inputDialog.handleEvent );
-                        inputDialog.text = "Press the button for <b>"
-                                + inputDialog.mapValues[ inputDialog.mapIndex ] + "</b>";
+                        background.state = "startMapping";
                     }
                 }
             }
