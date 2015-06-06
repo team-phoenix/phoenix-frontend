@@ -87,7 +87,10 @@ void SDLEventLoop::processEvents()
             case SDL_JOYAXISMOTION:
             case SDL_CONTROLLERAXISMOTION: {
                 auto *device = sdlDeviceList.at( sdlEvent.cbutton.which );
-                bool pressed = ( sdlEvent.caxis.value > device->deadZone() );
+                bool pressed = ( qAbs( sdlEvent.caxis.value ) > device->deadZone() );
+
+                // The lowest value is 0, so 0 + 4 will put us at the proper retropad value, ranging
+                // from 4 to 7;
                 sdlDeviceList.at( sdlEvent.cbutton.which )->insert( sdlEvent.caxis.axis + 4, pressed );
                 //qDebug() << "Axis motion: " << pressed << sdlEvent.caxis.axis + 4;
                 //qDebug() << sdlEvent.caxis.type;
