@@ -1,9 +1,12 @@
 import QtQuick 2.4
 import QtQuick.Controls 1.3
 import QtGraphicalEffects 1.0
-import libretro.video 1.0
 import QtQuick.Dialogs 1.2
 import QtQuick.Window 2.0
+import QtQuick.Layouts 1.1
+
+import libretro.video 1.0
+
 
 ApplicationWindow {
     id: phoenixWindow
@@ -101,94 +104,113 @@ ApplicationWindow {
 
     }
 
+    statusBar: StatusBar {
+        RowLayout {
+            Button {
+                anchors.verticalCenter: parent.verticalCenter;
+                text: qstr( "Input" );
+                onClicked: {
+                    if ( input.currentItem === null )
+                        input.currentIndexChanged.connect( inputDialog.open() );
+                    else
+                        inputDialog.open();
+
+                }
+            }
+        }
+    }
+
 
 
     Dialog {
         id: inputDialog;
         visible: false;
-        height: 450;
+        height: 125;
         width: 250;
 
+        function handleEvent( event ) {
+            if ( event.state > 0 ) {
+                if ( inputDialog.mapIndex == 15) {
+                    input.currentItem.inputDeviceEventChanged.disconnect( inputDialog.handleEvent );
+                    inputDialog.text = "Finished!";
+                    inputDialog.close();
+                    return;
+                }
+                input.currentItem.insertMappingValue( event.value, inputDialog.mapIndex );
+                inputDialog.mapIndex++;
+                inputDialog.text = "Press the button for <b>"
+                        + inputDialog.mapValues[ inputDialog.mapIndex ] + "</b>";
 
-
-
-        /*function handleEvent( event, pressed ) {
-            inputView.currentItem.newVal = event;
-            console.log( "IN QML::: " + event + " state: " + pressed);
-        }*/
-
-        property var inputDevice: undefined;
-        //property string inputDeviceName: undefined;
-        /*onInputDeviceChanged: {
-            if ( inputDevice !== undefined) {
-                //inputDeviceName = inputDevice.name;
-
-                inputDevice.inputDeviceEventChanged.connect( handleEvent );
-                console.log("Got device " + inputDevice.name + " " + inputDevice.retroButtonCount );
             }
-        }*/
+        }
 
-        ListView {
-            id: inputView;
-            orientation: ListView.Vertical;
-            model: ListModel {
-                ListElement { button: "A"}
-                ListElement { button: "B"}
-                ListElement { button: "X"}
-                ListElement { button: "Y"}
-                ListElement { button: "Up"}
-                ListElement { button: "Down"}
-                ListElement { button: "Left"}
-                ListElement { button: "Right"}
-                ListElement { button: "L"}
-                ListElement { button: "R"}
-                ListElement { button: "R2"}
-                ListElement { button: "R3"}
-                ListElement { button: "L2"}
-                ListElement { button: "L3"}
-                ListElement { button: "Start"}
-                ListElement { button: "Select"}
+        property string text: "<b>Change player " + input.currentIndex + " mapping?</b>";
+        property int mapIndex: 0;
+        property var mapValues: [
+            "B", "X", "Select",
+            "Start", "Up", "Down", "Left", "Right",
+            "A", "X", "L", "R", "L2", "R2", "L3", "R3"
+        ];
 
+        contentItem: Rectangle {
+            id: background;
+            //height: 250;
+            //width: 600;
+            color: systemPalette.light;
+            Label {
+                anchors.centerIn: parent;
+                text: inputDialog.text;
             }
 
 
-            spacing: 3;
-
-            height: 400;
-            width: 200;
-
-            delegate: Item {
-                height: 25;
+            RowLayout {
+                id: rowLayout;
                 anchors {
                     left: parent.left;
+                    leftMargin: 12;
                     right: parent.right;
+                    rightMargin: 12;
+                    bottom: parent.bottom;
                 }
 
-                property string newVal: "Unknown";
-                Label {
+                height: 50;
+
+                spacing: 12;
+
+                Button {
+                    text: "No";
                     anchors {
                         verticalCenter: parent.verticalCenter;
-                        right: inputTextField.left;
-                        rightMargin: 36;
+                        right: yesButton.left;
+                        rightMargin: 12;
                     }
 
-                    text: button;
-
+                    onClicked: inputDialog.close();
                 }
 
-                TextField {
-                    id: inputTextField;
-
-                    text: parent.newVal;
-                    width: 100;
+                Button {
+                    id: yesButton;
+                    text: "Yes";
                     anchors {
                         verticalCenter: parent.verticalCenter;
                         right: parent.right;
-                        rightMargin: 12;
+                    }
+
+
+                    onClicked: {
+                        rowLayout.visible = false;
+                        input.currentItem.editMode = true;
+                        input.currentItem.inputDeviceEventChanged.connect( inputDialog.handleEvent );
+                        inputDialog.text = "Press the button for <b>"
+                                + inputDialog.mapValues[ inputDialog.mapIndex ] + "</b>";
                     }
                 }
             }
         }
+
+
+
+
     }
 
 
@@ -278,25 +300,7 @@ ApplicationWindow {
 
             property int mapIndex: 0;
             onCurrentItemChanged: {
-                currentItem.editMode = true;
-                console.log("Current Button to enter is: " + mapIndex);
 
-
-                currentItem.inputDeviceEventChanged.connect( function( event ) {
-                    if ( event.state > 0 ) {
-                        //console.log( event.value, event.state, event.displayName, event.attachedDevice );
-                        if ( mapIndex > 15) {
-                            console.log( "Finished Mapping" );
-                            currentItem.editMode = false;
-                            return;
-                        }
-                        currentItem.insertMappingValue( event.value, input.mapIndex );
-                        //input.insertMappingValue( event.value, )// This is available in all editors.
-                        input.mapIndex++;
-                        console.log( "Next button is " + input.mapIndex );
-
-                    }
-                });
                 //console.log("CurrentItem: " + currentItem.name +
                             //" " + currentItem.retroButtonCount);
 
