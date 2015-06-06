@@ -342,8 +342,8 @@ ApplicationWindow {
             property int mapIndex: 0;
             onCurrentItemChanged: {
 
-                //console.log("CurrentItem: " + currentItem.name +
-                            //" " + currentItem.retroButtonCount);
+                console.log("CurrentItem: " + currentItem.name +
+                            " " + currentItem.retroButtonCount);
 
             }
 

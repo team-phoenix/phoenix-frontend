@@ -72,8 +72,8 @@ int main( int argc, char *argv[] ) {
     qRegisterMetaType<retro_pixel_format>();
     qRegisterMetaType<Core::State>();
     qRegisterMetaType<Core::Error>();
-    qRegisterMetaType<InputDevice *>("InputDevice *");
-    qRegisterMetaType<InputDeviceEvent *>("InputDeviceEvent *");
+    qRegisterMetaType<InputDevice *>( "InputDevice *" );
+    qRegisterMetaType<InputDeviceEvent *>( "InputDeviceEvent *" );
 
     engine.load( QUrl( QString( "qrc:/main.qml" ) ) );
 

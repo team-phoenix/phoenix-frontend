@@ -32,34 +32,30 @@ class VideoItem : public QQuickItem {
         Q_OBJECT
         Q_PROPERTY( QString libretroCore MEMBER corePath WRITE setCore )
         Q_PROPERTY( QString game MEMBER gamePath WRITE setGame )
-    Q_PROPERTY( InputManager * inputManager READ inputManager WRITE setInputManager NOTIFY inputManagerChanged )
+        Q_PROPERTY( InputManager *inputManager READ inputManager WRITE setInputManager NOTIFY inputManagerChanged )
 
-    InputManager *qmlInputManager;
+        InputManager *qmlInputManager;
 
-    void keyPressEvent(QKeyEvent *event)
-    {
-        qmlInputManager->keyboard->insert( (Qt::Key)event->key(), true );
+        void keyPressEvent( QKeyEvent *event ) {
+            qmlInputManager->keyboard->insert( ( Qt::Key )event->key(), true );
 
-    }
+        }
 
-    void keyReleaseEvent(QKeyEvent *event)
-    {
-        qmlInputManager->keyboard->insert( (Qt::Key)event->key() , false );
-    }
+        void keyReleaseEvent( QKeyEvent *event ) {
+            qmlInputManager->keyboard->insert( ( Qt::Key )event->key() , false );
+        }
 
     public:
 
         VideoItem( QQuickItem *parent = 0 );
         ~VideoItem();
 
-        InputManager *inputManager() const
-        {
+        InputManager *inputManager() const {
             return qmlInputManager;
         }
 
-        void setInputManager( InputManager *manager )
-        {
-            if ( manager != qmlInputManager ) {
+        void setInputManager( InputManager *manager ) {
+            if( manager != qmlInputManager ) {
                 qmlInputManager = manager;
                 core->inputManager = qmlInputManager;
 

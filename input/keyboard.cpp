@@ -1,16 +1,16 @@
 #include "keyboard.h"
 
 Keyboard::Keyboard( QObject *parent )
-    : InputDevice( LibretroType::RetroGamepad, "Keyboard", parent )
-{
+    : InputDevice( LibretroType::RetroGamepad, "Keyboard", parent ) {
 
 }
 
-void Keyboard::insert(const Qt::Key &event, int16_t pressed)
-{
+void Keyboard::insert( const Qt::Key &event, int16_t pressed ) {
     InputDeviceEvent::Event newEvent = keyConvertor.value( event , InputDeviceEvent::Unknown );
-    if ( newEvent != InputDeviceEvent::Unknown )
+
+    if( newEvent != InputDeviceEvent::Unknown ) {
         InputDevice::insert( newEvent, pressed );
+    }
 }
 
 

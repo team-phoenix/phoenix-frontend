@@ -10,8 +10,7 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     width( 0 ), height( 0 ), pitch( 0 ), coreFPS( 0.0 ), hostFPS( 0.0 ),
     qmlInputManager( nullptr ),
     texture( nullptr ),
-    frameTimer()
-{
+    frameTimer() {
 
     setFlag( QQuickItem::ItemHasContents, true );
 
@@ -103,26 +102,26 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             // Run a timer to make core produce a frame at regular intervals
             // Disabled at the moment due to the granulatiry being 1ms (not good enough)
 
-//            // Set up and start the frame timer
-//            qCDebug( phxController ) << "coreTimer.start("
-//                                     << ( double )1 / ( avInfo.timing.fps / 1000 )
-//                                     << "ms (core) =" << ( int )( 1 / ( avInfo.timing.fps / 1000 ) )
-//                                     << "ms (actual) )";
+            //            // Set up and start the frame timer
+            //            qCDebug( phxController ) << "coreTimer.start("
+            //                                     << ( double )1 / ( avInfo.timing.fps / 1000 )
+            //                                     << "ms (core) =" << ( int )( 1 / ( avInfo.timing.fps / 1000 ) )
+            //                                     << "ms (actual) )";
 
-//            // Stop when the program stops
-//            connect( this, &VideoItem::signalShutdown, coreTimer, &QTimer::stop );
+            //            // Stop when the program stops
+            //            connect( this, &VideoItem::signalShutdown, coreTimer, &QTimer::stop );
 
-//            // Millisecond accuracy on Unix (OS X/Linux)
-//            // Multimedia timer accuracy on Windows (better?)
-//            coreTimer->setTimerType( Qt::PreciseTimer );
+            //            // Millisecond accuracy on Unix (OS X/Linux)
+            //            // Multimedia timer accuracy on Windows (better?)
+            //            coreTimer->setTimerType( Qt::PreciseTimer );
 
-//            // Granulatiry is in the integer range :(
-//            coreTimer->start( ( int )( 1 / ( avInfo.timing.fps / 1000 ) ) );
+            //            // Granulatiry is in the integer range :(
+            //            coreTimer->start( ( int )( 1 / ( avInfo.timing.fps / 1000 ) ) );
 
-//            // Have the timer run in the same thread as Core
-//            // This will mean timeouts are blocking, preventing them from piling up if Core runs too slow
-//            coreTimer->moveToThread( coreThread );
-//            connect( coreThread, &QThread::finished, coreTimer, &QTimer::deleteLater );
+            //            // Have the timer run in the same thread as Core
+            //            // This will mean timeouts are blocking, preventing them from piling up if Core runs too slow
+            //            coreTimer->moveToThread( coreThread );
+            //            connect( coreThread, &QThread::finished, coreTimer, &QTimer::deleteLater );
 
             // Place Core into the render thread
             // Mandatory for OpenGL cores

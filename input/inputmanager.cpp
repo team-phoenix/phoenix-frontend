@@ -1,11 +1,10 @@
 #include "inputmanager.h"
 
-InputManager::InputManager(QObject *parent)
-    : QObject(parent),
+InputManager::InputManager( QObject *parent )
+    : QObject( parent ),
       keyboard( new Keyboard() ),
       qmlCurrentIndex( 0 ),
-      qmlCurrentItem( nullptr )
-{
+      qmlCurrentItem( nullptr ) {
 
 
     connect( &sdlEventLoop, &SDLEventLoop::deviceConnected, this, &InputManager::append );
@@ -18,13 +17,13 @@ InputManager::InputManager(QObject *parent)
     sdlEventLoop.start();
 }
 
-InputManager::~InputManager()
-{
+InputManager::~InputManager() {
     sdlEventLoop.stop();
 
-    for ( auto device : deviceList ) {
-        if ( device )
+    for( auto device : deviceList ) {
+        if( device ) {
             device->deleteLater();
+        }
     }
 
     //sdlThread.requestInterruption();

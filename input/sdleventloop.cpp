@@ -6,8 +6,7 @@
 SDLEventLoop::SDLEventLoop( QObject *parent )
     : QObject( parent ),
       sdlPollTimer( this ),
-      numOfDevices( 0 )
-{
+      numOfDevices( 0 ) {
     // To do the poll timer isn't in the sdlEventLoopThread. it needs to be.
 
     this->moveToThread( &sdlEventLoopThread );
@@ -27,8 +26,7 @@ SDLEventLoop::SDLEventLoop( QObject *parent )
 
 }
 
-void SDLEventLoop::processEvents()
-{
+void SDLEventLoop::processEvents() {
     SDL_Event sdlEvent;
 
     while( SDL_PollEvent( &sdlEvent ) ) {
@@ -40,22 +38,23 @@ void SDLEventLoop::processEvents()
 
                 qCDebug( phxInput ) << "Current Devices: " << numOfDevices << ", New Devices: " <<  SDL_NumJoysticks();
 
-                if ( numOfDevices != SDL_NumJoysticks() ) {
+                if( numOfDevices != SDL_NumJoysticks() ) {
                     quitSDL();
                     initSDL();
                     findJoysticks();
                 }
 
 
-/*
-                if( SDL_Init( SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER ) < 0 ) {
-                    qFatal( "Fatal: Unable to initialize SDL2: %s", SDL_GetError() );
-                }*/
+                /*
+                                if( SDL_Init( SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER ) < 0 ) {
+                                    qFatal( "Fatal: Unable to initialize SDL2: %s", SDL_GetError() );
+                                }*/
 
                 //AddController( sdlEvent.cdevice );
                 mutex.unlock();
                 break;
             }
+
             case SDL_CONTROLLERDEVICEADDED: {
                 qCDebug( phxInput ) << "Controller Device Added: " << sdlEvent.cdevice.which;
                 break;
@@ -70,6 +69,7 @@ void SDLEventLoop::processEvents()
                 mutex.unlock();
                 break;
             }
+
             case SDL_CONTROLLERDEVICEREMOVED:
                 qCDebug( phxInput ) << "GAME CONTROLLER REMOVED";
                 break;
@@ -102,7 +102,7 @@ void SDLEventLoop::processEvents()
                 qDebug() << "hat mootion " << sdlEvent.jhat.hat << " with value " << sdlEvent.jhat.value;
                 break;
 
-                // YOUR OTHER EVENT HANDLING HERE
+            // YOUR OTHER EVENT HANDLING HERE
             default:
                 //qDebug() << "hit";
                 //qDebug() << "Default: " << sdlEvent.text.text;
@@ -112,8 +112,7 @@ void SDLEventLoop::processEvents()
     }
 }
 
-void SDLEventLoop::initSDL()
-{
+void SDLEventLoop::initSDL() {
     if( SDL_Init( SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER ) < 0 ) {
         qFatal( "Fatal: Unable to initialize SDL2: %s", SDL_GetError() );
     }
@@ -121,19 +120,17 @@ void SDLEventLoop::initSDL()
     SDL_JoystickEventState( SDL_ENABLE );
 }
 
-void SDLEventLoop::findJoysticks()
-{
+void SDLEventLoop::findJoysticks() {
     numOfDevices = SDL_NumJoysticks();
 
-    for ( int i=0; i < numOfDevices; ++i ) {
+    for( int i = 0; i < numOfDevices; ++i ) {
         auto *joystick = new Joystick( i );
         sdlDeviceList.insert( i, joystick );
         emit deviceConnected( joystick );
     }
 }
 
-void SDLEventLoop::quitSDL()
-{
+void SDLEventLoop::quitSDL() {
     SDL_Quit();
 }
 

@@ -112,13 +112,13 @@ struct LibretroSymbols {
 };
 
 class Core: public QObject {
-    Q_OBJECT
+        Q_OBJECT
 
-    Q_PROPERTY( QString saveDirectory READ saveDirectory WRITE setSaveDirectory NOTIFY saveDirectoryChanged)
-    Q_PROPERTY( QString systemDirectory READ systemDirectory WRITE setSystemDirectory NOTIFY systemDirectoryChanged)
+        Q_PROPERTY( QString saveDirectory READ saveDirectory WRITE setSaveDirectory NOTIFY saveDirectoryChanged )
+        Q_PROPERTY( QString systemDirectory READ systemDirectory WRITE setSystemDirectory NOTIFY systemDirectoryChanged )
 
-    QString qmlSaveDirectory;
-    QString qmlSystemDirectory;
+        QString qmlSaveDirectory;
+        QString qmlSystemDirectory;
 
     public:
 
@@ -233,13 +233,11 @@ class Core: public QObject {
 
         };
 
-        QString saveDirectory() const
-        {
+        QString saveDirectory() const {
             return qmlSaveDirectory;
         }
 
-        QString systemDirectory() const
-        {
+        QString systemDirectory() const {
             return qmlSystemDirectory;
         }
 

@@ -217,8 +217,9 @@ void Core::slotLoadGame( QString path ) {
 
     gameFileInfo.setFile( path );
 
-    if ( saveDirectory().isEmpty() )
+    if( saveDirectory().isEmpty() ) {
         setSaveDirectory( gameFileInfo.canonicalPath() );
+    }
 
 
     loadSRAM( gameFileInfo.baseName() );
@@ -243,7 +244,7 @@ void Core::slotShutdown() {
 
     qCDebug( phxCore ) << "slotShutdown() start";
 
-     saveSRAM( gameFileInfo.baseName() );
+    saveSRAM( gameFileInfo.baseName() );
 
     // symbols.retro_audio is the first symbol set to null in the constructor, so check that one
     if( symbols.retro_audio ) {
@@ -308,14 +309,12 @@ void Core::emitVideoData( uchar *data, unsigned width, unsigned height, size_t p
 
 // Paths
 
-void Core::setSaveDirectory( const QString path )
-{
+void Core::setSaveDirectory( const QString path ) {
     qmlSaveDirectory = path;
     emit saveDirectoryChanged();
 }
 
-void Core::setSystemDirectory( const QString path )
-{
+void Core::setSystemDirectory( const QString path ) {
     qmlSystemDirectory = path;
     emit systemDirectoryChanged();
 }
@@ -658,8 +657,11 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
 
         case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY: {// 31
             qCDebug( phxCore ) << "\tRETRO_ENVIRONMENT_GET_saveDirectory (31) (handled)";
-            if ( core->systemDirectory().isEmpty() )
+
+            if( core->systemDirectory().isEmpty() ) {
                 core->setSystemDirectory( core->saveDirectory() );
+            }
+
             auto byteArray = core->saveDirectory().toLocal8Bit();
             *static_cast<const char **>( data ) = byteArray.constData();
             qCDebug( phxCore ) << "Save Directory: " << core->saveDirectory();
@@ -772,15 +774,17 @@ int16_t Core::inputStateCallback( unsigned port, unsigned device, unsigned index
     if( deviceobj->mapping()->deviceType() != device ) {
         return 0;
     }
-*/
+    */
     // we don't handle index for now...
 
     auto *inputDevice = core->inputManager->at( port );
-    if ( inputDevice->type() != (InputDevice::LibretroType)device )
+
+    if( inputDevice->type() != ( InputDevice::LibretroType )device ) {
         return 0;
+    }
 
 
-    auto pressed = inputDevice->value( (InputDeviceEvent::Event)id, 0 );
+    auto pressed = inputDevice->value( ( InputDeviceEvent::Event )id, 0 );
 
     return pressed;
 
