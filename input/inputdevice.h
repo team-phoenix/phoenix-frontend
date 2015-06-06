@@ -7,6 +7,7 @@
 #include <QDebug>
 #include <QMap>
 #include <QSharedPointer>
+#include <QQmlEngine>
 
 #include "libretro.h"
 #include "logging.h"
@@ -102,11 +103,12 @@ public slots:
 
     virtual void insert( const InputDeviceEvent::Event &value, const int16_t &state );
 
-    void insert( const InputDeviceEvent *event )
+    void insert( InputDeviceEvent *event )
     {
         if ( editMode() ) {
             QSharedPointer<InputDeviceEvent> scopedEvent(
                         new InputDeviceEvent(event->value(), event->state(), event->attachedDevice()));
+            QQmlEngine::setObjectOwnership( scopedEvent.data(), QQmlEngine::CppOwnership );
             emit inputDeviceEventChanged( scopedEvent.data() );
         }
         else {
@@ -116,7 +118,7 @@ public slots:
                 insert( val, event->state() );
             }
         }
-        delete event;
+        //delete event;
 
 
     }

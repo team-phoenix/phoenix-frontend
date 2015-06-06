@@ -2,7 +2,9 @@
 
 InputManager::InputManager(QObject *parent)
     : QObject(parent),
-      keyboard( new Keyboard() )
+      keyboard( new Keyboard() ),
+      qmlCurrentIndex( 0 ),
+      qmlCurrentItem( nullptr )
 {
 
 
