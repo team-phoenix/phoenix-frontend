@@ -1,7 +1,6 @@
 #ifndef VIDEOITEM_H
 #define VIDEOITEM_H
 
-#include <QDebug>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QSGSimpleRectNode>
@@ -24,19 +23,56 @@
 #include "libretro.h"
 #include "core.h"
 #include "audiooutput.h"
+#include "logging.h"
+
+#include "input/keyboard.h"
+#include "input/inputmanager.h"
 
 class VideoItem : public QQuickItem {
         Q_OBJECT
         Q_PROPERTY( QString libretroCore MEMBER corePath WRITE setCore )
         Q_PROPERTY( QString game MEMBER gamePath WRITE setGame )
+    Q_PROPERTY( InputManager * inputManager READ inputManager WRITE setInputManager NOTIFY inputManagerChanged )
+
+    InputManager *qmlInputManager;
+
+    void keyPressEvent(QKeyEvent *event)
+    {
+        qmlInputManager->keyboard->insert( (Qt::Key)event->key(), true );
+
+    }
+
+    void keyReleaseEvent(QKeyEvent *event)
+    {
+        qmlInputManager->keyboard->insert( (Qt::Key)event->key() , false );
+    }
 
     public:
 
         VideoItem( QQuickItem *parent = 0 );
         ~VideoItem();
 
-    signals:
+        InputManager *inputManager() const
+        {
+            return qmlInputManager;
+        }
 
+        void setInputManager( InputManager *manager )
+        {
+            if ( manager != qmlInputManager ) {
+                qmlInputManager = manager;
+                core->inputManager = qmlInputManager;
+
+                connect( this, &VideoItem::signalRunChanged, qmlInputManager, &InputManager::setRun, Qt::DirectConnection );
+
+                emit inputManagerChanged();
+
+            }
+        }
+
+    signals:
+        void inputManagerChanged();
+        void signalDevice( InputDevice *device );
         // Controller
         void signalLoadCore( QString path );
         void signalLoadGame( QString path );

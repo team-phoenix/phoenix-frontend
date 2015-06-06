@@ -42,8 +42,6 @@ Core::Core()
 
     Core::core = this;
 
-    setSaveDirectory( phxGlobals.savePath() );
-    setSystemDirectory( phxGlobals.biosPath() );
 
     avInfo = new retro_system_av_info;
     systemInfo = new retro_system_info;
@@ -162,18 +160,17 @@ void Core::slotLoadCore( QString path ) {
 
 void Core::slotLoadGame( QString path ) {
 
-    gamePath = path;
 
-    qCDebug( phxCore ) << "slotLoadGame(" << gamePath << ")";
+    qCDebug( phxCore ) << "slotLoadGame(" << path << ")";
 
     // Argument struct for symbols.retro_load_game()
     retro_game_info gameInfo;
 
-    QFileInfo info( gamePath );
+    QFileInfo info( path );
 
     // Full path needed, simply pass the game's file path to the core
     if( fullPathNeeded ) {
-        gameInfo.path = gamePath.toUtf8().constData();
+        gameInfo.path = path.toUtf8().constData();
         gameInfo.data = nullptr;
         gameInfo.size = 0;
         gameInfo.meta = "";
@@ -206,7 +203,6 @@ void Core::slotLoadGame( QString path ) {
     // Get the AV timing/dimensions/format
     symbols.retro_get_system_av_info( avInfo );
 
-    // loadSRAM();
 
     // Allocate buffers now that we know how large to make them
     // Assume 16-bit stereo audio, 32-bit video
@@ -218,6 +214,14 @@ void Core::slotLoadGame( QString path ) {
         videoBufferPool[i] = ( uchar * )calloc( 1, avInfo->geometry.max_width * avInfo->geometry.max_height * 4 );
 
     }
+
+    gameFileInfo.setFile( path );
+
+    if ( saveDirectory().isEmpty() )
+        setSaveDirectory( gameFileInfo.canonicalPath() );
+
+
+    loadSRAM( gameFileInfo.baseName() );
 
     core->emitStateReady();
 
@@ -239,7 +243,7 @@ void Core::slotShutdown() {
 
     qCDebug( phxCore ) << "slotShutdown() start";
 
-    // saveSRAM();
+     saveSRAM( gameFileInfo.baseName() );
 
     // symbols.retro_audio is the first symbol set to null in the constructor, so check that one
     if( symbols.retro_audio ) {
@@ -304,25 +308,25 @@ void Core::emitVideoData( uchar *data, unsigned width, unsigned height, size_t p
 
 // Paths
 
-void Core::setSaveDirectory( QString save_dir ) {
-
-    saveDirectory = save_dir.toLocal8Bit();
-
+void Core::setSaveDirectory( const QString path )
+{
+    qmlSaveDirectory = path;
+    emit saveDirectoryChanged();
 }
 
-void Core::setSystemDirectory( QString system_dir ) {
-
-    systemDirectory = system_dir.toLocal8Bit();
-
+void Core::setSystemDirectory( const QString path )
+{
+    qmlSystemDirectory = path;
+    emit systemDirectoryChanged();
 }
 
 // Save states
 
-void Core::loadSRAM() {
+void Core::loadSRAM( const QString &baseName ) {
 
     SRAMDataRaw = symbols.retro_get_memory_data( RETRO_MEMORY_SAVE_RAM );
 
-    QFile file( saveDirectory + phxGlobals.selectedGame().baseName() + ".srm" );
+    QFile file( saveDirectory() + "/" + baseName + ".srm" );
 
     if( file.open( QIODevice::ReadOnly ) ) {
         QByteArray data = file.readAll();
@@ -332,22 +336,31 @@ void Core::loadSRAM() {
         file.close();
     }
 
+    else {
+        qCDebug( phxCore ) << "loading SRAM from " << file.fileName() << " has failed.";
+    }
+
 }
 
-void Core::saveSRAM() {
+void Core::saveSRAM( const QString &baseName ) {
 
     if( SRAMDataRaw == nullptr ) {
+        qCDebug( phxCore ) << "SRAM pointer is null, the game probably wasn't loaded";
         return;
     }
 
-    QFile file( saveDirectory + phxGlobals.selectedGame().baseName() + ".srm" );
-    qCDebug( phxCore ) << "Saving SRAM to: " << file.fileName();
+    QFile file( saveDirectory() + "/" + baseName + ".srm" );
 
     if( file.open( QIODevice::WriteOnly ) ) {
+        qCDebug( phxCore ) << "Saving SRAM to: " << file.fileName();
         char *data = static_cast<char *>( SRAMDataRaw );
         size_t size = symbols.retro_get_memory_size( RETRO_MEMORY_SAVE_RAM );
         file.write( data, size );
         file.close();
+    }
+
+    else {
+        qDebug() << "saving SRAM has failed at " << file.fileName();
     }
 
 }
@@ -481,10 +494,12 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
             qDebug() << "\tRETRO_ENVIRONMENT_SET_PERFORMANCE_LEVEL (8)";
             break;
 
-        case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY: // 9
+        case RETRO_ENVIRONMENT_GET_SYSTEM_DIRECTORY: {// 9
             qCDebug( phxCore ) << "\tRETRO_ENVIRONMENT_GET_systemDirectory (9)";
-            *static_cast<const char **>( data ) = core->systemDirectory.constData();
+            auto byteArray = core->systemDirectory().toLocal8Bit();
+            *static_cast<const char **>( data ) = byteArray.constData();
             return true;
+        }
 
         case RETRO_ENVIRONMENT_SET_PIXEL_FORMAT: { // 10
             qDebug() << "\tRETRO_ENVIRONMENT_SET_PIXEL_FORMAT (10) (handled)";
@@ -641,11 +656,15 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
             qDebug() << "\tRETRO_ENVIRONMENT_GET_CONTENT_DIRECTORY (30)";
             break;
 
-        case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY: // 31
+        case RETRO_ENVIRONMENT_GET_SAVE_DIRECTORY: {// 31
             qCDebug( phxCore ) << "\tRETRO_ENVIRONMENT_GET_saveDirectory (31) (handled)";
-            *static_cast<const char **>( data ) = core->saveDirectory.constData();
-            qCDebug( phxCore ) << "Save Directory: " << core->saveDirectory;
-            break;
+            if ( core->systemDirectory().isEmpty() )
+                core->setSystemDirectory( core->saveDirectory() );
+            auto byteArray = core->saveDirectory().toLocal8Bit();
+            *static_cast<const char **>( data ) = byteArray.constData();
+            qCDebug( phxCore ) << "Save Directory: " << core->saveDirectory();
+            return true;
+        }
 
         case RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO: // 32
             qDebug() << "\tRETRO_ENVIRONMENT_SET_systemAVInfo (32)";
@@ -736,12 +755,34 @@ void Core::logCallback( enum retro_log_level level, const char *fmt, ... ) {
 }
 
 int16_t Core::inputStateCallback( unsigned port, unsigned device, unsigned index, unsigned id ) {
-    Q_UNUSED( port )
     Q_UNUSED( device )
     Q_UNUSED( index )
-    Q_UNUSED( id )
 
-    return 0;
+
+    if( ( int ) port >= core->inputManager->size() ) {
+        return 0;
+    }
+
+
+    // make sure the InputDevice was configured
+    // to map to the requested RETRO_DEVICE.
+
+
+    /*
+    if( deviceobj->mapping()->deviceType() != device ) {
+        return 0;
+    }
+*/
+    // we don't handle index for now...
+
+    auto *inputDevice = core->inputManager->at( port );
+    if ( inputDevice->type() != (InputDevice::LibretroType)device )
+        return 0;
+
+
+    auto pressed = inputDevice->value( (InputDeviceEvent::Event)id, 0 );
+
+    return pressed;
 
 }
 

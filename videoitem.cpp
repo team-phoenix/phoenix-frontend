@@ -8,8 +8,12 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     avInfo(), pixelFormat(),
     corePath( "" ), gamePath( "" ),
     width( 0 ), height( 0 ), pitch( 0 ), coreFPS( 0.0 ), hostFPS( 0.0 ),
+    qmlInputManager( nullptr ),
     texture( nullptr ),
-    frameTimer() {
+    frameTimer()
+{
+
+    setFlag( QQuickItem::ItemHasContents, true );
 
     // Place the objects under VideoItem's control into their own threads
     audioOutput->moveToThread( audioOutputThread );
@@ -95,6 +99,7 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             // This is mixing control (coreThread) and consumer (render thread) members...
             coreThread = window()->openglContext()->thread();
 
+
             // Run a timer to make core produce a frame at regular intervals
             // Disabled at the moment due to the granulatiry being 1ms (not good enough)
 
@@ -122,10 +127,14 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             // Place Core into the render thread
             // Mandatory for OpenGL cores
             // Also prevents massive overhead/performance loss caused by QML effects (like FastBlur)
+
             core->moveToThread( coreThread );
             connect( coreThread, &QThread::finished, core, &Core::deleteLater );
 
             qCDebug( phxController ) << "Begin emulation.";
+
+            // Let all the consumers know emulation began
+            emit signalRunChanged( true );
 
             // Get core to immediately (sorta) produce the first frame
             emit signalFrame();
@@ -133,8 +142,7 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             // Force an update to keep the render thread from pausing
             update();
 
-            // Let all the consumers know emulation began
-            emit signalRunChanged( true );
+
 
             break;
 
@@ -232,23 +240,7 @@ void VideoItem::handleWindowChanged( QQuickWindow *window ) {
         return;
     }
 
-
-    /* #################################
-     *
-     * DO NOT DELETE THIS COMMENTED CODE!!!
-     *
-     * #################################
-     */
-
-    //parentWindow = window;
-
-    //qDebug() << "handle: " << window->renderTarget()->handle();
-    //fbo_t = window->renderTarget()->handle();
-
-    setFlag( QQuickItem::ItemHasContents, true );
-
     connect( window, &QQuickWindow::openglContextCreated, this, &VideoItem::handleOpenGLContextCreated );
-
     connect( window, &QQuickWindow::frameSwapped, this, &QQuickItem::update );
 
 }

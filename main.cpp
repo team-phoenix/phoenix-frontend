@@ -7,6 +7,7 @@
 #include "core.h"
 #include "pathwatcher.h"
 #include "libretro.h"
+#include "input/inputmanager.h"
 
 Q_DECLARE_METATYPE( retro_system_av_info )
 Q_DECLARE_METATYPE( retro_pixel_format )
@@ -63,6 +64,7 @@ int main( int argc, char *argv[] ) {
     // Make C++ classes visible to QML
     qmlRegisterType<VideoItem>( "libretro.video", 1, 0, "VideoItem" );
     qmlRegisterType<PathWatcher>( "libretro.video", 1, 0, "PathWatcher" );
+    qmlRegisterType<InputManager>( "libretro.video", 1, 0, "InputManager" );
 
     // Don't let the Qt police find out we're declaring these structs as metatypes
     // without proper constructors/destructors declared/written
@@ -70,6 +72,8 @@ int main( int argc, char *argv[] ) {
     qRegisterMetaType<retro_pixel_format>();
     qRegisterMetaType<Core::State>();
     qRegisterMetaType<Core::Error>();
+    qRegisterMetaType<InputDevice *>("InputDevice *");
+    qRegisterMetaType<InputDeviceEvent *>("InputDeviceEvent *");
 
     engine.load( QUrl( QString( "qrc:/main.qml" ) ) );
 

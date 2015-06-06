@@ -15,6 +15,8 @@
 #include "libretro.h"
 #include "logging.h"
 
+#include "input/inputmanager.h"
+
 /* Core is a class that manages the execution of a Libretro core and its associated game.
  *
  * Core is a state machine whose normal lifecycle goes like this:
@@ -110,12 +112,20 @@ struct LibretroSymbols {
 };
 
 class Core: public QObject {
-        Q_OBJECT
+    Q_OBJECT
+
+    Q_PROPERTY( QString saveDirectory READ saveDirectory WRITE setSaveDirectory NOTIFY saveDirectoryChanged)
+    Q_PROPERTY( QString systemDirectory READ systemDirectory WRITE setSystemDirectory NOTIFY systemDirectoryChanged)
+
+    QString qmlSaveDirectory;
+    QString qmlSystemDirectory;
 
     public:
 
         Core();
         ~Core();
+
+        InputManager *inputManager;
 
         typedef enum : int {
             STATEUNINITIALIZED,
@@ -223,11 +233,22 @@ class Core: public QObject {
 
         };
 
+        QString saveDirectory() const
+        {
+            return qmlSaveDirectory;
+        }
+
+        QString systemDirectory() const
+        {
+            return qmlSystemDirectory;
+        }
+
         // State to text helper
         static QString stateToText( State state );
 
     signals:
-
+        void saveDirectoryChanged();
+        void systemDirectoryChanged();
         void signalCoreStateChanged( Core::State newState, Core::Error error );
         void signalAVFormat( retro_system_av_info avInfo, retro_pixel_format pixelFormat );
         void signalAudioData( int16_t *data, int bytes );
@@ -303,17 +324,15 @@ class Core: public QObject {
         // Paths
         //
 
-        QByteArray systemDirectory;
-        QByteArray saveDirectory;
-        void setSystemDirectory( QString systemDirectory );
-        void setSaveDirectory( QString saveDirectory );
+        void setSystemDirectory( const QString path );
+        void setSaveDirectory( const QString saveDirectory );
 
         //
         // Game
         //
 
         // Path to ROM/ISO, empty if (!fullPathNeeded)
-        QString gamePath;
+        QFileInfo gameFileInfo;
 
         // Raw ROM/ISO data, empty if (fullPathNeeded)
         QByteArray gameData;
@@ -351,8 +370,8 @@ class Core: public QObject {
         //
 
         void *SRAMDataRaw;
-        void loadSRAM();
-        void saveSRAM();
+        void loadSRAM( const QString &baseName );
+        void saveSRAM( const QString &baseName );
 
         //
         // Callbacks

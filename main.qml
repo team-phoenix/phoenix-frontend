@@ -19,6 +19,10 @@ ApplicationWindow {
         return qsTr(str);
     }
 
+    SystemPalette {
+        id: systemPalette;
+    }
+
     menuBar: MenuBar {
         Menu {
             title: "Game";
@@ -97,6 +101,98 @@ ApplicationWindow {
 
     }
 
+
+
+    Dialog {
+        id: inputDialog;
+        visible: false;
+        height: 450;
+        width: 250;
+
+
+
+
+        /*function handleEvent( event, pressed ) {
+            inputView.currentItem.newVal = event;
+            console.log( "IN QML::: " + event + " state: " + pressed);
+        }*/
+
+        property var inputDevice: undefined;
+        //property string inputDeviceName: undefined;
+        /*onInputDeviceChanged: {
+            if ( inputDevice !== undefined) {
+                //inputDeviceName = inputDevice.name;
+
+                inputDevice.inputDeviceEventChanged.connect( handleEvent );
+                console.log("Got device " + inputDevice.name + " " + inputDevice.retroButtonCount );
+            }
+        }*/
+
+        ListView {
+            id: inputView;
+            orientation: ListView.Vertical;
+            model: ListModel {
+                ListElement { button: "A"}
+                ListElement { button: "B"}
+                ListElement { button: "X"}
+                ListElement { button: "Y"}
+                ListElement { button: "Up"}
+                ListElement { button: "Down"}
+                ListElement { button: "Left"}
+                ListElement { button: "Right"}
+                ListElement { button: "L"}
+                ListElement { button: "R"}
+                ListElement { button: "R2"}
+                ListElement { button: "R3"}
+                ListElement { button: "L2"}
+                ListElement { button: "L3"}
+                ListElement { button: "Start"}
+                ListElement { button: "Select"}
+
+            }
+
+
+            spacing: 3;
+
+            height: 400;
+            width: 200;
+
+            delegate: Item {
+                height: 25;
+                anchors {
+                    left: parent.left;
+                    right: parent.right;
+                }
+
+                property string newVal: "Unknown";
+                Label {
+                    anchors {
+                        verticalCenter: parent.verticalCenter;
+                        right: inputTextField.left;
+                        rightMargin: 36;
+                    }
+
+                    text: button;
+
+                }
+
+                TextField {
+                    id: inputTextField;
+
+                    text: parent.newVal;
+                    width: 100;
+                    anchors {
+                        verticalCenter: parent.verticalCenter;
+                        right: parent.right;
+                        rightMargin: 12;
+                    }
+                }
+            }
+        }
+    }
+
+
+
     PathWatcher {
         id: pathWatcher;
         Component.onCompleted: pathWatcher.start();
@@ -162,6 +258,9 @@ ApplicationWindow {
             anchors.fill: parent
             z: 10
             hoverEnabled: true
+            onClicked:  {
+                //inputDialog.visible = true;
+            }
 
             onDoubleClicked: {
 
@@ -174,89 +273,58 @@ ApplicationWindow {
 
         }
 
+        InputManager {
+            id: input;
+
+            property int mapIndex: 0;
+            onCurrentItemChanged: {
+                currentItem.editMode = true;
+                console.log("Current Button to enter is: " + mapIndex);
+
+
+                currentItem.inputDeviceEventChanged.connect( function( event ) {
+                    if ( event.state > 0 ) {
+                        //console.log( event.value, event.state, event.displayName, event.attachedDevice );
+                        if ( mapIndex > 15) {
+                            console.log( "Finished Mapping" );
+                            currentItem.editMode = false;
+                        }
+                        currentItem.insertMappingValue( event.value, input.mapIndex );
+                        //input.insertMappingValue( event.value, )// This is available in all editors.
+                        input.mapIndex++;
+                        console.log( "Next button is " + input.mapIndex );
+
+                    }
+                });
+                //console.log("CurrentItem: " + currentItem.name +
+                            //" " + currentItem.retroButtonCount);
+
+            }
+
+            onCurrentIndexChanged: {
+                //if ( currentItem !== undefined )
+                    //currentItem.inputDeviceEvent.disconnect();
+            }
+
+            Component.onCompleted: {
+                console.log("finished");
+                input.emitConnectedDevices();
+            }
+        }
+
         VideoItem {
 
             id: videoItem
             rotation: 180
+            inputManager: input;
             anchors {
                 top: parent.top
                 bottom: parent.bottom
                 horizontalCenter: parent.horizontalCenter
             }
 
-            width: height * phoenixWindow.ratio
-
-//            Column {
-//                visible: false;
-//                spacing: 24;
-//                anchors.centerIn: parent;
-//                Rectangle {
-//                    color: "lightgray";
-//                    opacity: 0.6;
-
-//                    border {
-//                        color: "white"
-//                        width: 2;
-//                    }
-
-//                    height: 50;
-//                    width: 175;
-
-//                    Text {
-//                        anchors.centerIn: parent;
-//                        text: "Play | Pause";
-//                        color: "white";
-//                        font {
-//                            pixelSize: 18;
-//                            bold: true;
-//                        }
-//                    }
-//                }
-
-//                Rectangle {
-//                    color: "lightgray";
-//                    opacity: 0.6;
-//                    border {
-//                        color: "white"
-//                        width: 2;
-//                    }
-
-//                    height: 50;
-//                    width: 175;
-
-//                    Text {
-//                        anchors.centerIn: parent;
-//                        text: "Load Game";
-//                        color: "white";
-//                        font {
-//                            pixelSize: 18;
-//                            bold: true;
-//                        }
-//                    }
-//                }
-
-//                Rectangle {
-//                    color: "lightgray";
-//                    opacity: 0.6;
-//                    border {
-//                        color: "white"
-//                        width: 2;
-//                    }
-
-//                    height: 50;
-//                    width: 175;
-
-//                    Text {
-//                        anchors.centerIn: parent;
-//                        text: "Mute Audio";
-//                        color: "white";
-//                        font {
-//                            pixelSize: 18;
-//                            bold: true;
-//                        }
-//                    }
-//                }
-//            }
+            focus: true;
+            width: height * phoenixWindow.ratio;
 
         }
 
