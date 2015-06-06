@@ -70,6 +70,7 @@ public:
 
     InputDevice *at( int index )
     {
+
         return deviceList.at( index );
     }
 
@@ -175,6 +176,11 @@ private:
     void setCurrentItem( InputDevice *device )
     {
         qmlCurrentItem = device;
+
+        // Make sure qml doesn't snatch up ownership of this pointer
+        // and delete it. This would cause all sorts of hell...
+
+        QQmlEngine::setObjectOwnership( qmlCurrentItem, QQmlEngine::CppOwnership );
         emit currentItemChanged();
     }
 
