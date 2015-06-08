@@ -9,7 +9,6 @@
 
 class InputDevice;
 
-
 class InputDeviceEvent : public QObject {
         Q_OBJECT
 
@@ -17,8 +16,6 @@ class InputDeviceEvent : public QObject {
         Q_PROPERTY( int value READ value )
         Q_PROPERTY( QString displayName READ displayName )
         Q_PROPERTY( InputDevice *attachedDevice READ attachedDevice )
-
-
 
     public:
 
@@ -45,13 +42,8 @@ class InputDeviceEvent : public QObject {
         Q_ENUMS( Event )
 
 
-        explicit InputDeviceEvent( const int value
-                                   , const int16_t state
-                                   , InputDevice *device )
-            : qmlState( state ),
-              qmlValue( value ),
-              qmlDevice( device ) {
-
+        explicit InputDeviceEvent( const int value, const int16_t state, InputDevice *device )
+            : qmlState( state ), qmlValue( value ), qmlDevice( device ) {
         }
 
         ~InputDeviceEvent() {
@@ -72,8 +64,6 @@ class InputDeviceEvent : public QObject {
         InputDevice *attachedDevice() const {
             return qmlDevice;
         }
-
-    public:
 
         static QString toString( const InputDeviceEvent::Event &event ) {
             switch( event ) {
@@ -198,11 +188,7 @@ class InputDeviceEvent : public QObject {
             return Event::Unknown;
         }
 
-
-
-
     private:
-
 
         int qmlState;
         int qmlValue;
@@ -211,12 +197,9 @@ class InputDeviceEvent : public QObject {
         // Do not delete this pointer.
         InputDevice *qmlDevice;
 
-
-
 };
 
 //Q_DECLARE_METATYPE( InputDeviceEvent )
-
 
 #endif // INPUTDEVICEEVENT
 
