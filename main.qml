@@ -120,13 +120,13 @@ ApplicationWindow {
         }
     }
 
-
-
     Dialog {
+
         id: inputDialog;
         visible: false;
         height: 125;
         width: 250;
+        standardButtons: StandardButton.Ok | StandardButton.Cancel;
 
         function handleEvent( event ) {
             if ( event.state > 0 ) {
@@ -149,11 +149,13 @@ ApplicationWindow {
         ];
 
         contentItem: Rectangle {
+
             id: background;
             //height: 250;
             //width: 600;
             color: systemPalette.light;
             visible: inputDialog.visible;
+
             onVisibleChanged: {
                 if ( visible ) {
                     background.state = "resetMapping";
@@ -161,8 +163,11 @@ ApplicationWindow {
             }
 
             states: [
+
                 State {
+
                     name: "resetMapping";
+
                     PropertyChanges {
                         target: rowLayout;
                         visible: true;
@@ -173,9 +178,11 @@ ApplicationWindow {
                         text: "Edit mapping for <b>port " + inputDialog.mapIndex + "</b>?";
 
                     }
+
                 },
 
                 State {
+
                     name: "startMapping";
 
                     PropertyChanges {
@@ -183,10 +190,6 @@ ApplicationWindow {
                         mapIndex: 0;
                     }
 
-                    PropertyChanges {
-                        target: rowLayout;
-                        visible: false;
-                    }
                     PropertyChanges {
                         target: dialogLabel;
                         text: "Press the button for <b>"
@@ -199,16 +202,20 @@ ApplicationWindow {
                         editMode: true;
 
                     }
+
                 }
 
             ]
+
             Label {
+
                 id: dialogLabel;
                 anchors.centerIn: parent;
+
             }
 
-
             RowLayout {
+
                 id: rowLayout;
                 anchors {
                     left: parent.left;
@@ -222,19 +229,27 @@ ApplicationWindow {
                 spacing: 12;
 
                 Button {
-                    text: "No";
+                    text: background.state == "resetMapping" ? "No" : "Close";
                     anchors {
                         verticalCenter: parent.verticalCenter;
+                        horizontalCenter: background.state == "resetMapping" ? undefined : parent.horizontalCenter;
                         right: yesButton.left;
-                        rightMargin: 12;
+                        rightMargin: background.state == "resetMapping" ? 12 : 0;
                     }
 
-                    onClicked: inputDialog.close();
+                    onClicked: {
+                        if( background.state == "startMapping") {
+                            input.currentItem.inputDeviceEventChanged.disconnect( inputDialog.handleEvent );
+
+                        }
+                        inputDialog.close();
+                    }
                 }
 
                 Button {
                     id: yesButton;
                     text: "Yes";
+                    visible: background.state == "resetMapping";
                     anchors {
                         verticalCenter: parent.verticalCenter;
                         right: parent.right;
@@ -245,15 +260,14 @@ ApplicationWindow {
                         input.currentItem.inputDeviceEventChanged.connect( inputDialog.handleEvent );
                         background.state = "startMapping";
                     }
+
                 }
+
             }
+
         }
 
-
-
-
     }
-
 
 
     PathWatcher {
