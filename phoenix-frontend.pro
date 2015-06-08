@@ -1,5 +1,7 @@
 TEMPLATE = app
 
+TARGET = Phoenix
+
 QT += qml quick widgets multimedia concurrent
 
 HEADERS += \
