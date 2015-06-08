@@ -1,5 +1,7 @@
 TEMPLATE = app
 
+TARGET = Phoenix
+
 QT += qml quick widgets multimedia concurrent
 
 SOURCES += main.cpp \
@@ -20,6 +22,11 @@ macx {
     INCLUDEPATH += /Library/Frameworks/SDL2.framework/Headers /usr/local/include
     QMAKE_CXXFLAGS += -F/Library/Frameworks
     QMAKE_LFLAGS += -F/Library/Frameworks -L/usr/local/lib
+    ICON = phoenix.icns
+}
+
+win32 {
+    RC_FILE = phoenix.rc
 }
 
 CONFIG += c++11
@@ -44,4 +51,3 @@ HEADERS += \
     audiooutput.h \
     corevariable.h
 
-RC_FILE = phoenix.rc
