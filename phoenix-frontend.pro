@@ -38,10 +38,10 @@ RESOURCES += qml.qrc
 LIBS += -lsamplerate
 
 macx {
-    LIBS += -framework SDL2
-    INCLUDEPATH += /Library/Frameworks/SDL2.framework/Headers /usr/local/include
-    QMAKE_CXXFLAGS += -F/Library/Frameworks
-    QMAKE_LFLAGS += -F/Library/Frameworks -L/usr/local/lib
+    LIBS += -lSDL2
+    INCLUDEPATH += /usr/local/include /usr/local/include/SDL2
+    QMAKE_CXXFLAGS +=
+    QMAKE_LFLAGS += -L/usr/local/lib
 }
 
 win32 {
