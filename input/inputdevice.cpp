@@ -54,6 +54,7 @@ bool InputDevice::contains( const InputDeviceEvent::Event &event ) {
 
 void InputDevice::insert( const InputDeviceEvent::Event &value, const int16_t &state ) {
     mutex.lock();
+    qDebug() << "value ; " << value << state;
     deviceStates->insert( value, state );
     mutex.unlock();
 }

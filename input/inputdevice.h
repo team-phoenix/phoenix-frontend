@@ -103,11 +103,7 @@ class InputDevice : public QObject {
                 emit inputDeviceEventChanged( scopedEvent.data() );
             } else {
 
-                auto val = mapping().value( event->value(), InputDeviceEvent::Unknown );
-
-                if( val != InputDeviceEvent::Unknown ) {
-                    insert( val, event->state() );
-                }
+                 insert( static_cast<InputDeviceEvent::Event>( event->value() ), event->state() );
             }
 
             //delete event;

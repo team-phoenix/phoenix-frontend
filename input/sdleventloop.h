@@ -37,7 +37,6 @@ class SDLEventLoop : public QObject {
         }
 
         void startTimer() {
-            findJoysticks();
             sdlPollTimer.start();
         }
 
@@ -52,6 +51,7 @@ class SDLEventLoop : public QObject {
 
     private:
         void initSDL();
+        void buttonChanged( SDL_ControllerButtonEvent &controllerEvent );
 
         void findJoysticks();
 
