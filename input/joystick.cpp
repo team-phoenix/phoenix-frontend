@@ -7,7 +7,8 @@ Joystick::Joystick( const int joystickIndex, QObject *parent )
 
 
       qmlSdlIndex( joystickIndex ),
-      qmlDeadZone( 0 )
+      qmlDeadZone( 12000 ),
+      qmlAnalogMode( false )
 
 
 {
@@ -70,6 +71,16 @@ int Joystick::sdlIndex() const
 
 qreal Joystick::deadZone() const {
     return qmlDeadZone;
+}
+
+bool Joystick::analogMode() const
+{
+    return qmlAnalogMode;
+}
+
+void Joystick::setAnalogMode(const bool mode)
+{
+    qmlAnalogMode = mode;
 }
 
 SDL_GameController *Joystick::sdlDevice() const {
