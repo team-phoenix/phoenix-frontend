@@ -6,11 +6,14 @@ Joystick::Joystick( const int joystickIndex, QObject *parent )
     : InputDevice( LibretroType::RetroGamepad, parent ),
 
 
+      qmlSdlIndex( joystickIndex ),
       qmlDeadZone( 0 )
+
 
 {
     device = SDL_GameControllerOpen( joystickIndex );
     setName( SDL_GameControllerName( device ) );
+    qmlInstanceID = SDL_JoystickInstanceID( SDL_GameControllerGetJoystick( device ) );
 /*
     qmlAxisCount = SDL_JoystickNumAxes( device );
     qmlButtonCount = SDL_JoystickNumButtons( device );
@@ -37,8 +40,7 @@ Joystick::Joystick( const int joystickIndex, QObject *parent )
 }
 
 Joystick::~Joystick() {
-    Q_ASSERT_X( device, "InputDevice" , "the device was deleted by an external source" );
-    SDL_GameControllerClose( device );
+    close();
 }
 
 QString Joystick::guid() const {
@@ -61,12 +63,33 @@ int Joystick::axisCount() const {
     return qmlAxisCount;
 }
 
+int Joystick::sdlIndex() const
+{
+    return qmlSdlIndex;
+}
+
 qreal Joystick::deadZone() const {
     return qmlDeadZone;
 }
 
 SDL_GameController *Joystick::sdlDevice() const {
     return device;
+}
+
+SDL_JoystickID Joystick::instanceID() const
+{
+    return qmlInstanceID;
+}
+
+void Joystick::setSDLIndex(const int index)
+{
+    qmlSdlIndex = index;
+}
+
+void Joystick::close()
+{
+    Q_ASSERT_X( device, "InputDevice" , "the device was deleted by an external source" );
+    SDL_GameControllerClose( device );
 }
 
 void Joystick::insert( const quint8 &event, const int16_t pressed ) {

@@ -230,6 +230,7 @@ void Core::slotLoadGame( QString path ) {
 
 void Core::slotFrame() {
 
+
     // Tell the core to run a frame
     symbols.retro_run();
 
@@ -760,7 +761,6 @@ int16_t Core::inputStateCallback( unsigned port, unsigned device, unsigned index
     Q_UNUSED( device )
     Q_UNUSED( index )
 
-
     if( ( int ) port >= core->inputManager->size() ) {
         return 0;
     }
@@ -779,14 +779,13 @@ int16_t Core::inputStateCallback( unsigned port, unsigned device, unsigned index
 
     auto *inputDevice = core->inputManager->at( port );
 
-    if( inputDevice->type() != ( InputDevice::LibretroType )device ) {
+    //qDebug() << "Acquire device";
+
+    if( !inputDevice || inputDevice->type() != ( InputDevice::LibretroType )device ) {
         return 0;
     }
 
-
-    auto pressed = inputDevice->value( ( InputDeviceEvent::Event )id, 0 );
-
-    return pressed;
+    return inputDevice->value( ( InputDeviceEvent::Event )id, 0 );
 
 }
 

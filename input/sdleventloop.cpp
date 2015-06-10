@@ -3,7 +3,7 @@
 #include "logging.h"
 
 #include <QFile>
-#include <QResource>
+#include <QMutexLocker>
 
 
 SDLEventLoop::SDLEventLoop( QObject *parent )
@@ -21,34 +21,33 @@ SDLEventLoop::SDLEventLoop( QObject *parent )
     if ( SDL_SetHint( SDL_HINT_GAMECONTROLLERCONFIG, mappingData.constData() ) == SDL_FALSE )
         qFatal( "Fatal: Unable to load controller database: %s", SDL_GetError() );
 
-    this->moveToThread( &sdlEventLoopThread );
 
     for ( int i=0; i < Joystick::maxNumOfDevices; ++i )
         sdlDeviceList.append( nullptr );
 
-    sdlPollTimer.moveToThread( &sdlEventLoopThread );
 
     sdlPollTimer.setInterval( 5 );
 
-    connect( &sdlEventLoopThread, &QThread::started, this, &SDLEventLoop::startTimer );
-    connect( &sdlEventLoopThread, &QThread::finished, &sdlPollTimer, &QTimer::stop );
     connect( &sdlPollTimer, &QTimer::timeout, this, &SDLEventLoop::processEvents );
 
     initSDL();
 
-    qDebug() << sdlEventLoopThread.thread() << sdlPollTimer.thread() << this->thread();
-
-
 }
 
 void SDLEventLoop::processEvents() {
+
+    QMutexLocker locker( &sdlEventMutex );
     SDL_Event sdlEvent;
 
     while( SDL_PollEvent( &sdlEvent ) ) {
 
+
         switch( sdlEvent.type ) {
 
             case SDL_CONTROLLERDEVICEADDED: {
+
+                // This needs to be checked for, because the first time a controller
+                // sdl starts up, it fires this signal twice, pretty annoying...
 
                 if ( sdlDeviceList.at( sdlEvent.cdevice.which ) != nullptr ) {
                     qCDebug( phxInput ) << "Device already exists at " << sdlEvent.cdevice.which;
@@ -56,19 +55,37 @@ void SDLEventLoop::processEvents() {
                 }
 
                 auto *joystick = new Joystick( sdlEvent.cdevice.which );
-                sdlDeviceList.insert( sdlEvent.cdevice.which, joystick );
+
+                deviceLocationMap.insert( joystick->instanceID(), sdlEvent.cdevice.which );
+
+                sdlDeviceList[ sdlEvent.cdevice.which ] = joystick;
+
                 emit deviceConnected( joystick );
 
-                qCDebug( phxInput ) << "Controller Device Added: " << sdlEvent.cdevice.which;
+
+                qCDebug( phxInput ) << "Controller Added...";
                 break;
             }
 
 
             case SDL_CONTROLLERDEVICEREMOVED: {
-                //delete sdlDeviceList.at( sdlEvent.cdevice.which );
-                //emit deviceRemoved( Joystick(sdlEvent.cdevice.which );
 
-                qCDebug( phxInput ) << "GAME CONTROLLER REMOVED";
+                int index = deviceLocationMap.value( sdlEvent.cbutton.which, -1 );
+
+                Q_ASSERT( index != -1 );
+
+                auto *device = sdlDeviceList.at( index );
+
+                Q_ASSERT( device != nullptr );
+
+                if ( device && device->instanceID() == sdlEvent.cdevice.which ) {
+                    qCDebug( phxInput ) << "Controller Removed: " << sdlEvent.cdevice.which;
+                    emit deviceRemoved( device->sdlIndex() );
+                    sdlDeviceList[ index ] = nullptr;
+                    deviceLocationMap.remove( sdlEvent.cbutton.which );
+                    break;
+                }
+
                 break;
             }
 
@@ -80,21 +97,30 @@ void SDLEventLoop::processEvents() {
 
             case SDL_JOYAXISMOTION:
             case SDL_CONTROLLERAXISMOTION: {
-                auto *device = sdlDeviceList.at( sdlEvent.cbutton.which );
+                int index = deviceLocationMap.value( sdlEvent.cbutton.which );
+                auto *device = sdlDeviceList.at( index );
+
+                if ( !device )
+                    break;
+
                 bool pressed = ( qAbs( sdlEvent.caxis.value ) > device->deadZone() );
 
+                Q_UNUSED( pressed );
                 // The lowest value is 0, so 0 + 4 will put us at the proper retropad value, ranging
                 // from 4 to 7;
-                sdlDeviceList.at( sdlEvent.cbutton.which )->insert( sdlEvent.caxis.axis + 4, pressed );
+                //sdlDeviceList.at( index )->insert( sdlEvent.caxis.axis + 4, pressed );
                 //qDebug() << "Axis motion: " << pressed << sdlEvent.caxis.axis + 4;
                 //qDebug() << sdlEvent.caxis.type;
                 //OnControllerAxis( sdlEvent.caxis );
                 break;
             }
 
-            case SDL_JOYHATMOTION:
-                qDebug() << "hat mootion " << sdlEvent.jhat.hat << " with value " << sdlEvent.jhat.value;
+            case SDL_JOYHATMOTION: {
+                int index = deviceLocationMap.value( sdlEvent.cbutton.which );
+                auto *device = sdlDeviceList.at( index );
+                Q_UNUSED( device )
                 break;
+            }
 
             // YOUR OTHER EVENT HANDLING HERE
             default:
@@ -170,8 +196,17 @@ void SDLEventLoop::buttonChanged( SDL_ControllerButtonEvent &controllerButton ) 
                 break;
         }
 
+
         if ( inputEvent != InputDeviceEvent::Unknown ) {
-            auto *device = sdlDeviceList.at( controllerButton.which );
+
+            int index = deviceLocationMap.value( controllerButton.which );
+            auto *device = sdlDeviceList.at( index );
+
+            // SDL checks all the states of the buttons when a device is delete,
+            // so we need to make sure the device is actually valid.
+            if ( !device )
+                return;
+
             device->insert( new InputDeviceEvent( inputEvent
                                                  , controllerButton.state == SDL_PRESSED
                                                  , device ) );

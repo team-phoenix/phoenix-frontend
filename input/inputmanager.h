@@ -15,11 +15,9 @@
 
 class InputManager : public QObject {
         Q_OBJECT
-        Q_PROPERTY( InputDevice *currentItem READ currentItem NOTIFY currentItemChanged )
-        Q_PROPERTY( int currentIndex READ currentIndex WRITE setCurrentIndex NOTIFY currentIndexChanged )
 
 
-
+    QMutex mutex;
         QList<InputDevice *> deviceList;
 
         // One keyboard is reserved for being always active.
@@ -28,30 +26,13 @@ class InputManager : public QObject {
 
         SDLEventLoop sdlEventLoop;
 
-        InputDevice *qmlCurrentItem;
-        int qmlCurrentIndex;
 
     public:
         explicit InputManager( QObject *parent = 0 );
         ~InputManager();
 
-
-
         Keyboard *keyboard;
 
-        InputDevice *currentItem() const {
-            return qmlCurrentItem;
-        }
-
-        int currentIndex() const {
-            return qmlCurrentIndex;
-        }
-
-        void setCurrentIndex( const int index ) {
-            qmlCurrentIndex = index;
-            emit currentIndexChanged();
-            setCurrentItem( this->at( index ) );
-        }
 
 
         bool isKeyboardActive() const {
@@ -64,74 +45,27 @@ class InputManager : public QObject {
 
         InputDevice *at( int index ) {
 
+            QMutexLocker locker( &mutex );
             return deviceList.at( index );
         }
 
     public slots:
 
-        void append( InputDevice *device ) {
-            qCDebug( phxInput ) << "Appending device: " << device;
+        void insert( InputDevice *device );
 
-            if( deviceList.isEmpty() ) {
-                insert( deviceList.length(), device );
+        void removeAt( int index );
 
-                if( keyboard->sharingEnabled() ) {
-                    keyboard->shareStates( device );
-                }
-            }
+        bool shareDeviceStates( const int index );
 
-            else {
-                auto *firstDevice = deviceList.first();
-
-                if( device == keyboard ) {
-                    firstDevice = device;
-
-                    if( keyboard->sharingEnabled() ) {
-                        keyboard->shareStates( device );
-                    }
-                }
-
-                else {
-                    insert( deviceList.length(), device );
-                }
-
-            }
-
-
-        }
-
-        void insert( int index, InputDevice *device ) {
-            deviceList.insert( index, device );
-
-            if( index == 0 ) {
-                setCurrentIndex( index );
-            }
-
-            emit deviceAdded( device );
-        }
-
-        bool shareDeviceStates( const int index ) {
-            if( index < deviceList.length() ) {
-                return keyboard->shareStates( deviceList.at( index ) );
-            }
-
-            return false;
-        }
-
-        bool shareDeviceStates( const int index1, const int index2 ) {
-            if( index1 < deviceList.length() && index2 < deviceList.length() ) {
-                deviceList.at( index1 )->shareStates( deviceList.at( index2 ) );
-            }
-
-            return false;
-        }
+        bool shareDeviceStates( const int index1, const int index2 );
 
         void setRun( bool run ) {
 
-            if( run ) {
+            if ( run ) {
                 //sdlEventLoop.start();
                 for( auto device : deviceList ) {
-                    device->setEditMode( false );
+                    if ( device )
+                        device->setEditMode( false );
                 }
 
                 if( deviceList.isEmpty() ) {
@@ -141,6 +75,10 @@ class InputManager : public QObject {
                 else {
                     keyboard->shareStates( deviceList.at( 0 ) );
                 }
+            }
+
+            else {
+                keyboard->shareStates( nullptr );
             }
 
             /*else {
@@ -155,9 +93,10 @@ class InputManager : public QObject {
 
     public slots:
         void emitConnectedDevices() {
-            //emit device( keyboard );
+            emit device( keyboard );
             for( auto inputDevice : deviceList ) {
-                emit device( inputDevice );
+                if ( inputDevice )
+                    emit device( inputDevice );
             }
         }
 
@@ -166,20 +105,10 @@ class InputManager : public QObject {
         void deviceAdded( InputDevice *device );
         void incomingEvent( InputDeviceEvent *event );
         void keyboardActiveChanged();
-        void currentIndexChanged();
-        void currentItemChanged();
 
     private:
 
-        void setCurrentItem( InputDevice *device ) {
-            qmlCurrentItem = device;
 
-            // Make sure qml doesn't snatch up ownership of this pointer
-            // and delete it. This would cause all sorts of hell...
-
-            QQmlEngine::setObjectOwnership( qmlCurrentItem, QQmlEngine::CppOwnership );
-            emit currentItemChanged();
-        }
 
         bool eventFilter( QObject *object, QEvent *event ) {
             switch( event->type() ) {

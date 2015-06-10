@@ -3,20 +3,18 @@
 
 #include <QObject>
 #include <QTimer>
-#include <SDL.h>
-#include <QList>
-#include <QMutex>
-
 #include <QThread>
+#include <QMutex>
+#include <QHash>
+#include <SDL.h>
+
 #include "joystick.h"
 
 class SDLEventLoop : public QObject {
         Q_OBJECT
         QTimer sdlPollTimer;
         int numOfDevices;
-        QMutex mutex;
-
-        QThread sdlEventLoopThread;
+        QMutex sdlEventMutex;
 
         // The InputManager is in charge of deleting these devices.
         // The InputManager gains access to these devices by the
@@ -25,6 +23,7 @@ class SDLEventLoop : public QObject {
         // Also for this list, make use the 'which' index, for
         // propery insertions and retrievals.
         QList<Joystick *> sdlDeviceList;
+        QHash<int, int> deviceLocationMap;
 
     public:
         explicit SDLEventLoop( QObject *parent = 0 );
@@ -33,21 +32,19 @@ class SDLEventLoop : public QObject {
         void processEvents();
 
         void start() {
-            sdlEventLoopThread.start( QThread::HighPriority );
-        }
-
-        void startTimer() {
             sdlPollTimer.start();
         }
 
+        void startTimer() {
+        }
+
         void stop() {
-            sdlEventLoopThread.terminate();
-            sdlEventLoopThread.wait();
+            sdlPollTimer.stop();
         }
 
     signals:
-        void deviceConnected( Joystick * );
-        void deviceRemoved( Joystick * );
+        void deviceConnected( Joystick *joystick );
+        void deviceRemoved( int which );
 
     private:
         void initSDL();
@@ -56,6 +53,7 @@ class SDLEventLoop : public QObject {
         void findJoysticks();
 
         void quitSDL();
+
 
 };
 

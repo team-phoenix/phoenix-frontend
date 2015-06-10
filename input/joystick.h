@@ -37,9 +37,17 @@ class Joystick : public InputDevice {
 
         int axisCount() const;
 
+        int sdlIndex() const;
+
         qreal deadZone() const;
 
         SDL_GameController *sdlDevice() const;
+
+        SDL_JoystickID instanceID() const;
+
+        void setSDLIndex( const int index );
+
+        void close();
 
     public slots:
 
@@ -48,6 +56,8 @@ class Joystick : public InputDevice {
     private:
 
         QString qmlGuid;
+        int qmlInstanceID;
+        int qmlSdlIndex;
         int qmlButtonCount;
         int qmlAxisCount;
         int qmlHatCount;

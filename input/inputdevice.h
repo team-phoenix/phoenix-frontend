@@ -43,6 +43,8 @@ class InputDevice : public QObject {
 
         explicit InputDevice( const LibretroType type, const QString name, QObject *parent );
 
+        ~InputDevice();
+
         const QString name() const;
 
         bool editMode() const {
@@ -95,21 +97,7 @@ class InputDevice : public QObject {
 
         virtual void insert( const InputDeviceEvent::Event &value, const int16_t &state );
 
-        void insert( InputDeviceEvent *event ) {
-            if( editMode() ) {
-                QSharedPointer<InputDeviceEvent> scopedEvent(
-                    new InputDeviceEvent( event->value(), event->state(), event->attachedDevice() ) );
-                QQmlEngine::setObjectOwnership( scopedEvent.data(), QQmlEngine::CppOwnership );
-                emit inputDeviceEventChanged( scopedEvent.data() );
-            } else {
-
-                 insert( static_cast<InputDeviceEvent::Event>( event->value() ), event->state() );
-            }
-
-            //delete event;
-
-
-        }
+        void insert( InputDeviceEvent *event );
 
 
         void insertMappingValue( const int button, const int event ) {

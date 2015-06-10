@@ -30,6 +30,11 @@ qmlEditMode( false ) {
     setRetroButtonCount( 15 );
 }
 
+InputDevice::~InputDevice()
+{
+
+}
+
 InputDevice::InputDevice( const InputDevice::LibretroType type, QObject *parent )
     : InputDevice( type, "No-Name", parent )
 
@@ -54,9 +59,19 @@ bool InputDevice::contains( const InputDeviceEvent::Event &event ) {
 
 void InputDevice::insert( const InputDeviceEvent::Event &value, const int16_t &state ) {
     mutex.lock();
-    qDebug() << "value ; " << value << state;
     deviceStates->insert( value, state );
     mutex.unlock();
+}
+
+void InputDevice::insert(InputDeviceEvent *event) {
+    if ( editMode() ) {
+        emit inputDeviceEventChanged( event );
+    } else {
+
+        insert( static_cast<InputDeviceEvent::Event>( event->value() ), event->state() );
+    }
+
+    delete event;
 }
 
 InputDevice::LibretroType InputDevice::type() const {
@@ -71,17 +86,14 @@ bool InputDevice::shareStates( InputDevice *device ) {
     Q_ASSERT_X( this != device, "InputDevice::shareStates", "cannot share state with itself." );
 
     if( device == nullptr ) {
-        if( isSharingStates() ) {
+        if( sharingEnabled() ) {
             resetStates();
-            sharingStates = false;
         }
 
         return false;
     }
 
-
     deviceStates = device->states();
-    sharingStates = true ;
     return true;
 
 }
