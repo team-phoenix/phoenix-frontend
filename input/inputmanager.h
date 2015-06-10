@@ -68,8 +68,8 @@ class InputManager : public QObject {
                         device->setEditMode( false );
                 }
 
-                if( deviceList.isEmpty() ) {
-                    deviceList.insert( 0, keyboard );
+                if( deviceList.first() == nullptr ) {
+                    deviceList[ 0 ] = keyboard;
                 }
 
                 else {
