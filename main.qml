@@ -354,20 +354,12 @@ ApplicationWindow {
             id: input;
 
             property int mapIndex: 0;
-            onCurrentItemChanged: {
 
-                console.log("CurrentItem: " + currentItem.name +
-                            " " + currentItem.retroButtonCount);
-
-            }
-
-            onCurrentIndexChanged: {
-                //if ( currentItem !== undefined )
-                    //currentItem.inputDeviceEvent.disconnect();
+            onDevice: {
+                console.log( device.name )
             }
 
             Component.onCompleted: {
-                console.log("finished");
                 input.emitConnectedDevices();
             }
         }
