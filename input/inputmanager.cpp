@@ -19,6 +19,8 @@ InputManager::InputManager( QObject *parent )
 
     sdlEventLoop.start();
 
+    qDebug() << "Input Manager thread: " << this->thread();
+
 }
 
 InputManager::~InputManager() {

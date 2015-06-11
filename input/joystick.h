@@ -13,19 +13,10 @@ class Joystick : public InputDevice {
         // This is needed to stop a complication warning in the reimplemented insert function.
         using InputDevice::insert;
 
-    static const int maxNumOfDevices;
-
-        enum SDLType {
-            SDLGamepad = 0,
-            SDLJoystick,
-        };
+        static const int maxNumOfDevices;
 
         explicit Joystick( const int joystickIndex, QObject *parent = 0 );
         ~Joystick();
-
-        SDLType sdlType() const {
-            return qmlSdlType;
-        }
 
         QString guid() const;
 
@@ -41,12 +32,14 @@ class Joystick : public InputDevice {
 
         qreal deadZone() const;
 
+        bool analogMode() const;
+
         SDL_GameController *sdlDevice() const;
 
         SDL_JoystickID instanceID() const;
 
         void setSDLIndex( const int index );
-
+        void setAnalogMode( const bool mode );
         void close();
 
     public slots:
@@ -64,7 +57,7 @@ class Joystick : public InputDevice {
         int qmlBallCount;
         qreal qmlDeadZone;
 
-        SDLType qmlSdlType;
+        bool qmlAnalogMode;
 
         SDL_GameController *device;
 

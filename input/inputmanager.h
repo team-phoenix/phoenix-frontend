@@ -60,7 +60,7 @@ class InputManager : public QObject {
         bool shareDeviceStates( const int index1, const int index2 );
 
         void setRun( bool run ) {
-
+            mutex.lock();
             if ( run ) {
                 //sdlEventLoop.start();
                 for( auto device : deviceList ) {
@@ -81,6 +81,7 @@ class InputManager : public QObject {
                 keyboard->shareStates( nullptr );
             }
 
+            mutex.unlock();
             /*else {
                 sdlThread.terminate();
                 sdlThread.wait();
