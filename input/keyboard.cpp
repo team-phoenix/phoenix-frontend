@@ -6,7 +6,7 @@ Keyboard::Keyboard( QObject *parent )
 }
 
 void Keyboard::insert( const Qt::Key &event, int16_t pressed ) {
-    InputDeviceEvent::Event newEvent = keyConvertor.value( event , InputDeviceEvent::Unknown );
+    InputDeviceEvent::Event newEvent = keyConverter.value( event , InputDeviceEvent::Unknown );
 
     if( newEvent != InputDeviceEvent::Unknown ) {
         InputDevice::insert( newEvent, pressed );
@@ -14,7 +14,7 @@ void Keyboard::insert( const Qt::Key &event, int16_t pressed ) {
 }
 
 
-QMap< Qt::Key, InputDeviceEvent::Event> Keyboard::keyConvertor  {
+QMap< Qt::Key, InputDeviceEvent::Event> Keyboard::keyConverter  {
     { Qt::Key_A , InputDeviceEvent::A },
     { Qt::Key_D , InputDeviceEvent::B },
     { Qt::Key_W , InputDeviceEvent::Y },

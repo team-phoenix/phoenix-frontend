@@ -22,7 +22,7 @@ class Keyboard : public InputDevice {
         void insert( const Qt::Key &event, int16_t pressed );
 
     private:
-        static QMap< Qt::Key, InputDeviceEvent::Event> keyConvertor;
+        static QMap< Qt::Key, InputDeviceEvent::Event> keyConverter;
 
 
 
