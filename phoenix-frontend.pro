@@ -39,13 +39,6 @@ RESOURCES += qml.qrc
 
 LIBS += -lsamplerate
 
-macx {
-    LIBS += -lSDL2
-    INCLUDEPATH += /usr/local/include /usr/local/include/SDL2
-    QMAKE_CXXFLAGS +=
-    QMAKE_LFLAGS += -L/usr/local/lib
-}
-
 win32 {
     CONFIG -= windows
     QMAKE_LFLAGS += $$QMAKE_LFLAGS_WINDOWS
@@ -72,6 +65,10 @@ win32 {
 
 else {
     LIBS += -lSDL2
+    INCLUDEPATH += /usr/local/include /usr/local/include/SDL2
+    INCLUDEPATH += /usr/include /usr/include/SDL2
+    QMAKE_CXXFLAGS +=
+    QMAKE_LFLAGS += -L/usr/local/lib
 }
 
 
