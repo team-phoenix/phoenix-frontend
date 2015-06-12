@@ -16,6 +16,8 @@ class SDLEventLoop : public QObject {
         int numOfDevices;
         QMutex sdlEventMutex;
 
+        bool forceEventsHandling;
+
         // The InputManager is in charge of deleting these devices.
         // The InputManager gains access to these devices by the
         // deviceConnected( Joystick * ) signal.
