@@ -1,6 +1,6 @@
 #include "joystick.h"
 
-const int Joystick::maxNumOfDevices = 4;
+const int Joystick::maxNumOfDevices = 128;
 
 Joystick::Joystick( const int joystickIndex, QObject *parent )
     : InputDevice( LibretroType::RetroGamepad, parent ),
