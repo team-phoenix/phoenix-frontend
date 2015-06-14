@@ -34,7 +34,18 @@ class Joystick : public InputDevice {
 
         bool analogMode() const;
 
+        QHash<int, int> &sdlButtonMapping()
+        {
+            return buttonMapping;
+        }
+
+        QHash<int, int> &sdlAxisMapping()
+        {
+            return axisMapping;
+        }
+
         SDL_GameController *sdlDevice() const;
+        SDL_Joystick *sdlJoystick() const;
 
         SDL_JoystickID instanceID() const;
 
@@ -43,12 +54,12 @@ class Joystick : public InputDevice {
         void close();
 
     public slots:
-
         void insert( const quint8 &event, const int16_t pressed );
+        void setMapping( QVariantMap mapping ) override;
 
     private:
-
         QString qmlGuid;
+        QString qmlMappingString;
         int qmlInstanceID;
         int qmlSdlIndex;
         int qmlButtonCount;
@@ -60,6 +71,12 @@ class Joystick : public InputDevice {
         bool qmlAnalogMode;
 
         SDL_GameController *device;
+        QHash<int, int> buttonMapping;
+        QHash<int, int> axisMapping;
+
+        void populateMappings( SDL_GameController *device );
+
+
 
 };
 

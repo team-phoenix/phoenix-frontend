@@ -94,10 +94,10 @@ class InputManager : public QObject {
 
     public slots:
         void emitConnectedDevices() {
-            emit device( keyboard );
+            emit deviceAdded( keyboard );
             for( auto inputDevice : deviceList ) {
                 if ( inputDevice )
-                    emit device( inputDevice );
+                    emit deviceAdded( inputDevice );
             }
         }
 

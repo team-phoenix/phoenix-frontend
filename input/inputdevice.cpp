@@ -46,6 +46,11 @@ const QString InputDevice::name() const {
     return deviceName;
 }
 
+QString InputDevice::mappingString() const
+{
+    return qmlMappingString;
+}
+
 int16_t InputDevice::value( const InputDeviceEvent::Event &event, const int16_t defaultValue ) {
     mutex.lock();
     auto pressed = deviceStates->value( event, defaultValue );

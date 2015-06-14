@@ -126,145 +126,74 @@ ApplicationWindow {
         visible: false;
         height: 125;
         width: 250;
+
         standardButtons: StandardButton.Ok | StandardButton.Cancel;
 
-        function handleEvent( event ) {
-            if ( event.state > 0 ) {
-                if ( mapIndex == maxIndex ) {
-                    input.currentItem.inputDeviceEventChanged.disconnect( handleEvent );
-                    inputDialog.close();
-                    return;
-                }
-                input.currentItem.insertMappingValue( event.value, inputDialog.mapIndex );
-                mapIndex++;
-            }
+        modality: Qt.NonModal;
+        function handleEvent( value, state ) {
+            console.log( value, state );
         }
-
-        property int mapIndex: 0;
-        property int maxIndex: 15;
-        property var mapValues: [
-            "B", "X", "Select",
-            "Start", "Up", "Down", "Left", "Right",
-            "A", "X", "L", "R", "L2", "R2", "L3", "R3"
-        ];
 
         contentItem: Rectangle {
 
             id: background;
-            //height: 250;
-            //width: 600;
             color: systemPalette.light;
             visible: inputDialog.visible;
 
-            onVisibleChanged: {
-                if ( visible ) {
-                    background.state = "resetMapping";
-                }
-            }
-
-            states: [
-
-                State {
-
-                    name: "resetMapping";
-
-                    PropertyChanges {
-                        target: rowLayout;
-                        visible: true;
-                    }
-
-                    PropertyChanges {
-                        target: dialogLabel;
-                        text: "Edit mapping for <b>port " + inputDialog.mapIndex + "</b>?";
-
-                    }
-
-                },
-
-                State {
-
-                    name: "startMapping";
-
-                    PropertyChanges {
-                        target: inputDialog;
-                        mapIndex: 0;
-                    }
-
-                    PropertyChanges {
-                        target: dialogLabel;
-                        text: "Press the button for <b>"
-                              + inputDialog.mapValues[ inputDialog.mapIndex ]
-                              + "</b>";
-                    }
-
-                    PropertyChanges {
-                        target: input.currentItem;
-                        editMode: true;
-
-                    }
-
-                }
-
-            ]
-
-            Label {
-
-                id: dialogLabel;
+            ListView {
+                id: inputView;
+                interactive: false;
+                orientation: ListView.Vertical;
                 anchors.centerIn: parent;
+                height: parent.height;
+                width: parent.width;
 
-            }
-
-            RowLayout {
-
-                id: rowLayout;
-                anchors {
-                    left: parent.left;
-                    leftMargin: 12;
-                    right: parent.right;
-                    rightMargin: 12;
-                    bottom: parent.bottom;
-                }
-
-                height: 50;
                 spacing: 12;
 
-                Button {
-                    text: background.state == "resetMapping" ? "No" : "Close";
-                    anchors {
-                        verticalCenter: parent.verticalCenter;
-                        horizontalCenter: background.state == "resetMapping" ? undefined : parent.horizontalCenter;
-                        right: yesButton.left;
-                        rightMargin: background.state == "resetMapping" ? 12 : 0;
-                    }
+                model: ListModel {
+                    ListElement { key: "a"; value: "" }
+                    ListElement { key: "b"; value: "" }
+                    ListElement { key: "x"; value: "" }
+                    ListElement { key: "y"; value: "" }
+                    ListElement { key: "start"; value: "" }
+                    ListElement { key: "back"; value: "" }
+                    ListElement { key: "guide"; value: "" }
+                    ListElement { key: "dpup"; value: "" }
+                    ListElement { key: "dpleft"; value: "" }
+                    ListElement { key: "dpright"; value: "" }
+                    ListElement { key: "dpdown"; value: "" }
+                    ListElement { key: "leftstick"; value: "" }
+                    ListElement { key: "rightstick"; value: "" }
+                    ListElement { key: "leftshoulder"; value: "" }
+                    ListElement { key: "rightshoulder"; value: "" }
+                }
 
-                    onClicked: {
-                        if( background.state == "startMapping") {
-                            input.currentItem.inputDeviceEventChanged.disconnect( inputDialog.handleEvent );
+
+                delegate: Item {
+                    height: 25;
+                    width: 125;
+                    anchors.horizontalCenter: parent.horizontalCenter;
+
+                    Row {
+                        anchors.fill: parent;
+                        spacing: 12;
+                        Label {
+                            text: key;
+                        }
+
+                        TextField {
+                            placeholderText: value;
+                            onActiveFocusChanged: {
+                                if ( focus ) {
+                                    console.log("focus: " + key)
+                                    inputView.currentIndex = index;
+                                }
+                            }
 
                         }
-                        inputDialog.close();
                     }
                 }
-
-                Button {
-                    id: yesButton;
-                    text: "Yes";
-                    visible: background.state == "resetMapping";
-                    anchors {
-                        verticalCenter: parent.verticalCenter;
-                        right: parent.right;
-                    }
-
-
-                    onClicked: {
-                        input.currentItem.inputDeviceEventChanged.connect( inputDialog.handleEvent );
-                        background.state = "startMapping";
-                    }
-
-                }
-
             }
-
         }
 
     }
@@ -355,8 +284,9 @@ ApplicationWindow {
 
             property int mapIndex: 0;
 
-            onDevice: {
-                console.log( device.name )
+            onDeviceAdded: {
+                device.setMapping( {"a": 1, "b": 2, "x": "12"} );
+                console.log( device.name );
             }
 
             Component.onCompleted: {

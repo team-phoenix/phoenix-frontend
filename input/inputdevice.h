@@ -8,6 +8,7 @@
 #include <QMap>
 #include <QSharedPointer>
 #include <QQmlEngine>
+#include <QVariantMap>
 
 #include "libretro.h"
 #include "logging.h"
@@ -46,6 +47,7 @@ class InputDevice : public QObject {
         ~InputDevice();
 
         const QString name() const;
+        QString mappingString() const;
 
         bool editMode() const {
             return qmlEditMode;
@@ -99,49 +101,10 @@ class InputDevice : public QObject {
 
         void insert( InputDeviceEvent *event );
 
-
-        void insertMappingValue( const int button, const int event ) {
-            auto ev = ( InputDeviceEvent::Event )event;
-
-            if( mapping().value( button, InputDeviceEvent::Unknown ) == event
-                || ev == InputDeviceEvent::Unknown ) {
-
-                //qCDebug(phxInput) << "The button is already set, ABORT!";
-            }
-
-            // Remove last key value of button;
-            else {
-                bool foundMatch = false;
-
-                for( auto &key : mapping().keys() ) {
-                    auto value = mapping()[ key ];
-
-                    if( value == ev ) {
-                        foundMatch = true;
-                        //qDebug() << InputDeviceEvent::toString( ev ) << " used to be " << key;
-                        mapping().remove( key );
-                        mapping().insert( button, value );
-                        //qDebug() << InputDeviceEvent::toString( mapping()[button] ) << " is now " << button;
-
-                        break;
-                    }
-                }
-
-                if( !foundMatch ) {
-
-                    mapping().insert( button, ev );
-                }
-
-            }
-
-            /*
-                    for ( auto &key : mapping().keys() ) {
-                        auto val = mapping()[ key ];
-                        qDebug() << InputDeviceEvent::toString( val ) << val;
-                    }
-                    */
+        virtual void setMapping( const QVariantMap mapping )
+        {
+            Q_UNUSED( mapping );
         }
-
 
     protected:
         InputStateMap *deviceStates;
@@ -169,6 +132,7 @@ class InputDevice : public QObject {
 
         // QML Variables
         QString deviceName;
+        QString qmlMappingString;
         int qmlRetroButtonCount;
         bool qmlEditMode;
 };

@@ -9,7 +9,6 @@
 class Keyboard : public InputDevice {
         Q_OBJECT
 
-
     public:
         // This needs to be included for proper lookup during compliation.
         // Else the compiler will throw a warning.
@@ -20,11 +19,13 @@ class Keyboard : public InputDevice {
     public slots:
 
         void insert( const Qt::Key &event, int16_t pressed );
+        void setMapping( const QVariantMap mapping ) override
+        {
+            Q_UNUSED( mapping );
+        }
 
     private:
         static QMap< Qt::Key, InputDeviceEvent::Event> keyConverter;
-
-
 
 };
 
