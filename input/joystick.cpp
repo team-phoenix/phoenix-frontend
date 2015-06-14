@@ -71,6 +71,16 @@ bool Joystick::analogMode() const
     return qmlAnalogMode;
 }
 
+QHash<int, int> &Joystick::sdlButtonMapping()
+{
+    return buttonMapping;
+}
+
+QHash<int, int> &Joystick::sdlAxisMapping()
+{
+    return axisMapping;
+}
+
 void Joystick::setAnalogMode(const bool mode)
 {
     qmlAnalogMode = mode;
@@ -101,10 +111,6 @@ void Joystick::close()
     SDL_GameControllerClose( device );
 }
 
-void Joystick::insert( const quint8 &event, const int16_t pressed ) {
-    InputDevice::insert( new InputDeviceEvent( event, pressed, this ) );
-}
-
 void Joystick::setMapping( const QVariantMap mapping )
 {
     QString platform;
@@ -128,7 +134,7 @@ void Joystick::setMapping( const QVariantMap mapping )
 
     qmlMappingString = prefix + "," + body + suffix + ",";
 
-    qDebug() << qmlMappingString;
+
 
 }
 
@@ -146,8 +152,10 @@ void Joystick::populateMappings( SDL_GameController *device )
         auto key = keyValuePair.at( 0 );
         auto value = keyValuePair.at( 1 );
 
-        if ( value.isEmpty() )
+        if ( value.isEmpty() ) {
             qCWarning( phxInput ) << "The value for " << key << " is empty.";
+            continue;
+        }
 
         // Handle Button;
         if ( value.at(0) == 'b' ) {
