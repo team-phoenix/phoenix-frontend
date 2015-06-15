@@ -3,8 +3,7 @@
 InputManager::InputManager( QObject *parent )
     : QObject( parent ),
       sdlEventLoop( this ),
-      keyboard( new Keyboard() )
-{
+      keyboard( new Keyboard() ) {
 
 
     connect( &sdlEventLoop, &SDLEventLoop::deviceConnected, this, &InputManager::insert );
@@ -14,8 +13,9 @@ InputManager::InputManager( QObject *parent )
     // unless changed by the user.
     keyboardActivated = true;
 
-    for ( int i=0; i < Joystick::maxNumOfDevices; ++i )
+    for( int i = 0; i < Joystick::maxNumOfDevices; ++i ) {
         deviceList.append( nullptr );
+    }
 
     sdlEventLoop.start();
 
@@ -29,7 +29,7 @@ InputManager::~InputManager() {
     // I can't guarantee that the device won't be deleted by the deviceRemoved() signal.
     // So make sure we check.
 
-    for ( auto device : deviceList ) {
+    for( auto device : deviceList ) {
         if( device ) {
             device->deleteLater();
         }
@@ -41,12 +41,11 @@ InputManager::~InputManager() {
 
 }
 
-void InputManager::insert(InputDevice *device)
-{
+void InputManager::insert( InputDevice *device ) {
     mutex.lock();
     auto *joystick = static_cast<Joystick *>( device );
 
-    if ( deviceList.first() == nullptr || deviceList.first() == keyboard ) {
+    if( deviceList.first() == nullptr || deviceList.first() == keyboard ) {
         joystick->setSDLIndex( 0 );
         keyboard->shareStates( joystick );
     }
@@ -58,8 +57,7 @@ void InputManager::insert(InputDevice *device)
 
 }
 
-void InputManager::removeAt( int index )
-{
+void InputManager::removeAt( int index ) {
     mutex.lock();
 
     auto *device = static_cast<Joystick *>( deviceList.at( index ) );
@@ -68,7 +66,7 @@ void InputManager::removeAt( int index )
 
     deviceList[ index ] = nullptr;
 
-    if ( deviceList.first() == nullptr ) {
+    if( deviceList.first() == nullptr ) {
         deviceList[ 0 ] = keyboard;
     }
 
@@ -76,18 +74,15 @@ void InputManager::removeAt( int index )
 
 }
 
-bool InputManager::shareDeviceStates(const int index)
-{
-    if( index < deviceList.length() )
-    {
+bool InputManager::shareDeviceStates( const int index ) {
+    if( index < deviceList.length() ) {
         return keyboard->shareStates( deviceList.at( index ) );
     }
 
     return false;
 }
 
-bool InputManager::shareDeviceStates(const int index1, const int index2)
-{
+bool InputManager::shareDeviceStates( const int index1, const int index2 ) {
     if( index1 < deviceList.length() && index2 < deviceList.length() ) {
         deviceList.at( index1 )->shareStates( deviceList.at( index2 ) );
     }

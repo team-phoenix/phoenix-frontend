@@ -17,7 +17,7 @@ class InputManager : public QObject {
         Q_OBJECT
 
 
-    QMutex mutex;
+        QMutex mutex;
         QList<InputDevice *> deviceList;
 
         // One keyboard is reserved for being always active.
@@ -61,11 +61,13 @@ class InputManager : public QObject {
 
         void setRun( bool run ) {
             mutex.lock();
-            if ( run ) {
+
+            if( run ) {
                 //sdlEventLoop.start();
                 for( auto device : deviceList ) {
-                    if ( device )
+                    if( device ) {
                         device->setEditMode( false );
+                    }
                 }
 
                 if( deviceList.first() == nullptr ) {
@@ -95,9 +97,11 @@ class InputManager : public QObject {
     public slots:
         void emitConnectedDevices() {
             emit deviceAdded( keyboard );
+
             for( auto inputDevice : deviceList ) {
-                if ( inputDevice )
+                if( inputDevice ) {
                     emit deviceAdded( inputDevice );
+                }
             }
         }
 

@@ -10,8 +10,7 @@ SDLEventLoop::SDLEventLoop( QObject *parent )
     : QObject( parent ),
       sdlPollTimer( this ),
       numOfDevices( 0 ),
-      forceEventsHandling( true )
-{
+      forceEventsHandling( true ) {
     // To do the poll timer isn't in the sdlEventLoopThread. it needs to be.
 
     Q_INIT_RESOURCE( controllerdb );
@@ -19,15 +18,17 @@ SDLEventLoop::SDLEventLoop( QObject *parent )
     file.open( QIODevice::ReadOnly );
 
     auto mappingData = file.readAll();
-    if ( !SDL_GameControllerAddMapping( mappingData.constData() ) ) {
+
+    if( !SDL_GameControllerAddMapping( mappingData.constData() ) ) {
         qFatal( "Fatal: Unable to load controller database: %s", SDL_GetError() );
     }
 
     file.close();
 
 
-    for ( int i=0; i < Joystick::maxNumOfDevices; ++i )
+    for( int i = 0; i < Joystick::maxNumOfDevices; ++i ) {
         sdlDeviceList.append( nullptr );
+    }
 
 
     sdlPollTimer.setInterval( 5 );
@@ -40,10 +41,11 @@ SDLEventLoop::SDLEventLoop( QObject *parent )
 
 void SDLEventLoop::processEvents() {
 
-    if ( !forceEventsHandling ) {
+    if( !forceEventsHandling ) {
         SDL_GameControllerUpdate();
         SDL_JoystickUpdate();
-        for ( auto &key : deviceLocationMap.keys() ) {
+
+        for( auto &key : deviceLocationMap.keys() ) {
             auto index = deviceLocationMap[ key ];
 
             auto *joystick = sdlDeviceList.at( index );
@@ -53,38 +55,40 @@ void SDLEventLoop::processEvents() {
             // polling and initialize the event handling.
 
             forceEventsHandling = SDL_GameControllerGetAttached( sdlGamepad ) == SDL_FALSE;
-            if ( forceEventsHandling )
+
+            if( forceEventsHandling ) {
                 return;
+            }
 
             // Get all button states
             bool up = getControllerState( joystick,
-                                          SDL_CONTROLLER_BUTTON_DPAD_UP);
+                                          SDL_CONTROLLER_BUTTON_DPAD_UP );
             bool down = getControllerState( joystick,
-                                            SDL_CONTROLLER_BUTTON_DPAD_DOWN);
+                                            SDL_CONTROLLER_BUTTON_DPAD_DOWN );
             bool left = getControllerState( joystick,
-                                            SDL_CONTROLLER_BUTTON_DPAD_LEFT);
+                                            SDL_CONTROLLER_BUTTON_DPAD_LEFT );
             bool right = getControllerState( joystick,
-                                             SDL_CONTROLLER_BUTTON_DPAD_RIGHT);
+                                             SDL_CONTROLLER_BUTTON_DPAD_RIGHT );
             bool start = getControllerState( joystick,
-                                             SDL_CONTROLLER_BUTTON_START);
+                                             SDL_CONTROLLER_BUTTON_START );
             bool back = getControllerState( joystick,
-                                            SDL_CONTROLLER_BUTTON_BACK);
+                                            SDL_CONTROLLER_BUTTON_BACK );
             bool b = getControllerState( joystick,
-                                         SDL_CONTROLLER_BUTTON_B);
+                                         SDL_CONTROLLER_BUTTON_B );
             bool a = getControllerState( joystick,
-                                         SDL_CONTROLLER_BUTTON_A);
+                                         SDL_CONTROLLER_BUTTON_A );
             bool x = getControllerState( joystick,
-                                         SDL_CONTROLLER_BUTTON_X);
+                                         SDL_CONTROLLER_BUTTON_X );
             bool y = getControllerState( joystick,
-                                         SDL_CONTROLLER_BUTTON_Y);
+                                         SDL_CONTROLLER_BUTTON_Y );
             bool leftShoulder = getControllerState( joystick,
-                                                    SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
+                                                    SDL_CONTROLLER_BUTTON_LEFTSHOULDER );
             bool rightShoulder = getControllerState( joystick,
-                                                     SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
+                                 SDL_CONTROLLER_BUTTON_RIGHTSHOULDER );
             bool leftStick = getControllerState( joystick,
-                                                 SDL_CONTROLLER_BUTTON_LEFTSTICK);
+                                                 SDL_CONTROLLER_BUTTON_LEFTSTICK );
             bool rightStick = getControllerState( joystick,
-                                                  SDL_CONTROLLER_BUTTON_RIGHTSTICK);
+                                                  SDL_CONTROLLER_BUTTON_RIGHTSTICK );
 
             // Insert all button states except for directional buttons
             joystick->insert( InputDeviceEvent::Start, start );
@@ -100,21 +104,21 @@ void SDLEventLoop::processEvents() {
 
 
             int16_t leftXAxis = getControllerState( joystick,
-                                                    SDL_CONTROLLER_AXIS_LEFTX);
+                                                    SDL_CONTROLLER_AXIS_LEFTX );
 
             int16_t leftYAxis = getControllerState( joystick,
-                                                    SDL_CONTROLLER_AXIS_LEFTY);
+                                                    SDL_CONTROLLER_AXIS_LEFTY );
 
             int16_t rightXAxis = getControllerState( joystick,
-                                                     SDL_CONTROLLER_AXIS_RIGHTX);
+                                 SDL_CONTROLLER_AXIS_RIGHTX );
 
             int16_t rightYAxis = getControllerState( joystick,
-                                                     SDL_CONTROLLER_AXIS_RIGHTY);
+                                 SDL_CONTROLLER_AXIS_RIGHTY );
 
             int16_t leftTrigger = getControllerState( joystick,
-                                                      SDL_CONTROLLER_AXIS_TRIGGERLEFT);
+                                  SDL_CONTROLLER_AXIS_TRIGGERLEFT );
             int16_t rightTrigger = getControllerState( joystick,
-                                                       SDL_CONTROLLER_AXIS_TRIGGERRIGHT);
+                                   SDL_CONTROLLER_AXIS_TRIGGERRIGHT );
 
             joystick->insert( InputDeviceEvent::L2, leftTrigger );
             joystick->insert( InputDeviceEvent::R2, rightTrigger );
@@ -122,21 +126,21 @@ void SDLEventLoop::processEvents() {
             Q_UNUSED( rightXAxis );
             Q_UNUSED( rightYAxis );
 
-            if ( !joystick->analogMode() ) {
+            if( !joystick->analogMode() ) {
 
-                if ( !left && leftXAxis <= 0) {
+                if( !left && leftXAxis <= 0 ) {
                     left = ( leftXAxis < -joystick->deadZone() );
                 }
 
-                if ( !down && leftXAxis > 0) {
+                if( !down && leftXAxis > 0 ) {
                     right = ( leftXAxis > joystick->deadZone() );
                 }
 
-                if ( !up && leftYAxis <= 0 ) {
+                if( !up && leftYAxis <= 0 ) {
                     up = ( leftYAxis < -joystick->deadZone() );
                 }
 
-                if ( !down && leftYAxis > 0 ) {
+                if( !down && leftYAxis > 0 ) {
                     down = ( leftYAxis > joystick->deadZone() );
                 }
             }
@@ -166,7 +170,7 @@ void SDLEventLoop::processEvents() {
                     // This needs to be checked for, because the first time a controller
                     // sdl starts up, it fires this signal twice, pretty annoying...
 
-                    if ( sdlDeviceList.at( sdlEvent.cdevice.which ) != nullptr ) {
+                    if( sdlDeviceList.at( sdlEvent.cdevice.which ) != nullptr ) {
                         qCDebug( phxInput ) << "Device already exists at " << sdlEvent.cdevice.which;
                         break;
                     }
@@ -194,7 +198,7 @@ void SDLEventLoop::processEvents() {
 
                     Q_ASSERT( joystick != nullptr );
 
-                    if ( joystick->instanceID() == sdlEvent.cdevice.which ) {
+                    if( joystick->instanceID() == sdlEvent.cdevice.which ) {
                         qCDebug( phxInput ) << "Controller Removed: " << joystick->name();
                         emit deviceRemoved( joystick->sdlIndex() );
                         sdlDeviceList[ index ] = nullptr;
@@ -202,6 +206,7 @@ void SDLEventLoop::processEvents() {
                         forceEventsHandling = true;
                         break;
                     }
+
                     break;
                 }
 

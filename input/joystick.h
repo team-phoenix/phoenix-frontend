@@ -34,13 +34,11 @@ class Joystick : public InputDevice {
 
         bool analogMode() const;
 
-        QHash<int, int> &sdlButtonMapping()
-        {
+        QHash<int, int> &sdlButtonMapping() {
             return buttonMapping;
         }
 
-        QHash<int, int> &sdlAxisMapping()
-        {
+        QHash<int, int> &sdlAxisMapping() {
             return axisMapping;
         }
 

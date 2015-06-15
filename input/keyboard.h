@@ -19,8 +19,7 @@ class Keyboard : public InputDevice {
     public slots:
 
         void insert( const Qt::Key &event, int16_t pressed );
-        void setMapping( const QVariantMap mapping ) override
-        {
+        void setMapping( const QVariantMap mapping ) override {
             Q_UNUSED( mapping );
         }
 

@@ -30,8 +30,7 @@ qmlEditMode( false ) {
     setRetroButtonCount( 15 );
 }
 
-InputDevice::~InputDevice()
-{
+InputDevice::~InputDevice() {
 
 }
 
@@ -46,8 +45,7 @@ const QString InputDevice::name() const {
     return deviceName;
 }
 
-QString InputDevice::mappingString() const
-{
+QString InputDevice::mappingString() const {
     return qmlMappingString;
 }
 
@@ -68,8 +66,8 @@ void InputDevice::insert( const InputDeviceEvent::Event &value, const int16_t &s
     mutex.unlock();
 }
 
-void InputDevice::insert(InputDeviceEvent *event) {
-    if ( editMode() ) {
+void InputDevice::insert( InputDeviceEvent *event ) {
+    if( editMode() ) {
         emit inputDeviceEventChanged( event );
     } else {
 

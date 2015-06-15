@@ -101,8 +101,7 @@ class InputDevice : public QObject {
 
         void insert( InputDeviceEvent *event );
 
-        virtual void setMapping( const QVariantMap mapping )
-        {
+        virtual void setMapping( const QVariantMap mapping ) {
             Q_UNUSED( mapping );
         }
 
