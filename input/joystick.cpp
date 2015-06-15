@@ -114,11 +114,11 @@ void Joystick::close()
 void Joystick::setMapping( const QVariantMap mapping )
 {
     QString platform;
-#ifdef Q_OS_OSX
+#if defined(Q_OS_OSX)
     platform = "Mac OS X";
-#elif Q_OS_WIN32
+#elif defined(Q_OS_WIN32)
     platform = "Windows";
-#elif Q_OS_LINUX
+#elif defined(Q_OS_LINUX)
     platform = "Linux";
 #else
 #error "Your operating system does not support this feature. ( Joystick::mappingString() )"
