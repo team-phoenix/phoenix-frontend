@@ -2,13 +2,13 @@
 
 VideoItem::VideoItem( QQuickItem *parent ) :
     QQuickItem( parent ),
+    qmlInputManager( nullptr ),
     audioOutput( new AudioOutput() ), audioOutputThread( new QThread( this ) ),
     core( new Core() ), // coreTimer( new QTimer() ),
     coreThread( nullptr ), coreState( Core::STATEUNINITIALIZED ),
     avInfo(), pixelFormat(),
     corePath( "" ), gamePath( "" ),
     width( 0 ), height( 0 ), pitch( 0 ), coreFPS( 0.0 ), hostFPS( 0.0 ),
-    qmlInputManager( nullptr ),
     texture( nullptr ),
     frameTimer() {
 
