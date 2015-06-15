@@ -7,7 +7,6 @@ QT += qml quick widgets multimedia concurrent
 SOURCES += main.cpp \
     videoitem.cpp \
     core.cpp \
-    audiobuffer.cpp \
     phoenixglobals.cpp \
     pathwatcher.cpp \
     audiooutput.cpp \
@@ -41,7 +40,6 @@ HEADERS += \
     core.h \
     libretro.h \
     logging.h \
-    audiobuffer.h \
     phoenixglobals.h \
     pathwatcher.h \
     audiooutput.h
