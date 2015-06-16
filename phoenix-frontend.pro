@@ -65,10 +65,11 @@ win32 {
 
 else {
     LIBS += -lSDL2
-    INCLUDEPATH += /usr/local/include /usr/local/include/SDL2
-    INCLUDEPATH += /usr/include /usr/include/SDL2
+    INCLUDEPATH += /usr/local/include /usr/local/include/SDL2 # Homebrew (OS X)
+    INCLUDEPATH += /opt/local/include /opt/local/include/SDL2 # MacPorts (OS X)
+    INCLUDEPATH += /usr/include /usr/include/SDL2 # Linux
     QMAKE_CXXFLAGS +=
-    QMAKE_LFLAGS += -L/usr/local/lib
+    QMAKE_LFLAGS += -L/usr/local/lib -L/opt/local/lib
 }
 
 
