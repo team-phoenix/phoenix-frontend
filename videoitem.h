@@ -150,18 +150,12 @@ class VideoItem : public QQuickItem {
         // approximately the refresh rate of the monitor. Thus, we'll emit the render signal to core here
         QSGNode *updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintData );
 
-        // QML item has finished loading, ready to start displaying frames
-        void componentComplete();
-
         // Timer used to measure FPS of core
         QElapsedTimer frameTimer;
 
         //
         // Consumer helpers
         //
-
-        // Create a single-color texture
-        void generateSimpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTextureNode *textureNode );
 
         // Small helper method to convert Libretro image format types to their Qt equivalent
         inline QImage::Format retroToQImageFormat( enum retro_pixel_format fmt );

@@ -269,28 +269,19 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
 
     QSGSimpleTextureNode *textureNode = static_cast<QSGSimpleTextureNode *>( node );
 
-    if( !textureNode ) {
-
+    if( !textureNode )
         textureNode = new QSGSimpleTextureNode;
-
-    }
 
     // It's not time yet. Show a black rectangle.
     if( coreState != Core::STATEREADY ) {
-
-        generateSimpleTextureNode( Qt::black, textureNode );
-        return textureNode;
-
+        return QQuickItem::updatePaintNode( textureNode, paintData );
     }
 
     // First frame, no video data yet. Tell core to render a frame
     // then display it next time.
     if( !texture ) {
-
         emit signalFrame();
-        generateSimpleTextureNode( Qt::black, textureNode );
-        return textureNode;
-
+        return QQuickItem::updatePaintNode( textureNode, paintData );
     }
 
     static qint64 timeStamp = -1;
@@ -321,29 +312,6 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
     }
 
     return textureNode;
-
-}
-
-void VideoItem::componentComplete() {
-
-    QQuickItem::componentComplete();
-
-    setFlag( QQuickItem::ItemHasContents, true );
-
-    update();
-
-}
-
-void VideoItem::generateSimpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTextureNode *textureNode ) {
-
-    QImage image( boundingRect().size().toSize(), QImage::Format_ARGB32 );
-    image.fill( globalColor );
-
-    QSGTexture *texture = window()->createTextureFromImage( image );
-    textureNode->setTexture( texture );
-    textureNode->setTextureCoordinatesTransform( QSGSimpleTextureNode::MirrorVertically );
-    textureNode->setRect( boundingRect() );
-    textureNode->setFiltering( QSGTexture::Nearest );
 
 }
 
