@@ -240,7 +240,6 @@ void VideoItem::handleWindowChanged( QQuickWindow *window ) {
     }
 
     connect( window, &QQuickWindow::openglContextCreated, this, &VideoItem::handleOpenGLContextCreated );
-    connect( window, &QQuickWindow::frameSwapped, this, &QQuickItem::update );
 
 }
 
@@ -262,6 +261,11 @@ void VideoItem::handleOpenGLContextCreated( QOpenGLContext *GLContext ) {
 
     //connect( &fps_timer, &QTimer::timeout, this, &VideoItem::updateFps );
 
+}
+
+bool VideoItem::limitFrameRate()
+{
+    return false;
 }
 
 QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintData ) {
@@ -286,7 +290,7 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
 
     static qint64 timeStamp = -1;
 
-    if( timeStamp != -1 ) {
+    if ( timeStamp != -1 ) {
 
         qreal calculatedFrameRate = ( 1 / ( timeStamp / 1000000.0 ) ) * 1000.0;
         int difference = calculatedFrameRate > coreFPS ?

@@ -102,6 +102,8 @@ class VideoItem : public QQuickItem {
         // Controller
         //
 
+        bool limitFrameRate();
+
         // NOTE: All consumers must be declared before Core
 
         // Audio output on the system's default audio output device
@@ -118,6 +120,7 @@ class VideoItem : public QQuickItem {
 
         // Thread that keeps the emulation from blocking this UI thread
         QThread *coreThread;
+        QTimer coreTimer;
 
         // Core's 'current' state (since core lives on another thread, it could be in a different state)
         Core::State coreState;
