@@ -14,6 +14,8 @@
 #include "logging.h"
 #include "inputdeviceevent.h"
 
+// InputDevice represents an abstract controller
+
 // In normal situations, you only need to
 // reimplement the insert function.
 
@@ -29,11 +31,13 @@ class InputDevice : public QObject {
 
     public:
 
+        // Controller types from libretro's perspective
         enum  LibretroType {
             RetroGamepad = RETRO_DEVICE_JOYPAD,
             AnalogGamepad = RETRO_DEVICE_ANALOG,
         };
 
+        // Controller types from our perspective
         enum Name {
             SDLJoypad = 0,
             QtKeyboard,
@@ -44,96 +48,86 @@ class InputDevice : public QObject {
 
         explicit InputDevice( const LibretroType type, const QString name, QObject *parent );
 
-        ~InputDevice();
-
-        const QString name() const;
+        // Getters
+        const QString name() const; // QML
+        bool editMode() const; // QML
+        int retroButtonCount() const; // QML
         QString mappingString() const;
-
-        bool editMode() const {
-            return qmlEditMode;
-        }
-
-        int retroButtonCount() const {
-            return qmlRetroButtonCount;
-        }
-
         LibretroType type() const;
-
         InputStateMap *states();
+        InputDeviceMapping &mapping();
 
-        // This is for having 2 input devices share the same port;
-        // indirectly of course.
+        // Setters
+        void setName( const QString name ); // QML
+        void setEditMode( const bool edit ); // QML
+        void setType( const LibretroType type );
+
+        // Set the input device to mirror
         bool shareStates( InputDevice *device );
 
-        void setName( const QString name ) {
-            deviceName = name;
-            emit nameChanged();
-        }
+        // Currently sharing states?
+        bool isSharingStates() const;
 
-        void setEditMode( const bool edit ) {
-            qmlEditMode = edit;
-            emit editModeChanged();
-        }
-
-        void setType( const LibretroType type ) {
-            deviceType = type;
-        }
-
-        bool isSharingStates() const {
-            return sharingStates;
-        }
-
-        bool sharingEnabled() const {
-            return sharingStates;
-        }
-
-        InputDeviceMapping &mapping() {
-            return deviceMapping;
-        }
+        // Is sharing enabled?
+        bool sharingEnabled() const;
 
     public slots:
 
+        // Poll button state (getter)
         virtual int16_t value( const InputDeviceEvent::Event &event, const int16_t defaultValue = ~0 );
 
-        virtual bool contains( const InputDeviceEvent::Event &event );
-
+        // Set button state (setter)
         virtual void insert( const InputDeviceEvent::Event &value, const int16_t &state );
 
+        // Alternate mode? What's it for?
         void insert( InputDeviceEvent *event );
 
-        virtual void setMapping( const QVariantMap mapping ) {
-            Q_UNUSED( mapping );
-        }
+        // Not sure?
+        virtual bool contains( const InputDeviceEvent::Event &event );
+
+        // Set the device -> SDL2 gamepad mapping
+        virtual void setMapping( const QVariantMap mapping );
 
     protected:
+
+        // The device's current state (whether certain buttons are pressed)
         InputStateMap *deviceStates;
+
+        // Map between SDL2 -> retropad
         InputDeviceMapping deviceMapping;
 
     signals:
-        void editModeChanged();
-        void nameChanged();
-        void retroButtonCountChanged();
+
+        void editModeChanged(); // QML
+        void nameChanged(); // QML
+        void retroButtonCountChanged(); // QML
         void inputDeviceEventChanged( InputDeviceEvent *event );
 
     private:
+
+        // Type of controller this input device is
         LibretroType deviceType;
+
+        // This is for having 2 input devices share the same port;
+        // indirectly of course.
         bool sharingStates;
+
+        // Controller states are read by a different thread, lock access with a mutex
         QMutex mutex;
+
+        // How is this used?
         const int16_t defaultValue = ~0;
 
-
-
+        // Clear button states
         void resetStates();
-        void setRetroButtonCount( const int count ) {
-            qmlRetroButtonCount = count;
-            emit retroButtonCountChanged();
-        }
+        void setRetroButtonCount( const int count );
 
         // QML Variables
         QString deviceName;
         QString qmlMappingString;
         int qmlRetroButtonCount;
         bool qmlEditMode;
+
 };
 
 Q_DECLARE_METATYPE( InputDevice * )
