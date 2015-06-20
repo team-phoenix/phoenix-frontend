@@ -19,12 +19,11 @@ SDLEventLoop::SDLEventLoop( QObject *parent )
 
     auto mappingData = file.readAll();
 
-    if( !SDL_GameControllerAddMapping( mappingData.constData() ) ) {
+    if ( SDL_SetHint( SDL_HINT_GAMECONTROLLERCONFIG, mappingData.constData() ) == SDL_FALSE ) {
         qFatal( "Fatal: Unable to load controller database: %s", SDL_GetError() );
     }
 
     file.close();
-
 
     for( int i = 0; i < Joystick::maxNumOfDevices; ++i ) {
         sdlDeviceList.append( nullptr );
@@ -42,6 +41,7 @@ SDLEventLoop::SDLEventLoop( QObject *parent )
 void SDLEventLoop::processEvents() {
 
     if( !forceEventsHandling ) {
+
         SDL_GameControllerUpdate();
         SDL_JoystickUpdate();
 
