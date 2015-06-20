@@ -2,6 +2,10 @@
 
 #include <QSharedPointer>
 
+//
+// Constructors
+//
+
 InputDevice::InputDevice( const InputDevice::LibretroType type, const QString name, QObject *parent )
     : QObject( parent ),
       deviceStates( new InputStateMap {
@@ -26,38 +30,93 @@ deviceType( type ),
 sharingStates( true ),
 deviceName( name ),
 qmlEditMode( false ) {
-
     setRetroButtonCount( 15 );
 }
 
-InputDevice::~InputDevice() {
-
-}
-
 InputDevice::InputDevice( const InputDevice::LibretroType type, QObject *parent )
-    : InputDevice( type, "No-Name", parent )
-
-{
+    : InputDevice( type, "No-Name", parent ) {
 
 }
+
+//
+// Public
+//
 
 const QString InputDevice::name() const {
     return deviceName;
+}
+
+bool InputDevice::editMode() const {
+    return qmlEditMode;
+}
+
+int InputDevice::retroButtonCount() const {
+    return qmlRetroButtonCount;
 }
 
 QString InputDevice::mappingString() const {
     return qmlMappingString;
 }
 
+InputDevice::LibretroType InputDevice::type() const {
+    return deviceType;
+}
+
+InputStateMap *InputDevice::states() {
+    return deviceStates;
+}
+
+InputDeviceMapping &InputDevice::mapping() {
+    return deviceMapping;
+}
+
+void InputDevice::setName( const QString name ) {
+    deviceName = name;
+    emit nameChanged();
+}
+
+void InputDevice::setEditMode( const bool edit ) {
+    qmlEditMode = edit;
+    emit editModeChanged();
+}
+
+void InputDevice::setType( const InputDevice::LibretroType type ) {
+    deviceType = type;
+}
+
+bool InputDevice::shareStates( InputDevice *device ) {
+    Q_ASSERT_X( this != device, "InputDevice::shareStates", "cannot share state with itself." );
+
+    if( device == nullptr ) {
+        if( sharingEnabled() ) {
+            resetStates();
+        }
+
+        return false;
+    }
+
+    deviceStates = device->states();
+    return true;
+
+}
+
+bool InputDevice::isSharingStates() const {
+    return sharingStates;
+}
+
+bool InputDevice::sharingEnabled() const {
+    return sharingStates;
+}
+
+//
+// Public slots
+//
+
 int16_t InputDevice::value( const InputDeviceEvent::Event &event, const int16_t defaultValue ) {
     mutex.lock();
     auto pressed = deviceStates->value( event, defaultValue );
     mutex.unlock();
     return pressed;
-}
-
-bool InputDevice::contains( const InputDeviceEvent::Event &event ) {
-    return value( event, defaultValue ) != defaultValue;
 }
 
 void InputDevice::insert( const InputDeviceEvent::Event &value, const int16_t &state ) {
@@ -77,32 +136,25 @@ void InputDevice::insert( InputDeviceEvent *event ) {
     delete event;
 }
 
-InputDevice::LibretroType InputDevice::type() const {
-    return deviceType;
+bool InputDevice::contains( const InputDeviceEvent::Event &event ) {
+    return value( event, defaultValue ) != defaultValue;
 }
 
-InputStateMap *InputDevice::states() {
-    return deviceStates;
+void InputDevice::setMapping( const QVariantMap mapping ) {
+    Q_UNUSED( mapping );
 }
 
-bool InputDevice::shareStates( InputDevice *device ) {
-    Q_ASSERT_X( this != device, "InputDevice::shareStates", "cannot share state with itself." );
-
-    if( device == nullptr ) {
-        if( sharingEnabled() ) {
-            resetStates();
-        }
-
-        return false;
-    }
-
-    deviceStates = device->states();
-    return true;
-
-}
+//
+// Private
+//
 
 void InputDevice::resetStates() {
     for( auto &key : deviceStates->keys() ) {
         deviceStates->value( key, false );
     }
+}
+
+void InputDevice::setRetroButtonCount( const int count ) {
+    qmlRetroButtonCount = count;
+    emit retroButtonCountChanged();
 }

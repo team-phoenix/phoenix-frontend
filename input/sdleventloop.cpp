@@ -19,7 +19,7 @@ SDLEventLoop::SDLEventLoop( QObject *parent )
 
     auto mappingData = file.readAll();
 
-    if ( SDL_SetHint( SDL_HINT_GAMECONTROLLERCONFIG, mappingData.constData() ) == SDL_FALSE ) {
+    if( SDL_SetHint( SDL_HINT_GAMECONTROLLERCONFIG, mappingData.constData() ) == SDL_FALSE ) {
         qFatal( "Fatal: Unable to load controller database: %s", SDL_GetError() );
     }
 
@@ -171,7 +171,8 @@ void SDLEventLoop::processEvents() {
                     // sdl starts up, it fires this signal twice, pretty annoying...
 
                     if( sdlDeviceList.at( sdlEvent.cdevice.which ) != nullptr ) {
-                        qCDebug( phxInput ) << "Device already exists at " << sdlEvent.cdevice.which;
+                        qCDebug( phxInput ).nospace() << "Duplicate controller added at slot "
+                                                      << sdlEvent.cdevice.which << ", ignored";
                         break;
                     }
 

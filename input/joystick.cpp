@@ -123,8 +123,6 @@ void Joystick::setMapping( const QVariantMap mapping ) {
 
     qmlMappingString = prefix + "," + body + suffix + ",";
 
-
-
 }
 
 void Joystick::populateMappings( SDL_GameController *device ) {

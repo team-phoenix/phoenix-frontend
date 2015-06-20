@@ -193,8 +193,6 @@ class InputDeviceEvent : public QObject {
         int qmlState;
         int qmlValue;
         QString qmlDisplayName;
-
-        // Do not delete this pointer.
         InputDevice *qmlDevice;
 
 };
