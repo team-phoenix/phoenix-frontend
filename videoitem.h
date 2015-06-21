@@ -34,37 +34,14 @@ class VideoItem : public QQuickItem {
         Q_PROPERTY( QString game MEMBER gamePath WRITE setGame )
         Q_PROPERTY( InputManager *inputManager READ inputManager WRITE setInputManager NOTIFY inputManagerChanged )
 
-        InputManager *qmlInputManager;
-
-        void keyPressEvent( QKeyEvent *event ) {
-            qmlInputManager->keyboard->insert( ( Qt::Key )event->key(), true );
-
-        }
-
-        void keyReleaseEvent( QKeyEvent *event ) {
-            qmlInputManager->keyboard->insert( ( Qt::Key )event->key() , false );
-        }
-
     public:
 
         VideoItem( QQuickItem *parent = 0 );
         ~VideoItem();
 
-        InputManager *inputManager() const {
-            return qmlInputManager;
-        }
+        InputManager *inputManager() const;
 
-        void setInputManager( InputManager *manager ) {
-            if( manager != qmlInputManager ) {
-                qmlInputManager = manager;
-                core->inputManager = qmlInputManager;
-
-                connect( this, &VideoItem::signalRunChanged, qmlInputManager, &InputManager::setRun, Qt::DirectConnection );
-
-                emit inputManagerChanged();
-
-            }
-        }
+        void setInputManager( InputManager *manager );
 
     signals:
         void inputManagerChanged();
@@ -94,9 +71,13 @@ class VideoItem : public QQuickItem {
 
         // For future consumer use?
         void handleWindowChanged( QQuickWindow *window );
-        void handleOpenGLContextCreated( QOpenGLContext *GLContext );
 
     private:
+
+        InputManager *qmlInputManager;
+
+        void keyPressEvent( QKeyEvent *event );
+        void keyReleaseEvent( QKeyEvent *event );
 
         //
         // Controller

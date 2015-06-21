@@ -81,6 +81,34 @@ VideoItem::~VideoItem() {
 // Controller methods
 //
 
+InputManager *VideoItem::inputManager() const
+{
+    return qmlInputManager;
+}
+
+void VideoItem::setInputManager( InputManager *manager )
+{
+    if( manager != qmlInputManager ) {
+        qmlInputManager = manager;
+        core->inputManager = qmlInputManager;
+
+        connect( this, &VideoItem::signalRunChanged, qmlInputManager, &InputManager::setRun, Qt::DirectConnection );
+
+        emit inputManagerChanged();
+
+    }
+}
+
+void VideoItem::keyPressEvent( QKeyEvent *event )
+{
+    qmlInputManager->keyboard->insert( ( Qt::Key )event->key(), true );
+}
+
+void VideoItem::keyReleaseEvent( QKeyEvent *event )
+{
+    qmlInputManager->keyboard->insert( ( Qt::Key )event->key() , false );
+}
+
 void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) {
 
     qCDebug( phxController ) << "slotStateChanged(" << Core::stateToText( newState ) << "," << error << ")";
@@ -239,27 +267,6 @@ void VideoItem::handleWindowChanged( QQuickWindow *window ) {
         return;
     }
 
-    connect( window, &QQuickWindow::openglContextCreated, this, &VideoItem::handleOpenGLContextCreated );
-
-}
-
-void VideoItem::handleOpenGLContextCreated( QOpenGLContext *GLContext ) {
-
-    if( !GLContext ) {
-        return;
-    }
-
-    /* #################################
-     *
-     * DO NOT DELETE THIS COMMENTED CODE!!!
-     *
-     * #################################
-     */
-
-    //fbo_t = GLContext->defaultFramebufferObject();
-
-
-    //connect( &fps_timer, &QTimer::timeout, this, &VideoItem::updateFps );
 
 }
 

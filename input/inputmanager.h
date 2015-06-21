@@ -16,7 +16,6 @@
 class InputManager : public QObject {
         Q_OBJECT
 
-
         QMutex mutex;
         QList<InputDevice *> deviceList;
 
@@ -26,28 +25,20 @@ class InputManager : public QObject {
 
         SDLEventLoop sdlEventLoop;
 
-
     public:
         explicit InputManager( QObject *parent = 0 );
         ~InputManager();
 
         Keyboard *keyboard;
 
+        bool isKeyboardActive() const;
+
+        int size() const;
+
+        InputDevice *at( int index );
 
 
-        bool isKeyboardActive() const {
-            return keyboardActivated;
-        }
-
-        int size() const {
-            return deviceList.size();
-        }
-
-        InputDevice *at( int index ) {
-
-            QMutexLocker locker( &mutex );
-            return deviceList.at( index );
-        }
+        void pollStates();
 
     public slots:
 
@@ -55,55 +46,13 @@ class InputManager : public QObject {
 
         void removeAt( int index );
 
-        bool shareDeviceStates( const int index );
 
-        bool shareDeviceStates( const int index1, const int index2 );
+        void setRun( bool run );
 
-        void setRun( bool run ) {
-            mutex.lock();
-
-            if( run ) {
-                //sdlEventLoop.start();
-                for( auto device : deviceList ) {
-                    if( device ) {
-                        device->setEditMode( false );
-                    }
-                }
-
-                if( deviceList.first() == nullptr ) {
-                    deviceList[ 0 ] = keyboard;
-                }
-
-                else {
-                    keyboard->shareStates( deviceList.at( 0 ) );
-                }
-            }
-
-            else {
-                keyboard->shareStates( nullptr );
-            }
-
-            mutex.unlock();
-            /*else {
-                sdlThread.terminate();
-                sdlThread.wait();
-            }*/
-        }
-
-        void swap( const int index1, const int index2 ) {
-            deviceList.swap( index1, index2 );
-        }
+        void swap( const int index1, const int index2 );
 
     public slots:
-        void emitConnectedDevices() {
-            emit deviceAdded( keyboard );
-
-            for( auto inputDevice : deviceList ) {
-                if( inputDevice ) {
-                    emit deviceAdded( inputDevice );
-                }
-            }
-        }
+        void emitConnectedDevices();
 
     signals:
         void device( InputDevice *device );
@@ -113,8 +62,7 @@ class InputManager : public QObject {
 
     private:
 
-
-
+        /*
         bool eventFilter( QObject *object, QEvent *event ) {
             switch( event->type() ) {
                 case QEvent::KeyPress:
@@ -131,6 +79,7 @@ class InputManager : public QObject {
 
             return true;
         }
+        */
 
 
 };

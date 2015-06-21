@@ -212,5 +212,4 @@ void Joystick::populateMappings( SDL_GameController *device ) {
         }
     }
 
-    qCDebug( phxInput ) << name() << " mapping has finished.";
 }

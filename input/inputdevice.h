@@ -6,7 +6,6 @@
 #include <QHash>
 #include <QDebug>
 #include <QMap>
-#include <QSharedPointer>
 #include <QQmlEngine>
 #include <QVariantMap>
 
@@ -114,9 +113,6 @@ class InputDevice : public QObject {
 
         // Controller states are read by a different thread, lock access with a mutex
         QMutex mutex;
-
-        // How is this used?
-        const int16_t defaultValue = ~0;
 
         // Clear button states
         void resetStates();

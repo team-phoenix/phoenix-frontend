@@ -13,6 +13,10 @@ void Keyboard::insert( const Qt::Key &event, int16_t pressed ) {
     }
 }
 
+void Keyboard::setMapping(const QVariantMap mapping) {
+    Q_UNUSED( mapping );
+}
+
 
 QMap< Qt::Key, InputDeviceEvent::Event> Keyboard::keyConverter  {
     { Qt::Key_A , InputDeviceEvent::A },
