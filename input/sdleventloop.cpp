@@ -19,9 +19,7 @@ SDLEventLoop::SDLEventLoop( QObject *parent )
 
     auto mappingData = file.readAll();
 
-    if( SDL_SetHint( SDL_HINT_GAMECONTROLLERCONFIG, mappingData.constData() ) == SDL_FALSE ) {
-        qFatal( "Fatal: Unable to load controller database: %s", SDL_GetError() );
-    }
+    SDL_SetHint( SDL_HINT_GAMECONTROLLERCONFIG, mappingData.constData() );
 
     file.close();
 
@@ -32,17 +30,16 @@ SDLEventLoop::SDLEventLoop( QObject *parent )
 
     sdlPollTimer.setInterval( 5 );
 
-    connect( &sdlPollTimer, &QTimer::timeout, this, &SDLEventLoop::processEvents );
+    connect( &sdlPollTimer, &QTimer::timeout, this, &SDLEventLoop::pollEvents );
 
     initSDL();
 
 }
 
-void SDLEventLoop::processEvents() {
+void SDLEventLoop::pollEvents() {
 
     if( !forceEventsHandling ) {
 
-        SDL_GameControllerUpdate();
         SDL_JoystickUpdate();
 
         for( auto &key : deviceLocationMap.keys() ) {
@@ -184,8 +181,6 @@ void SDLEventLoop::processEvents() {
 
                     emit deviceConnected( joystick );
 
-
-                    qCDebug( phxInput ) << "Controller Added: " << joystick->name();
                     break;
                 }
 
@@ -200,7 +195,6 @@ void SDLEventLoop::processEvents() {
                     Q_ASSERT( joystick != nullptr );
 
                     if( joystick->instanceID() == sdlEvent.cdevice.which ) {
-                        qCDebug( phxInput ) << "Controller Removed: " << joystick->name();
                         emit deviceRemoved( joystick->sdlIndex() );
                         sdlDeviceList[ index ] = nullptr;
                         deviceLocationMap.remove( sdlEvent.cbutton.which );
@@ -218,6 +212,14 @@ void SDLEventLoop::processEvents() {
     }
 }
 
+void SDLEventLoop::start() {
+    sdlPollTimer.start();
+}
+
+void SDLEventLoop::stop() {
+    sdlPollTimer.stop();
+}
+
 void SDLEventLoop::initSDL() {
 
     if( SDL_Init( SDL_INIT_JOYSTICK | SDL_INIT_GAMECONTROLLER ) < 0 ) {
@@ -229,4 +231,31 @@ void SDLEventLoop::initSDL() {
 
 void SDLEventLoop::quitSDL() {
     SDL_Quit();
+}
+
+int16_t SDLEventLoop::getControllerState(Joystick *joystick, const SDL_GameControllerButton &button) {
+    int value = joystick->sdlButtonMapping().value( button, -1 );
+
+    if( value == -1 ) {
+        value = joystick->sdlAxisMapping().value( button, -1 );
+        return SDL_JoystickGetAxis( joystick->sdlJoystick(), value );
+    }
+
+    return SDL_JoystickGetButton( joystick->sdlJoystick(), value );
+}
+
+int16_t SDLEventLoop::getControllerState(Joystick *joystick, const SDL_GameControllerAxis &axis) {
+    int value = joystick->sdlAxisMapping().value( axis, -1 );
+
+    if ( value == -1 ) {
+        value = joystick->sdlButtonMapping().value( axis, -1 );
+        return SDL_JoystickGetButton( joystick->sdlJoystick(), value );
+    }
+
+
+    if ( value >= SDL_CONTROLLER_AXIS_MAX ) {
+        return SDL_JoystickGetButton( joystick->sdlJoystick(), value );
+    }
+
+    return SDL_JoystickGetAxis( joystick->sdlJoystick(), value );
 }

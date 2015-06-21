@@ -697,6 +697,7 @@ bool Core::environmentCallback( unsigned cmd, void *data ) {
 
 void Core::inputPollCallback( void ) {
 
+    core->inputManager->pollStates();
     // qDebug() << "Core::inputPollCallback";
     return;
 
@@ -758,34 +759,35 @@ void Core::logCallback( enum retro_log_level level, const char *fmt, ... ) {
 }
 
 int16_t Core::inputStateCallback( unsigned port, unsigned device, unsigned index, unsigned id ) {
-    Q_UNUSED( device )
     Q_UNUSED( index )
+
+    // we don't handle index for now...
+
 
     if( ( int ) port >= core->inputManager->size() ) {
         return 0;
     }
 
 
+    auto *inputDevice = core->inputManager->at( port );
+
+    auto event = static_cast<InputDeviceEvent::Event>( id );
+
+    if ( port == 0 ) {
+        auto keyState = core->inputManager->keyboard->value( event, 0 );
+        if ( !inputDevice )
+            return keyState;
+        auto deviceState = inputDevice->value( event, 0 );
+        return deviceState | keyState;
+    }
+
     // make sure the InputDevice was configured
     // to map to the requested RETRO_DEVICE.
 
-
-    /*
-    if( deviceobj->mapping()->deviceType() != device ) {
+    if ( !inputDevice || inputDevice->type() != static_cast<InputDevice::LibretroType>( device ) )
         return 0;
-    }
-    */
-    // we don't handle index for now...
 
-    auto *inputDevice = core->inputManager->at( port );
-
-    //qDebug() << "Acquire device";
-
-    if( !inputDevice || inputDevice->type() != ( InputDevice::LibretroType )device ) {
-        return 0;
-    }
-
-    return inputDevice->value( ( InputDeviceEvent::Event )id, 0 );
+    return inputDevice->value( event, 0 );
 
 }
 

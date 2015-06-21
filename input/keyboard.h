@@ -4,8 +4,6 @@
 #include "inputdevice.h"
 #include "inputdeviceevent.h"
 
-
-
 class Keyboard : public InputDevice {
         Q_OBJECT
 
@@ -19,9 +17,7 @@ class Keyboard : public InputDevice {
     public slots:
 
         void insert( const Qt::Key &event, int16_t pressed );
-        void setMapping( const QVariantMap mapping ) override {
-            Q_UNUSED( mapping );
-        }
+        void setMapping( const QVariantMap mapping ) override;
 
     private:
         static QMap< Qt::Key, InputDeviceEvent::Event> keyConverter;

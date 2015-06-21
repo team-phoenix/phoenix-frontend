@@ -31,18 +31,10 @@ class SDLEventLoop : public QObject {
         explicit SDLEventLoop( QObject *parent = 0 );
 
     public slots:
-        void processEvents();
+        void pollEvents();
 
-        void start() {
-            sdlPollTimer.start();
-        }
-
-        void startTimer() {
-        }
-
-        void stop() {
-            sdlPollTimer.stop();
-        }
+        void start();
+        void stop();
 
     signals:
         void deviceConnected( Joystick *joystick );
@@ -50,37 +42,10 @@ class SDLEventLoop : public QObject {
 
     private:
         void initSDL();
-
         void quitSDL();
 
-        int16_t getControllerState( Joystick *joystick, const SDL_GameControllerButton &button ) {
-            int value = joystick->sdlButtonMapping().value( button, -1 );
-
-            if( value == -1 ) {
-                value = joystick->sdlAxisMapping().value( button, -1 );
-                return SDL_JoystickGetAxis( joystick->sdlJoystick(), value );
-            }
-
-            return SDL_JoystickGetButton( joystick->sdlJoystick(), value );
-        }
-
-        int16_t getControllerState( Joystick *joystick, const SDL_GameControllerAxis &axis ) {
-            int value = joystick->sdlAxisMapping().value( axis, -1 );
-
-            if( value == -1 ) {
-                value = joystick->sdlButtonMapping().value( axis, -1 );
-                return SDL_JoystickGetButton( joystick->sdlJoystick(), value );
-            }
-
-
-            //qDebug() << axis << value;
-            if( value >= SDL_CONTROLLER_AXIS_MAX ) {
-                return SDL_JoystickGetButton( joystick->sdlJoystick(), value );
-            }
-
-            return SDL_JoystickGetAxis( joystick->sdlJoystick(), value );
-        }
-
+        int16_t getControllerState( Joystick *joystick, const SDL_GameControllerButton &button );
+        int16_t getControllerState( Joystick *joystick, const SDL_GameControllerAxis &axis );
 
 };
 
