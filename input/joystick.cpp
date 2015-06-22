@@ -3,7 +3,7 @@
 const int Joystick::maxNumOfDevices = 128;
 
 Joystick::Joystick( const int joystickIndex, QObject *parent )
-    : InputDevice( LibretroType::RetroGamepad, parent ),
+    : InputDevice( LibretroType::DigitalGamepad, parent ),
       qmlSdlIndex( joystickIndex ),
       qmlDeadZone( 12000 ),
       qmlAnalogMode( false ) {
@@ -126,6 +126,7 @@ void Joystick::setMapping( const QVariantMap mapping ) {
 }
 
 void Joystick::populateMappings( SDL_GameController *device ) {
+    // Handle populating our own mappings, because SDL2 often uses the incorrect mapping array.
     QString mappingString = SDL_GameControllerMapping( device );
 
     auto strList = mappingString.split( "," );
@@ -145,7 +146,7 @@ void Joystick::populateMappings( SDL_GameController *device ) {
             continue;
         }
 
-        // Handle Button;
+        // Handle adding buttons to map;
         if( value.at( 0 ) == 'b' ) {
             value = value.remove( "b" );
 
@@ -189,7 +190,7 @@ void Joystick::populateMappings( SDL_GameController *device ) {
                 qCWarning( phxInput ) << numVal <<  "was missed in the mapping.";
             }
         }
-        // Handle Axis
+        // Handle adding axis values into map.
         else if( value.at( 0 ) == 'a' ) {
             value = value.remove( "a" );
             int numVal = value.toInt();

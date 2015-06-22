@@ -13,15 +13,18 @@ SDLEventLoop::SDLEventLoop( QObject *parent )
       forceEventsHandling( true ) {
     // To do the poll timer isn't in the sdlEventLoopThread. it needs to be.
 
+    // Ensures the resources at loaded at startup, even during
+    // static compilation.
     Q_INIT_RESOURCE( controllerdb );
     QFile file( ":/input/gamecontrollerdb.txt" );
-    file.open( QIODevice::ReadOnly );
+    Q_ASSERT( file.open( QIODevice::ReadOnly ) );
 
     auto mappingData = file.readAll();
 
     SDL_SetHint( SDL_HINT_GAMECONTROLLERCONFIG, mappingData.constData() );
 
     file.close();
+
 
     for( int i = 0; i < Joystick::maxNumOfDevices; ++i ) {
         sdlDeviceList.append( nullptr );
@@ -32,6 +35,7 @@ SDLEventLoop::SDLEventLoop( QObject *parent )
 
     connect( &sdlPollTimer, &QTimer::timeout, this, &SDLEventLoop::pollEvents );
 
+    // Load SDL
     initSDL();
 
 }
@@ -40,8 +44,13 @@ void SDLEventLoop::pollEvents() {
 
     if( !forceEventsHandling ) {
 
+        // Update all connected controller states.
         SDL_JoystickUpdate();
 
+        // All joystick instance ID's are stored inside of this map.
+        // This is necessary because the instance ID could be any number, and
+        // so cannot be used for indexing the deviceLocationMap. The value of the map
+        // is the actual index that the sdlDeviceList uses.
         for( auto &key : deviceLocationMap.keys() ) {
             auto index = deviceLocationMap[ key ];
 
@@ -117,6 +126,7 @@ void SDLEventLoop::pollEvents() {
             int16_t rightTrigger = getControllerState( joystick,
                                    SDL_CONTROLLER_AXIS_TRIGGERRIGHT );
 
+            // Insert the trigger buttons.
             joystick->insert( InputDeviceEvent::L2, leftTrigger );
             joystick->insert( InputDeviceEvent::R2, rightTrigger );
 
@@ -125,6 +135,8 @@ void SDLEventLoop::pollEvents() {
 
             if( !joystick->analogMode() ) {
 
+                // The directional buttons need to be assigned again, so that
+                // the left analog stick can be used as a D-PAD.
                 if( !left && leftXAxis <= 0 ) {
                     left = ( leftXAxis < -joystick->deadZone() );
                 }
@@ -144,8 +156,10 @@ void SDLEventLoop::pollEvents() {
 
             else {
                 // Not handled yet.
+                // analogMode() will be true, when we support libretro's analog controller API.
             }
 
+            // Insert directional buttons.
             joystick->insert( InputDeviceEvent::Up, up );
             joystick->insert( InputDeviceEvent::Down, down );
             joystick->insert( InputDeviceEvent::Left, left );
@@ -157,6 +171,8 @@ void SDLEventLoop::pollEvents() {
     else {
         SDL_Event sdlEvent;
 
+        // The only events that should be handled here are, SDL_CONTROLLERDEVICEADDED
+        // and SDL_CONTROLLERDEVICEREMOVED.
         while( SDL_PollEvent( &sdlEvent ) ) {
 
             switch( sdlEvent.type ) {
@@ -226,6 +242,7 @@ void SDLEventLoop::initSDL() {
         qFatal( "Fatal: Unable to initialize SDL2: %s", SDL_GetError() );
     }
 
+    // Allow game controller event states to be automatically updated.
     SDL_GameControllerEventState( SDL_ENABLE );
 }
 
@@ -234,8 +251,11 @@ void SDLEventLoop::quitSDL() {
 }
 
 int16_t SDLEventLoop::getControllerState(Joystick *joystick, const SDL_GameControllerButton &button) {
+    // This first checks to see if a button located in the sdlButtonMapping().
     int value = joystick->sdlButtonMapping().value( button, -1 );
 
+    // If the value is not in the sdlButtonMapping(), look for it in the
+    // sdlAxisMapping.
     if( value == -1 ) {
         value = joystick->sdlAxisMapping().value( button, -1 );
         return SDL_JoystickGetAxis( joystick->sdlJoystick(), value );
@@ -247,15 +267,22 @@ int16_t SDLEventLoop::getControllerState(Joystick *joystick, const SDL_GameContr
 int16_t SDLEventLoop::getControllerState(Joystick *joystick, const SDL_GameControllerAxis &axis) {
     int value = joystick->sdlAxisMapping().value( axis, -1 );
 
+    // First check to see if the button is located in sdlAxisMapping().
+
+    // If the value is not in the sdlAxisMapping(), look for the axis in
+    // the sdlButtonMapping(). This can happen with the Wii U Pro Controller
+    // because the Wii U Pro Controller has digital trigger buttons, instead of analog triggers.
     if ( value == -1 ) {
         value = joystick->sdlButtonMapping().value( axis, -1 );
         return SDL_JoystickGetButton( joystick->sdlJoystick(), value );
     }
 
-
+    // If the returned value is greater than SDL_CONTROLLER_AXIS_MAX, then this value
+    // is a button.
     if ( value >= SDL_CONTROLLER_AXIS_MAX ) {
         return SDL_JoystickGetButton( joystick->sdlJoystick(), value );
     }
 
+    // else it's an axis value.
     return SDL_JoystickGetAxis( joystick->sdlJoystick(), value );
 }

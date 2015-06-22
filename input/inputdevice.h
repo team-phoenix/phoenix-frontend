@@ -32,15 +32,8 @@ class InputDevice : public QObject {
 
         // Controller types from libretro's perspective
         enum  LibretroType {
-            RetroGamepad = RETRO_DEVICE_JOYPAD,
+            DigitalGamepad = RETRO_DEVICE_JOYPAD,
             AnalogGamepad = RETRO_DEVICE_ANALOG,
-        };
-
-        // Controller types from our perspective
-        enum Name {
-            SDLJoypad = 0,
-            QtKeyboard,
-            None,
         };
 
         explicit InputDevice( const LibretroType type, QObject *parent = 0 );
@@ -78,12 +71,6 @@ class InputDevice : public QObject {
         // Set button state (setter)
         virtual void insert( const InputDeviceEvent::Event &value, const int16_t &state );
 
-        // Alternate mode? What's it for?
-        void insert( InputDeviceEvent *event );
-
-        // Not sure?
-        virtual bool contains( const InputDeviceEvent::Event &event );
-
         // Set the device -> SDL2 gamepad mapping
         virtual void setMapping( const QVariantMap mapping );
 
@@ -100,7 +87,7 @@ class InputDevice : public QObject {
         void editModeChanged(); // QML
         void nameChanged(); // QML
         void retroButtonCountChanged(); // QML
-        void inputDeviceEventChanged( InputDeviceEvent *event );
+        void inputDeviceEventChanged( int, int );
 
     private:
 

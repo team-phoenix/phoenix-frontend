@@ -10,6 +10,9 @@
 
 #include "joystick.h"
 
+// The SDLEventLoop's job is to poll for button states,
+// and to react the handle to newly connected, or disconnected, devices.
+
 class SDLEventLoop : public QObject {
         Q_OBJECT
         QTimer sdlPollTimer;

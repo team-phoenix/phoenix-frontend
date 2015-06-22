@@ -11,7 +11,6 @@ InputManager::InputManager( QObject *parent )
 
     // The Keyboard will be always active in port 0,
     // unless changed by the user.
-    keyboardActivated = true;
 
     for( int i = 0; i < Joystick::maxNumOfDevices; ++i ) {
         deviceList.append( nullptr );
@@ -34,10 +33,6 @@ InputManager::~InputManager() {
     }
 
 
-}
-
-bool InputManager::isKeyboardActive() const {
-    return keyboardActivated;
 }
 
 int InputManager::size() const {

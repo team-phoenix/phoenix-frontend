@@ -16,51 +16,50 @@
 class InputManager : public QObject {
         Q_OBJECT
 
-        QMutex mutex;
-        QList<InputDevice *> deviceList;
-
-        // One keyboard is reserved for being always active.
-
-        bool keyboardActivated;
-
-        SDLEventLoop sdlEventLoop;
-
     public:
         explicit InputManager( QObject *parent = 0 );
         ~InputManager();
 
         Keyboard *keyboard;
 
-        bool isKeyboardActive() const;
-
         int size() const;
 
         InputDevice *at( int index );
-
 
         void pollStates();
 
     public slots:
 
+        // Insert or append an inputDevice to the deviceList.
         void insert( InputDevice *device );
 
+        // Remove and delete inputDevice at index.
         void removeAt( int index );
 
-
+        // Handle when the game has started playing.
         void setRun( bool run );
 
+        // Allows the user to change controller ports.
         void swap( const int index1, const int index2 );
 
     public slots:
+        // Iterate through, and expose inputDevices to QML.
         void emitConnectedDevices();
 
     signals:
         void device( InputDevice *device );
         void deviceAdded( InputDevice *device );
         void incomingEvent( InputDeviceEvent *event );
-        void keyboardActiveChanged();
 
     private:
+        QMutex mutex;
+
+        QList<InputDevice *> deviceList;
+
+        // One keyboard is reserved for being always active.
+
+
+        SDLEventLoop sdlEventLoop;
 
         /*
         bool eventFilter( QObject *object, QEvent *event ) {

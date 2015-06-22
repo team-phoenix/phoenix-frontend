@@ -121,27 +121,19 @@ int16_t InputDevice::value( const InputDeviceEvent::Event &event, const int16_t 
 
 void InputDevice::insert( const InputDeviceEvent::Event &value, const int16_t &state ) {
     mutex.lock();
-    deviceStates->insert( value, state );
+
+    if( editMode() )
+        emit inputDeviceEventChanged( value, state );
+
+    else
+        deviceStates->insert( value, state );
     mutex.unlock();
 }
 
-void InputDevice::insert( InputDeviceEvent *event ) {
-    if( editMode() ) {
-        emit inputDeviceEventChanged( event );
-    } else {
-
-        insert( static_cast<InputDeviceEvent::Event>( event->value() ), event->state() );
-    }
-
-    delete event;
-}
-
-bool InputDevice::contains( const InputDeviceEvent::Event &event ) {
-    return value( event, ~0) != ~0;
-}
 
 void InputDevice::setMapping( const QVariantMap mapping ) {
     Q_UNUSED( mapping );
+    // To do...
 }
 
 //
