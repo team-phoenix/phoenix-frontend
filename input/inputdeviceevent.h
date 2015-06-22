@@ -36,7 +36,6 @@ class InputDeviceEvent : public QObject {
 
         Q_ENUMS( Event )
 
-
         static QString toString( const InputDeviceEvent::Event &event );
 
         static Event toEvent( const QString button );

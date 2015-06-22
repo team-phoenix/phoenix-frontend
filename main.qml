@@ -5,7 +5,9 @@ import QtQuick.Dialogs 1.2
 import QtQuick.Window 2.0
 import QtQuick.Layouts 1.1
 
-import libretro.video 1.0
+import phoenix.video 1.0
+import phoenix.input 1.0
+import paths 1.0
 
 
 ApplicationWindow {
@@ -151,23 +153,21 @@ ApplicationWindow {
                 spacing: 12;
 
                 model: ListModel {
-                    ListElement { key: "a"; value: "" }
-                    ListElement { key: "b"; value: "" }
-                    ListElement { key: "x"; value: "" }
-                    ListElement { key: "y"; value: "" }
-                    ListElement { key: "start"; value: "" }
-                    ListElement { key: "back"; value: "" }
-                    ListElement { key: "guide"; value: "" }
-                    ListElement { key: "dpup"; value: "" }
-                    ListElement { key: "dpleft"; value: "" }
-                    ListElement { key: "dpright"; value: "" }
-                    ListElement { key: "dpdown"; value: "" }
-                    ListElement { key: "leftstick"; value: "" }
-                    ListElement { key: "rightstick"; value: "" }
-                    ListElement { key: "leftshoulder"; value: "" }
-                    ListElement { key: "rightshoulder"; value: "" }
+                    ListElement { key: "a"; value: InputDeviceEvent.A }
+                    ListElement { key: "b"; value: InputDeviceEvent.B }
+                    ListElement { key: "x"; value: InputDeviceEvent.X }
+                    ListElement { key: "y"; value: InputDeviceEvent.Y }
+                    ListElement { key: "start"; value: InputDeviceEvent.Start }
+                    ListElement { key: "back"; value: InputDeviceEvent.Select }
+                    ListElement { key: "dpup"; value: InputDeviceEvent.Up }
+                    ListElement { key: "dpleft"; value: InputDeviceEvent.Left }
+                    ListElement { key: "dpright"; value: InputDeviceEvent.Right }
+                    ListElement { key: "dpdown"; value: InputDeviceEvent.Down }
+                    ListElement { key: "leftstick"; value: InputDeviceEvent.L3 }
+                    ListElement { key: "rightstick"; value: InputDeviceEvent.R2 }
+                    ListElement { key: "leftshoulder"; value: InputDeviceEvent.L }
+                    ListElement { key: "rightshoulder"; value: InputDeviceEvent.R }
                 }
-
 
                 delegate: Item {
                     height: 25;
