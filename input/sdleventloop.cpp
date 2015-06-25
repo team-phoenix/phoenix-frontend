@@ -66,104 +66,74 @@ void SDLEventLoop::pollEvents() {
                 return;
             }
 
-            // Get all button states
-            bool up = getControllerState( joystick,
-                                          SDL_CONTROLLER_BUTTON_DPAD_UP );
-            bool down = getControllerState( joystick,
-                                            SDL_CONTROLLER_BUTTON_DPAD_DOWN );
-            bool left = getControllerState( joystick,
-                                            SDL_CONTROLLER_BUTTON_DPAD_LEFT );
-            bool right = getControllerState( joystick,
-                                             SDL_CONTROLLER_BUTTON_DPAD_RIGHT );
-            bool start = getControllerState( joystick,
-                                             SDL_CONTROLLER_BUTTON_START );
-            bool back = getControllerState( joystick,
-                                            SDL_CONTROLLER_BUTTON_BACK );
-            bool b = getControllerState( joystick,
-                                         SDL_CONTROLLER_BUTTON_B );
-            bool a = getControllerState( joystick,
-                                         SDL_CONTROLLER_BUTTON_A );
-            bool x = getControllerState( joystick,
-                                         SDL_CONTROLLER_BUTTON_X );
-            bool y = getControllerState( joystick,
-                                         SDL_CONTROLLER_BUTTON_Y );
-            bool leftShoulder = getControllerState( joystick,
-                                                    SDL_CONTROLLER_BUTTON_LEFTSHOULDER );
-            bool rightShoulder = getControllerState( joystick,
-                                 SDL_CONTROLLER_BUTTON_RIGHTSHOULDER );
-            bool leftStick = getControllerState( joystick,
-                                                 SDL_CONTROLLER_BUTTON_LEFTSTICK );
-            bool rightStick = getControllerState( joystick,
-                                                  SDL_CONTROLLER_BUTTON_RIGHTSTICK );
+            int16_t left = 0;
+            int16_t right = 0;
+            int16_t down = 0;
+            int16_t up = 0;
 
-            // Insert all button states except for directional buttons
-            joystick->insert( InputDeviceEvent::Start, start );
-            joystick->insert( InputDeviceEvent::Select, back );
-            joystick->insert( InputDeviceEvent::B, a );
-            joystick->insert( InputDeviceEvent::A, b );
-            joystick->insert( InputDeviceEvent::X, y );
-            joystick->insert( InputDeviceEvent::Y, x );
-            joystick->insert( InputDeviceEvent::L, leftShoulder );
-            joystick->insert( InputDeviceEvent::R, rightShoulder );
-            joystick->insert( InputDeviceEvent::L3, leftStick );
-            joystick->insert( InputDeviceEvent::R3, rightStick );
+            for ( auto &sdlEvent : joystick->mapping().keys() ) {
+                auto deviceEvent = joystick->mapping().value( sdlEvent );
 
+                int16_t state = 0;
 
-            int16_t leftXAxis = getControllerState( joystick,
-                                                    SDL_CONTROLLER_AXIS_LEFTX );
+                if ( deviceEvent == InputDeviceEvent::Axis ) {
 
-            int16_t leftYAxis = getControllerState( joystick,
-                                                    SDL_CONTROLLER_AXIS_LEFTY );
+                    // Immitate a D-PAD.
+                    if ( !joystick->analogMode() ) {
 
-            int16_t rightXAxis = getControllerState( joystick,
-                                 SDL_CONTROLLER_AXIS_RIGHTX );
+                        if ( sdlEvent == "leftx" ) {
+                            state = SDL_JoystickGetAxis( joystick->sdlJoystick()
+                                                         , joystick->sdlMapping().value( sdlEvent ) );
+                            left |= ( state < -joystick->deadZone() );
 
-            int16_t rightYAxis = getControllerState( joystick,
-                                 SDL_CONTROLLER_AXIS_RIGHTY );
+                            right |= ( state > joystick->deadZone() );
 
-            int16_t leftTrigger = getControllerState( joystick,
-                                  SDL_CONTROLLER_AXIS_TRIGGERLEFT );
-            int16_t rightTrigger = getControllerState( joystick,
-                                   SDL_CONTROLLER_AXIS_TRIGGERRIGHT );
+                        }
 
-            // Insert the trigger buttons.
-            joystick->insert( InputDeviceEvent::L2, leftTrigger );
-            joystick->insert( InputDeviceEvent::R2, rightTrigger );
+                        else if ( sdlEvent == "lefty" ) {
 
-            Q_UNUSED( rightXAxis );
-            Q_UNUSED( rightYAxis );
+                            state = SDL_JoystickGetAxis( joystick->sdlJoystick()
+                                                         , joystick->sdlMapping().value( sdlEvent ) );
 
-            if( !joystick->analogMode() ) {
+                            up |= ( state < -joystick->deadZone() );
+                            down |= ( state > joystick->deadZone() );
 
-                // The directional buttons need to be assigned again, so that
-                // the left analog stick can be used as a D-PAD.
-                if( !left && leftXAxis <= 0 ) {
-                    left = ( leftXAxis < -joystick->deadZone() );
+                            //qDebug() << up << down;
+                        }
+
+                    }
+
+                    else {
+                        // Still need to handle true analog events.
+                    }
                 }
 
-                if( !down && leftXAxis > 0 ) {
-                    right = ( leftXAxis > joystick->deadZone() );
-                }
+                else { // InputDeviceEvent is a button value.
+                    state = SDL_JoystickGetButton( joystick->sdlJoystick()
+                                                   , joystick->sdlMapping().value( sdlEvent ) );
 
-                if( !up && leftYAxis <= 0 ) {
-                    up = ( leftYAxis < -joystick->deadZone() );
-                }
+                    if ( deviceEvent == InputDeviceEvent::Left )
+                        left |= state;
+                    else if ( deviceEvent == InputDeviceEvent::Right )
+                        right |= state;
+                    else if ( deviceEvent == InputDeviceEvent::Up )
+                        up |= state;
+                    else if ( deviceEvent == InputDeviceEvent::Down  )
+                        down |= state;
 
-                if( !down && leftYAxis > 0 ) {
-                    down = ( leftYAxis > joystick->deadZone() );
+                    else {
+                        joystick->insert( deviceEvent, state );
+                    }
+
                 }
             }
 
-            else {
-                // Not handled yet.
-                // analogMode() will be true, when we support libretro's analog controller API.
-            }
-
-            // Insert directional buttons.
-            joystick->insert( InputDeviceEvent::Up, up );
-            joystick->insert( InputDeviceEvent::Down, down );
             joystick->insert( InputDeviceEvent::Left, left );
             joystick->insert( InputDeviceEvent::Right, right );
+            joystick->insert( InputDeviceEvent::Up, up );
+            joystick->insert( InputDeviceEvent::Down, down );
+
+           // qDebug() << joystick->value( InputDeviceEvent::L) << joystick->value( InputDeviceEvent::R);
 
         }
     }
@@ -248,41 +218,4 @@ void SDLEventLoop::initSDL() {
 
 void SDLEventLoop::quitSDL() {
     SDL_Quit();
-}
-
-int16_t SDLEventLoop::getControllerState(Joystick *joystick, const SDL_GameControllerButton &button) {
-    // This first checks to see if a button located in the sdlButtonMapping().
-    int value = joystick->sdlButtonMapping().value( button, -1 );
-
-    // If the value is not in the sdlButtonMapping(), look for it in the
-    // sdlAxisMapping.
-    if( value == -1 ) {
-        value = joystick->sdlAxisMapping().value( button, -1 );
-        return SDL_JoystickGetAxis( joystick->sdlJoystick(), value );
-    }
-
-    return SDL_JoystickGetButton( joystick->sdlJoystick(), value );
-}
-
-int16_t SDLEventLoop::getControllerState(Joystick *joystick, const SDL_GameControllerAxis &axis) {
-    int value = joystick->sdlAxisMapping().value( axis, -1 );
-
-    // First check to see if the button is located in sdlAxisMapping().
-
-    // If the value is not in the sdlAxisMapping(), look for the axis in
-    // the sdlButtonMapping(). This can happen with the Wii U Pro Controller
-    // because the Wii U Pro Controller has digital trigger buttons, instead of analog triggers.
-    if ( value == -1 ) {
-        value = joystick->sdlButtonMapping().value( axis, -1 );
-        return SDL_JoystickGetButton( joystick->sdlJoystick(), value );
-    }
-
-    // If the returned value is greater than SDL_CONTROLLER_AXIS_MAX, then this value
-    // is a button.
-    if ( value >= SDL_CONTROLLER_AXIS_MAX ) {
-        return SDL_JoystickGetButton( joystick->sdlJoystick(), value );
-    }
-
-    // else it's an axis value.
-    return SDL_JoystickGetAxis( joystick->sdlJoystick(), value );
 }

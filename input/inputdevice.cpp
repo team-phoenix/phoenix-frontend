@@ -130,7 +130,6 @@ void InputDevice::insert( const InputDeviceEvent::Event &value, const int16_t &s
     mutex.unlock();
 }
 
-
 void InputDevice::setMapping( const QVariantMap mapping ) {
     Q_UNUSED( mapping );
     // To do...

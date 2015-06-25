@@ -20,7 +20,7 @@
 
 // Use alias so we don't have to type this out every time. :/
 using InputStateMap = QHash<InputDeviceEvent::Event, int16_t>;
-using InputDeviceMapping = QHash< int, InputDeviceEvent::Event >;
+using InputDeviceMapping = QHash< QString, InputDeviceEvent::Event >;
 
 class InputDevice : public QObject {
         Q_OBJECT
@@ -66,7 +66,7 @@ class InputDevice : public QObject {
     public slots:
 
         // Poll button state (getter)
-        virtual int16_t value( const InputDeviceEvent::Event &event, const int16_t defaultValue = ~0 );
+        virtual int16_t value( const InputDeviceEvent::Event &event, const int16_t defaultValue = 0 );
 
         // Set button state (setter)
         virtual void insert( const InputDeviceEvent::Event &value, const int16_t &state );

@@ -30,6 +30,8 @@ Joystick::Joystick( const int joystickIndex, QObject *parent )
 
     populateMappings( device );
 
+
+
 }
 
 Joystick::~Joystick() {
@@ -68,12 +70,8 @@ bool Joystick::analogMode() const {
     return qmlAnalogMode;
 }
 
-QHash<int, int> &Joystick::sdlButtonMapping() {
-    return buttonMapping;
-}
-
-QHash<int, int> &Joystick::sdlAxisMapping() {
-    return axisMapping;
+QHash<QString, int> &Joystick::sdlMapping() {
+    return sdlControllerMapping;
 }
 
 void Joystick::setAnalogMode( const bool mode ) {
@@ -146,71 +144,61 @@ void Joystick::populateMappings( SDL_GameController *device ) {
             continue;
         }
 
-        // Handle adding buttons to map;
-        if( value.at( 0 ) == 'b' ) {
-            value = value.remove( "b" );
+        if ( key == "platform" )
+            continue;
 
-            int numVal = value.toInt();
 
-            if( key == "a" ) {
-                buttonMapping.insert( SDL_CONTROLLER_BUTTON_A, numVal );
-            } else if( key == "b" ) {
-                buttonMapping.insert( SDL_CONTROLLER_BUTTON_B, numVal );
-            } else if( key == "x" ) {
-                buttonMapping.insert( SDL_CONTROLLER_BUTTON_X, numVal );
-            } else if( key == "y" ) {
-                buttonMapping.insert( SDL_CONTROLLER_BUTTON_Y, numVal );
-            } else if( key == "back" ) {
-                buttonMapping.insert( SDL_CONTROLLER_BUTTON_BACK, numVal );
-            } else if( key == "start" ) {
-                buttonMapping.insert( SDL_CONTROLLER_BUTTON_START, numVal );
-            } else if( key == "guide" ) {
-                buttonMapping.insert( SDL_CONTROLLER_BUTTON_GUIDE, numVal );
-            } else if( key == "leftstick" ) {
-                buttonMapping.insert( SDL_CONTROLLER_BUTTON_LEFTSTICK, numVal );
-            } else if( key == "rightstick" ) {
-                buttonMapping.insert( SDL_CONTROLLER_BUTTON_RIGHTSTICK, numVal );
-            } else if( key == "leftshoulder" ) {
-                buttonMapping.insert( SDL_CONTROLLER_BUTTON_LEFTSHOULDER, numVal );
-            } else if( key == "rightshoulder" ) {
-                buttonMapping.insert( SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, numVal );
-            } else if( key == "dpup" ) {
-                buttonMapping.insert( SDL_CONTROLLER_BUTTON_DPAD_UP, numVal );
-            } else if( key == "dpdown" ) {
-                buttonMapping.insert( SDL_CONTROLLER_BUTTON_DPAD_DOWN, numVal );
-            } else if( key == "dpleft" ) {
-                buttonMapping.insert( SDL_CONTROLLER_BUTTON_DPAD_LEFT, numVal );
-            } else if( key == "dpright" ) {
-                buttonMapping.insert( SDL_CONTROLLER_BUTTON_DPAD_RIGHT, numVal );
-            } else if( key == "lefttrigger" ) {
-                axisMapping.insert( SDL_CONTROLLER_AXIS_TRIGGERLEFT, numVal );
-            } else if( key == "righttrigger" ) {
-                axisMapping.insert( SDL_CONTROLLER_AXIS_TRIGGERRIGHT, numVal );
-            } else {
-                qCWarning( phxInput ) << numVal <<  "was missed in the mapping.";
-            }
+        int numberValue = value.remove( value.at( 0 ) ).toInt();
+
+        auto newEvent = InputDeviceEvent::Unknown;
+        if( key == "a" ) {
+            newEvent = InputDeviceEvent::A;
+        } else if( key == "b" ) {
+            newEvent = InputDeviceEvent::B;
+        } else if( key == "x" ) {
+            newEvent = InputDeviceEvent::X;
+        } else if( key == "y" ) {
+            newEvent = InputDeviceEvent::Y;
+        } else if( key == "back" ) {
+            newEvent = InputDeviceEvent::Select;
+        } else if( key == "start" ) {
+            newEvent = InputDeviceEvent::Start;
+        } else if( key == "guide" ) {
+            newEvent = InputDeviceEvent::Unknown;
+        } else if( key == "leftstick" ) {
+            newEvent = InputDeviceEvent::L3;
+        } else if( key == "rightstick" ) {
+            newEvent = InputDeviceEvent::R3;
+        } else if( key == "leftshoulder" ) {
+            newEvent = InputDeviceEvent::L;
+        } else if( key == "rightshoulder" ) {
+            newEvent = InputDeviceEvent::R;
+        } else if( key == "dpup" ) {
+            newEvent = InputDeviceEvent::Up;
+        } else if( key == "dpdown" ) {
+            newEvent = InputDeviceEvent::Down;
+        } else if( key == "dpleft" ) {
+            newEvent = InputDeviceEvent::Left;
+        } else if( key == "dpright" ) {
+            newEvent = InputDeviceEvent::Right;
+        } else if( key == "lefttrigger" ) {
+            newEvent = InputDeviceEvent::L2;
+        } else if( key == "righttrigger" ) {
+            newEvent = InputDeviceEvent::R2;
+        } else if( key == "leftx"
+               || key == "lefty"
+               || key == "rightx"
+               || key == "righty"
+               || key == "lefttrigger"
+               || key == "righttrigger") {
+            newEvent = InputDeviceEvent::Axis;
+        } else {
+            qCWarning( phxInput ) << key << "was missed in the mapping.";
         }
-        // Handle adding axis values into map.
-        else if( value.at( 0 ) == 'a' ) {
-            value = value.remove( "a" );
-            int numVal = value.toInt();
 
-            if( key == "leftx" ) {
-                axisMapping.insert( SDL_CONTROLLER_AXIS_LEFTX, numVal );
-            } else if( key == "lefty" ) {
-                axisMapping.insert( SDL_CONTROLLER_AXIS_LEFTY, numVal );
-            } else if( key == "rightx" ) {
-                axisMapping.insert( SDL_CONTROLLER_AXIS_RIGHTX, numVal );
-            } else if( key == "righty" ) {
-                axisMapping.insert( SDL_CONTROLLER_AXIS_RIGHTY, numVal );
-            } else if( key == "lefttrigger" ) {
-                axisMapping.insert( SDL_CONTROLLER_AXIS_TRIGGERLEFT, numVal );
-            } else if( key == "righttrigger" ) {
-                axisMapping.insert( SDL_CONTROLLER_AXIS_TRIGGERRIGHT, numVal );
-            } else {
-                qCWarning( phxInput ) << numVal << "was missed in the mapping.";
-            }
+        if ( newEvent != InputDeviceEvent::Unknown ) {
+            mapping().insert( key, newEvent );
+            sdlControllerMapping.insert( key, numberValue );
         }
     }
-
 }

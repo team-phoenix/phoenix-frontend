@@ -285,7 +285,7 @@ ApplicationWindow {
             property int mapIndex: 0;
 
             onDeviceAdded: {
-                device.setMapping( {"a": 1, "b": 2, "x": "12"} );
+                //device.setMapping( {"a": 1, "b": 2, "x": "12"} );
                 console.log( device.name );
             }
 

@@ -15,6 +15,7 @@ class InputDeviceEvent : public QObject {
     public:
 
         enum Event {
+            Axis = -1,
             B = RETRO_DEVICE_ID_JOYPAD_B,
             Y = RETRO_DEVICE_ID_JOYPAD_Y,
             Select = RETRO_DEVICE_ID_JOYPAD_SELECT,

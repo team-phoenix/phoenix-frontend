@@ -101,12 +101,12 @@ void VideoItem::setInputManager( InputManager *manager )
 
 void VideoItem::keyPressEvent( QKeyEvent *event )
 {
-    qmlInputManager->keyboard->insert( ( Qt::Key )event->key(), true );
+    qmlInputManager->keyboard->insert( event->key(), true );
 }
 
 void VideoItem::keyReleaseEvent( QKeyEvent *event )
 {
-    qmlInputManager->keyboard->insert( ( Qt::Key )event->key() , false );
+    qmlInputManager->keyboard->insert( event->key() , false );
 }
 
 void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) {

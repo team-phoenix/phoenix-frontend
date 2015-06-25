@@ -34,9 +34,8 @@ class Joystick : public InputDevice {
 
         bool analogMode() const;
 
-        QHash<int, int> &sdlButtonMapping();
+        QHash< QString, int > &sdlMapping();
 
-        QHash<int, int> &sdlAxisMapping();
 
         SDL_GameController *sdlDevice() const;
         SDL_Joystick *sdlJoystick() const;
@@ -65,8 +64,7 @@ class Joystick : public InputDevice {
         bool qmlAnalogMode;
 
         SDL_GameController *device;
-        QHash<int, int> buttonMapping;
-        QHash<int, int> axisMapping;
+        QHash<QString, int> sdlControllerMapping;
 
         void populateMappings( SDL_GameController *device );
 

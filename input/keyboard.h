@@ -14,13 +14,14 @@ class Keyboard : public InputDevice {
 
         explicit Keyboard( QObject *parent = 0 );
 
+        void loadDefaultMapping();
+
     public slots:
 
-        void insert( const Qt::Key &event, int16_t pressed );
+        void insert( const int &event, int16_t pressed );
         void setMapping( const QVariantMap mapping ) override;
 
     private:
-        static QMap< Qt::Key, InputDeviceEvent::Event> keyConverter;
 
 };
 

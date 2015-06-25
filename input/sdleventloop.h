@@ -47,9 +47,6 @@ class SDLEventLoop : public QObject {
         void initSDL();
         void quitSDL();
 
-        int16_t getControllerState( Joystick *joystick, const SDL_GameControllerButton &button );
-        int16_t getControllerState( Joystick *joystick, const SDL_GameControllerAxis &axis );
-
 };
 
 #endif // SDLEVENTLOOP_H
