@@ -28,9 +28,10 @@ Joystick::Joystick( const int joystickIndex, QObject *parent )
     // doesn't assign a proper mapping value certain controller buttons.
     // This means that we have to hold the mapping ourselves and do it correctly.
 
-    populateMappings( device );
-
-
+    if ( !loadMapping() ) {
+        qCDebug( phxInput ) << name() << " is defaulting to SDL config file.";
+        loadSDLMapping( sdlDevice() );
+    }
 
 }
 
@@ -99,6 +100,70 @@ void Joystick::close() {
     SDL_GameControllerClose( device );
 }
 
+bool Joystick::loadMapping()
+{
+    QSettings settings;
+    settings.beginGroup( guid() );
+
+    // No point in iterating if the file doesn't exist.
+    if ( !QFile::exists( settings.fileName() ) )
+        return false;
+
+    // Check for button saves.
+    for ( int i=0; i < SDL_CONTROLLER_BUTTON_MAX; ++i ) {
+        auto button = static_cast<SDL_GameControllerButton>( i );
+
+        auto buttonString = QString( SDL_GameControllerGetStringForButton( button ) );
+
+        auto value = settings.value( buttonString );
+
+        if ( value.isValid() ) {
+            int numberValue = value.toInt();
+
+            auto event = sdlStringToEvent( buttonString );
+
+            if ( event != InputDeviceEvent::Unknown) {
+                mapping().insert( buttonString, event );
+                sdlControllerMapping.insert( buttonString, numberValue );
+                //qDebug() << buttonString << numberValue;
+            }
+        }
+    }
+
+    // Check for axis saves.
+    for ( int i=0; i < SDL_CONTROLLER_AXIS_MAX; ++i ) {
+        auto axis = static_cast<SDL_GameControllerAxis>( i );
+
+        auto axisString = QString( SDL_GameControllerGetStringForAxis( axis ) );
+
+        auto value = settings.value( axisString );
+        if ( value.isValid() ) {
+            int numberValue = value.toInt();
+
+            auto event = sdlStringToEvent( axisString );
+            if ( event != InputDeviceEvent::Unknown) {
+                mapping().insert( axisString, event );
+                sdlControllerMapping.insert( axisString, numberValue );
+            }
+        }
+    }
+
+    return !mapping().isEmpty();
+
+}
+
+void Joystick::saveMapping()
+{
+    QSettings settings;
+    settings.beginGroup( guid() );
+
+    for ( auto &sdlEvent : mapping().keys() ) {
+        auto value = sdlControllerMapping.value( sdlEvent );
+        settings.setValue( sdlEvent, value );
+    }
+
+}
+
 void Joystick::setMapping( const QVariantMap mapping ) {
     QString platform;
 #if defined(Q_OS_OSX)
@@ -123,7 +188,7 @@ void Joystick::setMapping( const QVariantMap mapping ) {
 
 }
 
-void Joystick::populateMappings( SDL_GameController *device ) {
+void Joystick::loadSDLMapping( SDL_GameController *device ) {
     // Handle populating our own mappings, because SDL2 often uses the incorrect mapping array.
     QString mappingString = SDL_GameControllerMapping( device );
 
@@ -150,55 +215,62 @@ void Joystick::populateMappings( SDL_GameController *device ) {
 
         int numberValue = value.remove( value.at( 0 ) ).toInt();
 
-        auto newEvent = InputDeviceEvent::Unknown;
-        if( key == "a" ) {
-            newEvent = InputDeviceEvent::A;
-        } else if( key == "b" ) {
-            newEvent = InputDeviceEvent::B;
-        } else if( key == "x" ) {
-            newEvent = InputDeviceEvent::X;
-        } else if( key == "y" ) {
-            newEvent = InputDeviceEvent::Y;
-        } else if( key == "back" ) {
-            newEvent = InputDeviceEvent::Select;
-        } else if( key == "start" ) {
-            newEvent = InputDeviceEvent::Start;
-        } else if( key == "guide" ) {
-            newEvent = InputDeviceEvent::Unknown;
-        } else if( key == "leftstick" ) {
-            newEvent = InputDeviceEvent::L3;
-        } else if( key == "rightstick" ) {
-            newEvent = InputDeviceEvent::R3;
-        } else if( key == "leftshoulder" ) {
-            newEvent = InputDeviceEvent::L;
-        } else if( key == "rightshoulder" ) {
-            newEvent = InputDeviceEvent::R;
-        } else if( key == "dpup" ) {
-            newEvent = InputDeviceEvent::Up;
-        } else if( key == "dpdown" ) {
-            newEvent = InputDeviceEvent::Down;
-        } else if( key == "dpleft" ) {
-            newEvent = InputDeviceEvent::Left;
-        } else if( key == "dpright" ) {
-            newEvent = InputDeviceEvent::Right;
-        } else if( key == "lefttrigger" ) {
-            newEvent = InputDeviceEvent::L2;
-        } else if( key == "righttrigger" ) {
-            newEvent = InputDeviceEvent::R2;
-        } else if( key == "leftx"
-               || key == "lefty"
-               || key == "rightx"
-               || key == "righty"
-               || key == "lefttrigger"
-               || key == "righttrigger") {
-            newEvent = InputDeviceEvent::Axis;
-        } else {
-            qCWarning( phxInput ) << key << "was missed in the mapping.";
-        }
+        auto newEvent = sdlStringToEvent( key );
 
         if ( newEvent != InputDeviceEvent::Unknown ) {
             mapping().insert( key, newEvent );
             sdlControllerMapping.insert( key, numberValue );
         }
     }
+}
+
+InputDeviceEvent::Event Joystick::sdlStringToEvent(const QString &key )
+{
+    auto newEvent = InputDeviceEvent::Unknown;
+    if( key == "a" ) {
+        newEvent = InputDeviceEvent::A;
+    } else if( key == "b" ) {
+        newEvent = InputDeviceEvent::B;
+    } else if( key == "x" ) {
+        newEvent = InputDeviceEvent::X;
+    } else if( key == "y" ) {
+        newEvent = InputDeviceEvent::Y;
+    } else if( key == "back" ) {
+        newEvent = InputDeviceEvent::Select;
+    } else if( key == "start" ) {
+        newEvent = InputDeviceEvent::Start;
+    } else if( key == "guide" ) {
+        newEvent = InputDeviceEvent::Unknown;
+    } else if( key == "leftstick" ) {
+        newEvent = InputDeviceEvent::L3;
+    } else if( key == "rightstick" ) {
+        newEvent = InputDeviceEvent::R3;
+    } else if( key == "leftshoulder" ) {
+        newEvent = InputDeviceEvent::L;
+    } else if( key == "rightshoulder" ) {
+        newEvent = InputDeviceEvent::R;
+    } else if( key == "dpup" ) {
+        newEvent = InputDeviceEvent::Up;
+    } else if( key == "dpdown" ) {
+        newEvent = InputDeviceEvent::Down;
+    } else if( key == "dpleft" ) {
+        newEvent = InputDeviceEvent::Left;
+    } else if( key == "dpright" ) {
+        newEvent = InputDeviceEvent::Right;
+    } else if( key == "lefttrigger" ) {
+        newEvent = InputDeviceEvent::L2;
+    } else if( key == "righttrigger" ) {
+        newEvent = InputDeviceEvent::R2;
+    } else if( key == "leftx"
+           || key == "lefty"
+           || key == "rightx"
+           || key == "righty"
+           || key == "lefttrigger"
+           || key == "righttrigger") {
+        newEvent = InputDeviceEvent::Axis;
+    } else {
+        qCWarning( phxInput ) << key << "was missed in the mapping.";
+    }
+
+    return newEvent;
 }

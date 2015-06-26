@@ -8,6 +8,8 @@
 #include <QMap>
 #include <QQmlEngine>
 #include <QVariantMap>
+#include <QSettings>
+#include <QFile>
 
 #include "libretro.h"
 #include "logging.h"
@@ -62,6 +64,11 @@ class InputDevice : public QObject {
 
         // Is sharing enabled?
         bool sharingEnabled() const;
+
+        virtual void saveMapping();
+        virtual bool loadMapping();
+
+        void selfDestruct();
 
     public slots:
 

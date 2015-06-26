@@ -5,6 +5,7 @@ InputManager::InputManager( QObject *parent )
       sdlEventLoop( this ),
       keyboard( new Keyboard() ) {
 
+    keyboard->loadMapping();
 
     connect( &sdlEventLoop, &SDLEventLoop::deviceConnected, this, &InputManager::insert );
     connect( &sdlEventLoop, &SDLEventLoop::deviceRemoved, this, &InputManager::removeAt );
@@ -28,10 +29,12 @@ InputManager::~InputManager() {
 
     for( auto device : deviceList ) {
         if( device ) {
-            device->deleteLater();
+            auto *joystick = static_cast<Joystick *>( device );
+            joystick->selfDestruct();
         }
     }
 
+    keyboard->selfDestruct();
 
 }
 
@@ -52,6 +55,7 @@ void InputManager::pollStates()
 }
 
 void InputManager::insert( InputDevice *device ) {
+    device->loadMapping();
     mutex.lock();
     auto *joystick = static_cast<Joystick *>( device );
 
@@ -66,8 +70,7 @@ void InputManager::removeAt( int index ) {
     mutex.lock();
 
     auto *device = static_cast<Joystick *>( deviceList.at( index ) );
-
-    delete device;
+    device->selfDestruct();
 
     deviceList[ index ] = nullptr;
 

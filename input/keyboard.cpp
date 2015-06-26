@@ -3,7 +3,7 @@
 Keyboard::Keyboard( QObject *parent )
     : InputDevice( LibretroType::DigitalGamepad, "Keyboard", parent ) {
 
-    loadDefaultMapping();
+
 
 }
 
@@ -38,4 +38,16 @@ void Keyboard::insert( const int &event, int16_t pressed ) {
 void Keyboard::setMapping(const QVariantMap mapping) {
     Q_UNUSED( mapping );
     // To do...
+}
+
+bool Keyboard::loadMapping() {
+
+    if ( !InputDevice::loadMapping() ) {
+        qCDebug( phxInput ) << name() << " is using the default mapping.";
+        loadDefaultMapping();
+        return false;
+    }
+
+    return true;
+
 }

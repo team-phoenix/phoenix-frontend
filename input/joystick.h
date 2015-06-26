@@ -18,33 +18,36 @@ class Joystick : public InputDevice {
         explicit Joystick( const int joystickIndex, QObject *parent = 0 );
         ~Joystick();
 
+        // Getters
         QString guid() const;
-
         int buttonCount() const;
-
         int ballCount() const;
-
         int hatCount() const;
-
         int axisCount() const;
-
         int sdlIndex() const;
-
         qreal deadZone() const;
-
         bool analogMode() const;
-
-        QHash< QString, int > &sdlMapping();
-
 
         SDL_GameController *sdlDevice() const;
         SDL_Joystick *sdlJoystick() const;
-
         SDL_JoystickID instanceID() const;
 
+        QHash< QString, int > &sdlMapping();
+
         void setSDLIndex( const int index );
+
+        // This value will be set to 'true' if the
+        // core detects a libretro core that
+        // can use the analog sticks.
+
+        // If not, then setting this to false
+        // will cause the left analog stick
+        // to mimic the D-PAD.
         void setAnalogMode( const bool mode );
+
         void close();
+        bool loadMapping() override;
+        void saveMapping() override;
 
     public slots:
         void insert( const quint8 &event, const int16_t pressed );
@@ -60,15 +63,15 @@ class Joystick : public InputDevice {
         int qmlHatCount;
         int qmlBallCount;
         qreal qmlDeadZone;
-
         bool qmlAnalogMode;
 
         SDL_GameController *device;
         QHash<QString, int> sdlControllerMapping;
 
-        void populateMappings( SDL_GameController *device );
+        void loadSDLMapping( SDL_GameController *device );
 
-
+        // Helper function to convert a SDL styled string, into an event.
+        InputDeviceEvent::Event sdlStringToEvent( const QString &key );
 
 };
 

@@ -14,7 +14,7 @@ class Keyboard : public InputDevice {
 
         explicit Keyboard( QObject *parent = 0 );
 
-        void loadDefaultMapping();
+        bool loadMapping();
 
     public slots:
 
@@ -22,6 +22,7 @@ class Keyboard : public InputDevice {
         void setMapping( const QVariantMap mapping ) override;
 
     private:
+        void loadDefaultMapping();
 
 };
 
