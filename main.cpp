@@ -2,12 +2,14 @@
 #include <QApplication>
 #include <QtCore>
 #include <QQmlApplicationEngine>
+#include <QQmlContext>
 
 #include "videoitem.h"
 #include "core.h"
 #include "pathwatcher.h"
 #include "libretro.h"
 #include "input/inputmanager.h"
+#include "input/qmlinputdevice.h"
 
 Q_DECLARE_METATYPE( retro_system_av_info )
 Q_DECLARE_METATYPE( retro_pixel_format )
@@ -63,6 +65,7 @@ int main( int argc, char *argv[] ) {
 
     QQmlApplicationEngine engine;
 
+
     // Necessary to quit properly
     QObject::connect( &engine, &QQmlApplicationEngine::quit, &app, &QApplication::quit );
 
@@ -71,6 +74,8 @@ int main( int argc, char *argv[] ) {
     qmlRegisterType<PathWatcher>( "paths", 1, 0, "PathWatcher" );
     qmlRegisterType<InputManager>( "phoenix.input", 1, 0, "InputManager" );
     qmlRegisterType<InputDeviceEvent>( "phoenix.input", 1, 0, "InputDeviceEvent" );
+    qmlRegisterType<QMLInputDevice>( "phoenix.input", 1, 0, "QMLInputDevice" );
+
 
     // Don't let the Qt police find out we're declaring these structs as metatypes
     // without proper constructors/destructors declared/written
@@ -79,6 +84,7 @@ int main( int argc, char *argv[] ) {
     qRegisterMetaType<Core::State>();
     qRegisterMetaType<Core::Error>();
     qRegisterMetaType<InputDevice *>( "InputDevice *" );
+
 
     engine.load( QUrl( QString( "qrc:/main.qml" ) ) );
 

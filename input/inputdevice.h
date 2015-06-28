@@ -10,6 +10,7 @@
 #include <QVariantMap>
 #include <QSettings>
 #include <QFile>
+#include <memory>
 
 #include "libretro.h"
 #include "logging.h"
@@ -22,15 +23,17 @@
 
 // Use alias so we don't have to type this out every time. :/
 using InputStateMap = QHash<InputDeviceEvent::Event, int16_t>;
-using InputDeviceMapping = QHash< QString, InputDeviceEvent::Event >;
 
 class InputDevice : public QObject {
         Q_OBJECT
         Q_PROPERTY( QString name READ name WRITE setName NOTIFY nameChanged )
         Q_PROPERTY( int retroButtonCount READ retroButtonCount NOTIFY retroButtonCountChanged )
         Q_PROPERTY( bool editMode READ editMode WRITE setEditMode NOTIFY editModeChanged )
+        Q_PROPERTY( bool resetMapping READ resetMapping WRITE setResetMapping NOTIFY resetMappingChanged )
 
     public:
+
+        static bool gamepadControlsFrontend;
 
         // Controller types from libretro's perspective
         enum  LibretroType {
@@ -38,22 +41,31 @@ class InputDevice : public QObject {
             AnalogGamepad = RETRO_DEVICE_ANALOG,
         };
 
+        InputDevice( QObject *parent = 0 );
+
         explicit InputDevice( const LibretroType type, QObject *parent = 0 );
 
         explicit InputDevice( const LibretroType type, const QString name, QObject *parent );
 
         // Getters
         const QString name() const; // QML
+
+        // editMode stops incoming button events, from being put into the
+        // deviceStates mapping. It causes the insert() function to emit
+        // inputDeviceEventChanged(), which allows the frontend to
+        // connect and react to.
         bool editMode() const; // QML
         int retroButtonCount() const; // QML
         QString mappingString() const;
+        bool resetMapping() const;// QML
         LibretroType type() const;
         InputStateMap *states();
-        InputDeviceMapping &mapping();
 
         // Setters
         void setName( const QString name ); // QML
         void setEditMode( const bool edit ); // QML
+        void setResetMapping( const bool reset ); // QML
+
         void setType( const LibretroType type );
 
         // Set the input device to mirror
@@ -86,15 +98,14 @@ class InputDevice : public QObject {
         // The device's current state (whether certain buttons are pressed)
         InputStateMap *deviceStates;
 
-        // Map between SDL2 -> retropad
-        InputDeviceMapping deviceMapping;
-
     signals:
 
         void editModeChanged(); // QML
         void nameChanged(); // QML
         void retroButtonCountChanged(); // QML
-        void inputDeviceEventChanged( int, int );
+        void resetMappingChanged(); // QML
+        void inputDeviceEvent( InputDeviceEvent::Event event, int state );
+        void editModeEvent( int event, int state );
 
     private:
 
@@ -117,6 +128,8 @@ class InputDevice : public QObject {
         QString qmlMappingString;
         int qmlRetroButtonCount;
         bool qmlEditMode;
+        bool qmlResetMapping;
+
 
 };
 

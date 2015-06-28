@@ -1,10 +1,10 @@
 #include "inputdevice.h"
 
-#include <QSharedPointer>
-
 //
 // Constructors
 //
+
+bool InputDevice::gamepadControlsFrontend = false;
 
 InputDevice::InputDevice( const InputDevice::LibretroType type, const QString name, QObject *parent )
     : QObject( parent ),
@@ -26,11 +26,18 @@ InputDevice::InputDevice( const InputDevice::LibretroType type, const QString na
         { InputDeviceEvent::Start, false },
         { InputDeviceEvent::Select, false },
         } ),
+    qmlResetMapping( false ),
     deviceType( type ),
     sharingStates( true ),
     deviceName( name ),
     qmlEditMode( false ) {
     setRetroButtonCount( 15 );
+}
+
+InputDevice::InputDevice( QObject *parent )
+    : InputDevice( DigitalGamepad, parent )
+{
+
 }
 
 InputDevice::InputDevice( const InputDevice::LibretroType type, QObject *parent )
@@ -58,16 +65,17 @@ QString InputDevice::mappingString() const {
     return qmlMappingString;
 }
 
+bool InputDevice::resetMapping() const
+{
+    return qmlResetMapping;
+}
+
 InputDevice::LibretroType InputDevice::type() const {
     return deviceType;
 }
 
 InputStateMap *InputDevice::states() {
     return deviceStates;
-}
-
-InputDeviceMapping &InputDevice::mapping() {
-    return deviceMapping;
 }
 
 void InputDevice::setName( const QString name ) {
@@ -78,6 +86,12 @@ void InputDevice::setName( const QString name ) {
 void InputDevice::setEditMode( const bool edit ) {
     qmlEditMode = edit;
     emit editModeChanged();
+}
+
+void InputDevice::setResetMapping( const bool reset )
+{
+    qmlResetMapping = reset;
+    emit resetMappingChanged();
 }
 
 void InputDevice::setType( const InputDevice::LibretroType type ) {
@@ -110,6 +124,7 @@ bool InputDevice::sharingEnabled() const {
 
 void InputDevice::saveMapping()
 {
+    /*
     QSettings settings;
     settings.beginGroup( name() );
 
@@ -117,10 +132,14 @@ void InputDevice::saveMapping()
         auto value = mapping().value( key );
         settings.setValue( InputDeviceEvent::toString( value ), key );
     }
+
+    qDebug() << settings.fileName();
+    */
 }
 
 bool InputDevice::loadMapping()
 {
+    /*
     QSettings settings;
 
     if ( !QFile::exists( settings.fileName() ) )
@@ -139,6 +158,7 @@ bool InputDevice::loadMapping()
     }
 
     return !mapping().isEmpty();
+    */
 }
 
 void InputDevice::selfDestruct()
@@ -160,18 +180,16 @@ int16_t InputDevice::value( const InputDeviceEvent::Event &event, const int16_t 
 
 void InputDevice::insert( const InputDeviceEvent::Event &value, const int16_t &state ) {
     mutex.lock();
-
-    if( editMode() )
-        emit inputDeviceEventChanged( value, state );
-
-    else
-        deviceStates->insert( value, state );
+    if ( InputDevice::gamepadControlsFrontend ) {
+        emit inputDeviceEvent( value, state );
+    }
+    deviceStates->insert( value, state );
     mutex.unlock();
 }
 
-void InputDevice::setMapping( const QVariantMap mapping ) {
+void InputDevice::setMapping(const QVariantMap mapping)
+{
     Q_UNUSED( mapping );
-    // To do...
 }
 
 //

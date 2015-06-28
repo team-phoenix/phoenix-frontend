@@ -16,6 +16,10 @@
 class InputManager : public QObject {
         Q_OBJECT
 
+    Q_PROPERTY( bool gamepadControlsFrontend READ gamepadControlsFrontend
+                WRITE setGamepadControlsFrontend NOTIFY gamepadControlsFrontendChanged)
+
+
     public:
         explicit InputManager( QObject *parent = 0 );
         ~InputManager();
@@ -27,6 +31,10 @@ class InputManager : public QObject {
         InputDevice *at( int index );
 
         void pollStates();
+
+        bool gamepadControlsFrontend() const;
+
+        void setGamepadControlsFrontend( const bool control );
 
     public slots:
 
@@ -42,11 +50,11 @@ class InputManager : public QObject {
         // Allows the user to change controller ports.
         void swap( const int index1, const int index2 );
 
-    public slots:
         // Iterate through, and expose inputDevices to QML.
         void emitConnectedDevices();
 
     signals:
+        void gamepadControlsFrontendChanged();
         void device( InputDevice *device );
         void deviceAdded( InputDevice *device );
         void incomingEvent( InputDeviceEvent *event );

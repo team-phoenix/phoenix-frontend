@@ -1,123 +1,123 @@
 #include "inputdeviceevent.h"
 
 
-QString InputDeviceEvent::toString(const InputDeviceEvent::Event &event) {
+QString InputDeviceEvent::toString( const InputDeviceEvent::Event &event  ) {
     switch( event ) {
         case B:
-            return "B";
+            return "b";
 
         case A:
-            return "A";
+            return "a";
 
         case X:
-            return "X";
+            return "x";
 
         case Y:
-            return "Y";
+            return "y";
 
         case Start:
-            return "Start";
+            return "start";
 
         case Select:
-            return "Select";
+            return "back";
 
         case Up:
-            return "Up";
+            return "dup";
 
         case Down:
-            return "Down";
+            return "dpdown";
 
         case Left:
-            return "Left";
+            return "dpleft";
 
         case Right:
-            return "Right";
+            return "dpright";
 
         case L:
-            return "L";
+            return "leftshoulder";
 
         case R:
-            return "R";
+            return "rightshoulder";
 
         case L2:
-            return "L2";
+            return "lefttrigger";
 
         case R2:
-            return "R3";
+            return "righttrigger";
 
         case L3:
-            return "L3";
+            return "leftstick";
 
         case R3:
-            return "R3";
+            return "rightstick";
 
         default:
-            return "Unknown";
+            return "unknown";
     }
 }
 
-InputDeviceEvent::Event InputDeviceEvent::toEvent(const QString button) {
-    if( button == "B" ) {
+InputDeviceEvent::Event InputDeviceEvent::toEvent( const QString button ) {
+    if( button == "b" ) {
         return Event::B;
     }
 
-    if( button == "A" ) {
+    else if( button == "a" ) {
         return Event::A;
     }
 
-    if( button == "X" ) {
+    else if( button == "x" ) {
         return Event::X;
     }
 
-    if( button == "Y" ) {
+    else if( button == "y" ) {
         return Event::Y;
     }
 
-    if( button == "Start" ) {
+    else if( button == "start" ) {
         return Event::Start;
     }
 
-    if( button == "Select" ) {
+    else if( button == "select" ) {
         return Event::Select;
     }
 
-    if( button == "Up" ) {
+    else if( button == "dpup" ) {
         return Event::Up;
     }
 
-    if( button == "Down" ) {
+    else if( button == "dpdown" ) {
         return Event::Down;
     }
 
-    if( button == "Left" ) {
+    else if( button == "dpleft" ) {
         return Event::Left;
     }
 
-    if( button == "Right" ) {
+    else if( button == "dpright" ) {
         return Event::Right;
     }
 
-    if( button == "L" ) {
+    else if( button == "leftshoulder" ) {
         return Event::L;
     }
 
-    if( button == "R" ) {
+    else if( button == "rightshoulder" ) {
         return Event::R;
     }
 
-    if( button == "R2" ) {
+    else if( button == "righttrigger" ) {
         return Event::R2;
     }
 
-    if( button == "L2" ) {
+    else if( button == "lefttrigger" ) {
         return Event::L2;
     }
 
-    if( button == "R3" ) {
+    else if( button == "rightstick" ) {
         return Event::R3;
     }
 
-    if( button == "L3" ) {
+    else if( button == "leftstick" ) {
         return Event::L3;
     }
 

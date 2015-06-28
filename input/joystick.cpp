@@ -6,7 +6,12 @@ Joystick::Joystick( const int joystickIndex, QObject *parent )
     : InputDevice( LibretroType::DigitalGamepad, parent ),
       qmlSdlIndex( joystickIndex ),
       qmlDeadZone( 12000 ),
-      qmlAnalogMode( false ) {
+      qmlAnalogMode( false ),
+      mSDLButtonVector( SDL_CONTROLLER_BUTTON_MAX, SDL_CONTROLLER_BUTTON_INVALID ),
+      mSDLAxisVector( SDL_CONTROLLER_BUTTON_MAX, SDL_CONTROLLER_BUTTON_INVALID )
+
+{
+
     device = SDL_GameControllerOpen( joystickIndex );
     setName( SDL_GameControllerName( device ) );
     qmlInstanceID = SDL_JoystickInstanceID( SDL_GameControllerGetJoystick( device ) );
@@ -24,14 +29,21 @@ Joystick::Joystick( const int joystickIndex, QObject *parent )
 
     qmlGuid = guidStr;
 
+
+    mDigitalTriggers = hasDigitalTriggers( qmlGuid );
+
+
     // This is really annoying, but for whatever reason, the SDL2 Game Controller API,
     // doesn't assign a proper mapping value certain controller buttons.
     // This means that we have to hold the mapping ourselves and do it correctly.
 
-    if ( !loadMapping() ) {
-        qCDebug( phxInput ) << name() << " is defaulting to SDL config file.";
-        loadSDLMapping( sdlDevice() );
-    }
+    connect( this, &Joystick::resetMappingChanged, this, [ this ] {
+        if ( resetMapping() )
+            loadSDLMapping( sdlDevice() );
+    });
+
+    loadSDLMapping( sdlDevice() );
+
 
 }
 
@@ -71,6 +83,39 @@ bool Joystick::analogMode() const {
     return qmlAnalogMode;
 }
 
+bool Joystick::digitalTriggers() const
+{
+    return mDigitalTriggers;
+}
+
+quint8 Joystick::getButtonState(const SDL_GameControllerButton &button)
+{
+    if ( button >= mSDLButtonVector.size() )
+        return 0;
+
+    auto buttonID = mSDLButtonVector.at( button );
+
+    return SDL_JoystickGetButton( sdlJoystick(), buttonID );
+}
+
+qint16 Joystick::getAxisState(const SDL_GameControllerAxis &axis)
+{
+    if ( axis >= mSDLAxisVector.size() )
+        return 0;
+
+    auto axisID = mSDLAxisVector.at( axis );
+
+    switch ( axis ) {
+        case SDL_CONTROLLER_AXIS_TRIGGERLEFT:
+        case SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
+            if ( digitalTriggers() )
+                return SDL_JoystickGetButton( sdlJoystick(), axisID  );
+            return SDL_JoystickGetAxis( sdlJoystick(),  axisID );
+        default:
+            return SDL_JoystickGetAxis( sdlJoystick(),  axisID );
+    }
+}
+
 QHash<QString, int> &Joystick::sdlMapping() {
     return sdlControllerMapping;
 }
@@ -102,6 +147,7 @@ void Joystick::close() {
 
 bool Joystick::loadMapping()
 {
+/*
     QSettings settings;
     settings.beginGroup( guid() );
 
@@ -149,11 +195,13 @@ bool Joystick::loadMapping()
     }
 
     return !mapping().isEmpty();
+    */
 
 }
 
 void Joystick::saveMapping()
 {
+    /*
     QSettings settings;
     settings.beginGroup( guid() );
 
@@ -161,31 +209,55 @@ void Joystick::saveMapping()
         auto value = sdlControllerMapping.value( sdlEvent );
         settings.setValue( sdlEvent, value );
     }
-
+    */
 }
 
-void Joystick::setMapping( const QVariantMap mapping ) {
-    QString platform;
-#if defined(Q_OS_OSX)
-    platform = "Mac OS X";
-#elif defined(Q_OS_WIN32)
-    platform = "Windows";
-#elif defined(Q_OS_LINUX)
-    platform = "Linux";
-#else
-#error "Your operating system does not support this feature. ( Joystick::mappingString() )"
-#endif
-    const QString prefix = guid() + "," + name();
-    const QString suffix = "platform:" + platform;
+void Joystick::emitEditModeEvent(int event, int state)
+{
+    emit editModeEvent( event, state );
+}
 
-    QString body;
+void Joystick::emitInputDeviceEvent(InputDeviceEvent::Event event, int state)
+{
+    emit inputDeviceEvent( event, state );
+}
 
-    for( auto &key : mapping.keys() ) {
-        body += key + ":" + mapping.value( key ).toString() + ",";
+bool Joystick::hasDigitalTriggers( const QString &guid )
+{
+    if ( guid == "050000005769696d6f74652028313800" )
+        return true;
+    return false;
+}
+
+void Joystick::setMapping( const QVariantMap newMapping ) {
+    /*
+    for ( auto &newEvent : newMapping.keys() ) {
+        auto newValue = newMapping.value( newEvent ).toInt();
+
+        bool foundCollision = false;
+        for ( auto &oldEvent : sdlControllerMapping.keys() ) {
+            auto oldValue = sdlControllerMapping.value( oldEvent );
+
+            // Override old value.
+            if ( newEvent == oldEvent) {
+
+                foundCollision = true;
+
+                // button collisions will have to be noticed by the user for the time being.
+                // This is because the InputDeviceEvent is <QString, int> instead
+                // of <QString, QString>.
+                qDebug() << name() << newEvent << ":" << oldValue  << "==>" << newValue;
+                //sdlControllerMapping[ newEvent ] = newValue;
+                break;
+            }
+        }
+
+        if ( !foundCollision ) {
+            //sdlControllerMapping.insert( newEvent, newValue );
+        }
+
     }
-
-    qmlMappingString = prefix + "," + body + suffix + ",";
-
+    */
 }
 
 void Joystick::loadSDLMapping( SDL_GameController *device ) {
@@ -194,7 +266,10 @@ void Joystick::loadSDLMapping( SDL_GameController *device ) {
 
     auto strList = mappingString.split( "," );
 
+
     for( QString &str : strList ) {
+
+
         auto keyValuePair = str.split( ":" );
 
         if( keyValuePair.size() <= 1 ) {
@@ -212,65 +287,32 @@ void Joystick::loadSDLMapping( SDL_GameController *device ) {
         if ( key == "platform" )
             continue;
 
+        auto prefix = value.at( 0 );
+        int numberValue = value.remove( prefix ).toInt();
+        auto byteArray = key.toLocal8Bit();
 
-        int numberValue = value.remove( value.at( 0 ) ).toInt();
+        if ( key == "leftx"
+             || key == "lefty"
+             || key == "rightx"
+             || key == "righty"
+             || key == "lefttrigger"
+             || key == "righttrigger" ) {
 
-        auto newEvent = sdlStringToEvent( key );
-
-        if ( newEvent != InputDeviceEvent::Unknown ) {
-            mapping().insert( key, newEvent );
-            sdlControllerMapping.insert( key, numberValue );
+            mSDLAxisVector[ SDL_GameControllerGetAxisFromString( byteArray.constData() ) ] = numberValue;
         }
-    }
-}
 
-InputDeviceEvent::Event Joystick::sdlStringToEvent(const QString &key )
-{
-    auto newEvent = InputDeviceEvent::Unknown;
-    if( key == "a" ) {
-        newEvent = InputDeviceEvent::A;
-    } else if( key == "b" ) {
-        newEvent = InputDeviceEvent::B;
-    } else if( key == "x" ) {
-        newEvent = InputDeviceEvent::X;
-    } else if( key == "y" ) {
-        newEvent = InputDeviceEvent::Y;
-    } else if( key == "back" ) {
-        newEvent = InputDeviceEvent::Select;
-    } else if( key == "start" ) {
-        newEvent = InputDeviceEvent::Start;
-    } else if( key == "guide" ) {
-        newEvent = InputDeviceEvent::Unknown;
-    } else if( key == "leftstick" ) {
-        newEvent = InputDeviceEvent::L3;
-    } else if( key == "rightstick" ) {
-        newEvent = InputDeviceEvent::R3;
-    } else if( key == "leftshoulder" ) {
-        newEvent = InputDeviceEvent::L;
-    } else if( key == "rightshoulder" ) {
-        newEvent = InputDeviceEvent::R;
-    } else if( key == "dpup" ) {
-        newEvent = InputDeviceEvent::Up;
-    } else if( key == "dpdown" ) {
-        newEvent = InputDeviceEvent::Down;
-    } else if( key == "dpleft" ) {
-        newEvent = InputDeviceEvent::Left;
-    } else if( key == "dpright" ) {
-        newEvent = InputDeviceEvent::Right;
-    } else if( key == "lefttrigger" ) {
-        newEvent = InputDeviceEvent::L2;
-    } else if( key == "righttrigger" ) {
-        newEvent = InputDeviceEvent::R2;
-    } else if( key == "leftx"
-           || key == "lefty"
-           || key == "rightx"
-           || key == "righty"
-           || key == "lefttrigger"
-           || key == "righttrigger") {
-        newEvent = InputDeviceEvent::Axis;
-    } else {
-        qCWarning( phxInput ) << key << "was missed in the mapping.";
-    }
+        else {
 
-    return newEvent;
+            if ( prefix == 'a' ) {
+                qCWarning( phxInput ) << key
+                                      << " has an unhandled axis value. Report this to the Phoenix "
+                                      << " developers.";
+                continue;
+            }
+            mSDLButtonVector[ SDL_GameControllerGetButtonFromString( byteArray.constData() ) ] = numberValue;
+
+        }
+
+
+    }
 }

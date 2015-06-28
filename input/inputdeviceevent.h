@@ -15,7 +15,7 @@ class InputDeviceEvent : public QObject {
     public:
 
         enum Event {
-            Axis = -1,
+            Guide = -1,
             B = RETRO_DEVICE_ID_JOYPAD_B,
             Y = RETRO_DEVICE_ID_JOYPAD_Y,
             Select = RETRO_DEVICE_ID_JOYPAD_SELECT,
@@ -42,6 +42,8 @@ class InputDeviceEvent : public QObject {
         static Event toEvent( const QString button );
 
 };
+
+Q_DECLARE_METATYPE( InputDeviceEvent::Event )
 
 #endif // INPUTDEVICEEVENT
 

@@ -24,6 +24,18 @@ ApplicationWindow {
         return qsTr(str);
     }
 
+    QMLInputDevice {
+        id: qmlInputDevice;
+
+
+        onGuideChanged: {
+            if ( guide )
+            console.log("guide " + guide );
+        }
+
+        onAChanged: console.log("a: " + a)
+    }
+
     SystemPalette {
         id: systemPalette;
     }
@@ -284,9 +296,21 @@ ApplicationWindow {
 
             property int mapIndex: 0;
 
+            gamepadControlsFrontend: false;
+
             onDeviceAdded: {
-                //device.setMapping( {"a": 1, "b": 2, "x": "12"} );
+                //device.resetMapping = true;
+                //if ( device.name === "Keyboard" )
+                  //  device.setMapping( {"a": Qt.Key_C, "b": Qt.Key_Z, "x": Qt.Key_Y } );
                 console.log( device.name );
+                //device.editMode = true;
+
+                // Every device needs to forward its inputDeviceEvent signal
+                // to the qmlInputDevice. This allows every controller to
+                // control the UI.
+                device.inputDeviceEvent.connect( function( event, state )  {
+                    qmlInputDevice.insert( event, state );
+                });
             }
 
             Component.onCompleted: {

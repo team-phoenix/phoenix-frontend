@@ -2,16 +2,16 @@
 #define JOYSTICK_H
 
 #include <QMap>
+#include <QPair>
+#include <QVector>
 
 #include "input/inputdevice.h"
 #include "libretro.h"
 #include "SDL.h"
-
+#include "SDL_gamecontroller.h"
 class Joystick : public InputDevice {
 
     public:
-        // This is needed to stop a complication warning in the reimplemented insert function.
-        using InputDevice::insert;
 
         static const int maxNumOfDevices;
 
@@ -27,6 +27,10 @@ class Joystick : public InputDevice {
         int sdlIndex() const;
         qreal deadZone() const;
         bool analogMode() const;
+        bool digitalTriggers() const;
+        quint8 getButtonState( const SDL_GameControllerButton &button );
+
+        qint16 getAxisState( const SDL_GameControllerAxis &axis );
 
         SDL_GameController *sdlDevice() const;
         SDL_Joystick *sdlJoystick() const;
@@ -45,15 +49,22 @@ class Joystick : public InputDevice {
         // to mimic the D-PAD.
         void setAnalogMode( const bool mode );
 
+        // calls SDL_GameControllerClose().
         void close();
+
         bool loadMapping() override;
         void saveMapping() override;
 
+        void emitEditModeEvent( int event, int state );
+        void emitInputDeviceEvent( InputDeviceEvent::Event event, int state );
+
     public slots:
-        void insert( const quint8 &event, const int16_t pressed );
+
         void setMapping( QVariantMap mapping ) override;
 
+
     private:
+        // QML Variables
         QString qmlGuid;
         QString qmlMappingString;
         int qmlInstanceID;
@@ -65,13 +76,19 @@ class Joystick : public InputDevice {
         qreal qmlDeadZone;
         bool qmlAnalogMode;
 
+        // Normal Variables
+        bool mDigitalTriggers;
+
+        // Store button and axis values;
+        QVector<int> mSDLButtonVector;
+        QVector<int> mSDLAxisVector;
+
         SDL_GameController *device;
         QHash<QString, int> sdlControllerMapping;
 
         void loadSDLMapping( SDL_GameController *device );
 
-        // Helper function to convert a SDL styled string, into an event.
-        InputDeviceEvent::Event sdlStringToEvent( const QString &key );
+        bool hasDigitalTriggers( const QString &guid );
 
 };
 

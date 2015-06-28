@@ -54,6 +54,17 @@ void InputManager::pollStates()
 
 }
 
+bool InputManager::gamepadControlsFrontend() const
+{
+    return InputDevice::gamepadControlsFrontend;
+}
+
+void InputManager::setGamepadControlsFrontend( const bool control )
+{
+    InputDevice::gamepadControlsFrontend = control;
+    emit gamepadControlsFrontendChanged();
+}
+
 void InputManager::insert( InputDevice *device ) {
     device->loadMapping();
     mutex.lock();
