@@ -5,16 +5,15 @@ Keyboard::Keyboard( QObject *parent )
 
 
     connect( this, &Keyboard::resetMappingChanged, this, [ this ] {
-        if ( resetMapping() ) {
+        if( resetMapping() ) {
             mapping().clear();
             loadDefaultMapping();
         }
-    });
+    } );
 
 }
 
-void Keyboard::loadDefaultMapping()
-{
+void Keyboard::loadDefaultMapping() {
     mapping().insert( Qt::Key_A, InputDeviceEvent::A );
     mapping().insert( Qt::Key_D, InputDeviceEvent::B );
     mapping().insert( Qt::Key_W, InputDeviceEvent::Y );
@@ -35,7 +34,7 @@ void Keyboard::loadDefaultMapping()
 
 void Keyboard::insert( const int &event, int16_t pressed ) {
 
-    if ( editMode() ) {
+    if( editMode() ) {
         emit editModeEvent( event, pressed );
         return;
     }
@@ -87,17 +86,19 @@ bool Keyboard::loadMapping() {
 
     QSettings settings;
 
-    if ( !QFile::exists( settings.fileName() ) )
+    if( !QFile::exists( settings.fileName() ) ) {
         return false;
+    }
 
     settings.beginGroup( name() );
 
-    for ( int i=0; i < InputDeviceEvent::Unknown; ++i ) {
+    for( int i = 0; i < InputDeviceEvent::Unknown; ++i ) {
         auto event = static_cast<InputDeviceEvent::Event>( i );
         auto eventString = InputDeviceEvent::toString( event );
 
         auto key = settings.value( eventString );
-        if ( key.isValid() ) {
+
+        if( key.isValid() ) {
             mapping().insert( key.toInt(), event );
         }
     }
@@ -106,12 +107,11 @@ bool Keyboard::loadMapping() {
 
 }
 
-void Keyboard::saveMapping()
-{
+void Keyboard::saveMapping() {
     QSettings settings;
     settings.beginGroup( name() );
 
-    for ( auto &key : mapping().keys() ) {
+    for( auto &key : mapping().keys() ) {
         auto value = mapping().value( key );
         settings.setValue( InputDeviceEvent::toString( value ), key );
     }

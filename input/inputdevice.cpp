@@ -9,35 +9,33 @@ bool InputDevice::gamepadControlsFrontend = true;
 InputDevice::InputDevice( const InputDevice::LibretroType type, const QString name, QObject *parent )
     : QObject( parent ),
       deviceStates( new InputStateMap {
-        { InputDeviceEvent::B, false },
-        { InputDeviceEvent::A, false },
-        { InputDeviceEvent::X, false },
-        { InputDeviceEvent::Y, false },
-        { InputDeviceEvent::Up, false },
-        { InputDeviceEvent::Down, false },
-        { InputDeviceEvent::Right, false },
-        { InputDeviceEvent::Left, false },
-        { InputDeviceEvent::R, false },
-        { InputDeviceEvent::L, false },
-        { InputDeviceEvent::L2, false },
-        { InputDeviceEvent::R2, false },
-        { InputDeviceEvent::R3, false },
-        { InputDeviceEvent::L3, false },
-        { InputDeviceEvent::Start, false },
-        { InputDeviceEvent::Select, false },
-        } ),
-    deviceType( type ),
-    sharingStates( true ),
-    deviceName( name ),
-    qmlEditMode( false ),
-    qmlResetMapping( false )
-{
+    { InputDeviceEvent::B, false },
+    { InputDeviceEvent::A, false },
+    { InputDeviceEvent::X, false },
+    { InputDeviceEvent::Y, false },
+    { InputDeviceEvent::Up, false },
+    { InputDeviceEvent::Down, false },
+    { InputDeviceEvent::Right, false },
+    { InputDeviceEvent::Left, false },
+    { InputDeviceEvent::R, false },
+    { InputDeviceEvent::L, false },
+    { InputDeviceEvent::L2, false },
+    { InputDeviceEvent::R2, false },
+    { InputDeviceEvent::R3, false },
+    { InputDeviceEvent::L3, false },
+    { InputDeviceEvent::Start, false },
+    { InputDeviceEvent::Select, false },
+} ),
+deviceType( type ),
+sharingStates( true ),
+deviceName( name ),
+qmlEditMode( false ),
+qmlResetMapping( false ) {
     setRetroButtonCount( 15 );
 }
 
 InputDevice::InputDevice( QObject *parent )
-    : InputDevice( DigitalGamepad, parent )
-{
+    : InputDevice( DigitalGamepad, parent ) {
 
 }
 
@@ -66,8 +64,7 @@ QString InputDevice::mappingString() const {
     return qmlMappingString;
 }
 
-bool InputDevice::resetMapping() const
-{
+bool InputDevice::resetMapping() const {
     return qmlResetMapping;
 }
 
@@ -89,8 +86,7 @@ void InputDevice::setEditMode( const bool edit ) {
     emit editModeChanged();
 }
 
-void InputDevice::setResetMapping( const bool reset )
-{
+void InputDevice::setResetMapping( const bool reset ) {
     qmlResetMapping = reset;
     emit resetMappingChanged();
 }
@@ -123,18 +119,15 @@ bool InputDevice::sharingEnabled() const {
     return sharingStates;
 }
 
-void InputDevice::saveMapping()
-{
+void InputDevice::saveMapping() {
     return;
 }
 
-bool InputDevice::loadMapping()
-{
+bool InputDevice::loadMapping() {
     return false;
 }
 
-void InputDevice::selfDestruct()
-{
+void InputDevice::selfDestruct() {
     saveMapping();
     delete this;
 }
@@ -152,15 +145,16 @@ int16_t InputDevice::value( const InputDeviceEvent::Event &event, const int16_t 
 
 void InputDevice::insert( const InputDeviceEvent::Event &value, const int16_t &state ) {
     mutex.lock();
-    if ( InputDevice::gamepadControlsFrontend ) {
+
+    if( InputDevice::gamepadControlsFrontend ) {
         emit inputDeviceEvent( value, state );
     }
+
     deviceStates->insert( value, state );
     mutex.unlock();
 }
 
-void InputDevice::setMapping( const QVariantMap mapping )
-{
+void InputDevice::setMapping( const QVariantMap mapping ) {
     Q_UNUSED( mapping );
     return;
 }

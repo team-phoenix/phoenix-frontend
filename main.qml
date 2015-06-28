@@ -296,8 +296,6 @@ ApplicationWindow {
 
             property int mapIndex: 0;
 
-            gamepadControlsFrontend: true;
-
             onDeviceAdded: {
                 //device.resetMapping = true;
                 //if ( device.name === "Keyboard" )

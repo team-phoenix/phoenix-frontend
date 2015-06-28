@@ -59,9 +59,9 @@ int main( int argc, char *argv[] ) {
     QApplication app( argc, argv );
 
     QApplication::setApplicationDisplayName( "Phoenix" );
-    QApplication::setApplicationName( "Phoenix");
+    QApplication::setApplicationName( "Phoenix" );
     QApplication::setApplicationVersion( "1.0" );
-    QApplication::setOrganizationDomain( "http://phoenix.vg/");
+    QApplication::setOrganizationDomain( "http://phoenix.vg/" );
 
     QQmlApplicationEngine engine;
 

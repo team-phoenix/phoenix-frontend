@@ -3,8 +3,7 @@
 InputManager::InputManager( QObject *parent )
     : QObject( parent ),
       keyboard( new Keyboard() ),
-      sdlEventLoop( this )
-{
+      sdlEventLoop( this ) {
 
     keyboard->loadMapping();
 
@@ -43,25 +42,22 @@ int InputManager::size() const {
     return deviceList.size();
 }
 
-InputDevice *InputManager::at(int index) {
+InputDevice *InputManager::at( int index ) {
 
     QMutexLocker locker( &mutex );
     return deviceList.at( index );
 }
 
-void InputManager::pollStates()
-{
+void InputManager::pollStates() {
     sdlEventLoop.pollEvents();
 
 }
 
-bool InputManager::gamepadControlsFrontend() const
-{
+bool InputManager::gamepadControlsFrontend() const {
     return InputDevice::gamepadControlsFrontend;
 }
 
-void InputManager::setGamepadControlsFrontend( const bool control )
-{
+void InputManager::setGamepadControlsFrontend( const bool control ) {
     InputDevice::gamepadControlsFrontend = control;
     emit gamepadControlsFrontendChanged();
 }
@@ -90,17 +86,18 @@ void InputManager::removeAt( int index ) {
         deviceList[ 0 ] = keyboard;
     }
 
-   mutex.unlock();
+    mutex.unlock();
 
 }
 
-void InputManager::setRun(bool run) {
+void InputManager::setRun( bool run ) {
     mutex.lock();
 
     setGamepadControlsFrontend( !run );
 
     if( run ) {
         sdlEventLoop.stop();
+
         for( auto device : deviceList ) {
             if( device ) {
                 device->setEditMode( false );
@@ -116,7 +113,7 @@ void InputManager::setRun(bool run) {
 
 }
 
-void InputManager::swap(const int index1, const int index2) {
+void InputManager::swap( const int index1, const int index2 ) {
     deviceList.swap( index1, index2 );
 }
 

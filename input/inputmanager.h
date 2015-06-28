@@ -16,8 +16,8 @@
 class InputManager : public QObject {
         Q_OBJECT
 
-    Q_PROPERTY( bool gamepadControlsFrontend READ gamepadControlsFrontend
-                WRITE setGamepadControlsFrontend NOTIFY gamepadControlsFrontendChanged)
+        Q_PROPERTY( bool gamepadControlsFrontend READ gamepadControlsFrontend
+                    WRITE setGamepadControlsFrontend NOTIFY gamepadControlsFrontendChanged )
 
 
     public:

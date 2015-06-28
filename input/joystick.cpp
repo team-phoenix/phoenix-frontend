@@ -38,9 +38,9 @@ Joystick::Joystick( const int joystickIndex, QObject *parent )
     // This means that we have to hold the mapping ourselves and do it correctly.
 
     connect( this, &Joystick::resetMappingChanged, this, [ this ] {
-        if ( resetMapping() )
+        if( resetMapping() )
             loadSDLMapping( sdlDevice() );
-    });
+    } );
 
     loadSDLMapping( sdlDevice() );
 
@@ -83,34 +83,36 @@ bool Joystick::analogMode() const {
     return qmlAnalogMode;
 }
 
-bool Joystick::digitalTriggers() const
-{
+bool Joystick::digitalTriggers() const {
     return mDigitalTriggers;
 }
 
-quint8 Joystick::getButtonState(const SDL_GameControllerButton &button)
-{
-    if ( button >= mSDLButtonVector.size() )
+quint8 Joystick::getButtonState( const SDL_GameControllerButton &button ) {
+    if( button >= mSDLButtonVector.size() ) {
         return 0;
+    }
 
     auto buttonID = mSDLButtonVector.at( button );
 
     return SDL_JoystickGetButton( sdlJoystick(), buttonID );
 }
 
-qint16 Joystick::getAxisState(const SDL_GameControllerAxis &axis)
-{
-    if ( axis >= mSDLAxisVector.size() )
+qint16 Joystick::getAxisState( const SDL_GameControllerAxis &axis ) {
+    if( axis >= mSDLAxisVector.size() ) {
         return 0;
+    }
 
     auto axisID = mSDLAxisVector.at( axis );
 
-    switch ( axis ) {
+    switch( axis ) {
         case SDL_CONTROLLER_AXIS_TRIGGERLEFT:
         case SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
-            if ( digitalTriggers() )
-                return SDL_JoystickGetButton( sdlJoystick(), axisID  );
+            if( digitalTriggers() ) {
+                return SDL_JoystickGetButton( sdlJoystick(), axisID );
+            }
+
             return SDL_JoystickGetAxis( sdlJoystick(),  axisID );
+
         default:
             return SDL_JoystickGetAxis( sdlJoystick(),  axisID );
     }
@@ -145,80 +147,77 @@ void Joystick::close() {
     SDL_GameControllerClose( device );
 }
 
-bool Joystick::loadMapping()
-{
+bool Joystick::loadMapping() {
     return false;
-/*
-    QSettings settings;
-    settings.beginGroup( guid() );
+    /*
+        QSettings settings;
+        settings.beginGroup( guid() );
 
-    // No point in iterating if the file doesn't exist.
-    if ( !QFile::exists( settings.fileName() ) )
-        return false;
+        // No point in iterating if the file doesn't exist.
+        if ( !QFile::exists( settings.fileName() ) )
+            return false;
 
-    // Check for button saves.
-    for ( int i=0; i < SDL_CONTROLLER_BUTTON_MAX; ++i ) {
-        auto button = static_cast<SDL_GameControllerButton>( i );
+        // Check for button saves.
+        for ( int i=0; i < SDL_CONTROLLER_BUTTON_MAX; ++i ) {
+            auto button = static_cast<SDL_GameControllerButton>( i );
 
-        auto buttonString = QString( SDL_GameControllerGetStringForButton( button ) );
+            auto buttonString = QString( SDL_GameControllerGetStringForButton( button ) );
 
-        auto value = settings.value( buttonString );
+            auto value = settings.value( buttonString );
 
-        if ( value.isValid() ) {
-            int numberValue = value.toInt();
+            if ( value.isValid() ) {
+                int numberValue = value.toInt();
 
-            auto event = sdlStringToEvent( buttonString );
+                auto event = sdlStringToEvent( buttonString );
 
-            if ( event != InputDeviceEvent::Unknown) {
-                mapping().insert( buttonString, event );
-                sdlControllerMapping.insert( buttonString, numberValue );
-                //qDebug() << buttonString << numberValue;
+                if ( event != InputDeviceEvent::Unknown) {
+                    mapping().insert( buttonString, event );
+                    sdlControllerMapping.insert( buttonString, numberValue );
+                    //qDebug() << buttonString << numberValue;
+                }
             }
         }
-    }
 
-    // Check for axis saves.
-    for ( int i=0; i < SDL_CONTROLLER_AXIS_MAX; ++i ) {
-        auto axis = static_cast<SDL_GameControllerAxis>( i );
+        // Check for axis saves.
+        for ( int i=0; i < SDL_CONTROLLER_AXIS_MAX; ++i ) {
+            auto axis = static_cast<SDL_GameControllerAxis>( i );
 
-        auto axisString = QString( SDL_GameControllerGetStringForAxis( axis ) );
+            auto axisString = QString( SDL_GameControllerGetStringForAxis( axis ) );
 
-        auto value = settings.value( axisString );
-        if ( value.isValid() ) {
-            int numberValue = value.toInt();
+            auto value = settings.value( axisString );
+            if ( value.isValid() ) {
+                int numberValue = value.toInt();
 
-            auto event = sdlStringToEvent( axisString );
-            if ( event != InputDeviceEvent::Unknown) {
-                mapping().insert( axisString, event );
-                sdlControllerMapping.insert( axisString, numberValue );
+                auto event = sdlStringToEvent( axisString );
+                if ( event != InputDeviceEvent::Unknown) {
+                    mapping().insert( axisString, event );
+                    sdlControllerMapping.insert( axisString, numberValue );
+                }
             }
         }
-    }
 
-    return !mapping().isEmpty();
-    */
+        return !mapping().isEmpty();
+        */
 
 }
 
-void Joystick::saveMapping()
-{
+void Joystick::saveMapping() {
 
 }
 
-void Joystick::emitEditModeEvent(int event, int state)
-{
+void Joystick::emitEditModeEvent( int event, int state ) {
     emit editModeEvent( event, state );
 }
 
-void Joystick::emitInputDeviceEvent(InputDeviceEvent::Event event, int state)
-{
+void Joystick::emitInputDeviceEvent( InputDeviceEvent::Event event, int state ) {
     emit inputDeviceEvent( event, state );
 }
 
-bool Joystick::hasDigitalTriggers( const QString &guid )
-{
-    if ( guid == "050000005769696d6f74652028313800" )
+bool Joystick::hasDigitalTriggers( const QString &guid ) {
+    if( guid == "050000005769696d6f74652028313800" ) {
         return true;
+    }
+
     return false;
 }
 
@@ -279,31 +278,33 @@ void Joystick::loadSDLMapping( SDL_GameController *device ) {
             continue;
         }
 
-        if ( key == "platform" )
+        if( key == "platform" ) {
             continue;
+        }
 
         auto prefix = value.at( 0 );
         int numberValue = value.remove( prefix ).toInt();
         auto byteArray = key.toLocal8Bit();
 
-        if ( key == "leftx"
-             || key == "lefty"
-             || key == "rightx"
-             || key == "righty"
-             || key == "lefttrigger"
-             || key == "righttrigger" ) {
+        if( key == "leftx"
+            || key == "lefty"
+            || key == "rightx"
+            || key == "righty"
+            || key == "lefttrigger"
+            || key == "righttrigger" ) {
 
             mSDLAxisVector[ SDL_GameControllerGetAxisFromString( byteArray.constData() ) ] = numberValue;
         }
 
         else {
 
-            if ( prefix == 'a' ) {
+            if( prefix == 'a' ) {
                 qCWarning( phxInput ) << key
                                       << " has an unhandled axis value. Report this to the Phoenix "
                                       << " developers.";
                 continue;
             }
+
             mSDLButtonVector[ SDL_GameControllerGetButtonFromString( byteArray.constData() ) ] = numberValue;
 
         }

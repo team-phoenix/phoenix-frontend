@@ -81,13 +81,11 @@ VideoItem::~VideoItem() {
 // Controller methods
 //
 
-InputManager *VideoItem::inputManager() const
-{
+InputManager *VideoItem::inputManager() const {
     return qmlInputManager;
 }
 
-void VideoItem::setInputManager( InputManager *manager )
-{
+void VideoItem::setInputManager( InputManager *manager ) {
     if( manager != qmlInputManager ) {
         qmlInputManager = manager;
         core->inputManager = qmlInputManager;
@@ -99,13 +97,11 @@ void VideoItem::setInputManager( InputManager *manager )
     }
 }
 
-void VideoItem::keyPressEvent( QKeyEvent *event )
-{
+void VideoItem::keyPressEvent( QKeyEvent *event ) {
     qmlInputManager->keyboard->insert( event->key(), true );
 }
 
-void VideoItem::keyReleaseEvent( QKeyEvent *event )
-{
+void VideoItem::keyReleaseEvent( QKeyEvent *event ) {
     qmlInputManager->keyboard->insert( event->key() , false );
 }
 
@@ -270,8 +266,7 @@ void VideoItem::handleWindowChanged( QQuickWindow *window ) {
 
 }
 
-bool VideoItem::limitFrameRate()
-{
+bool VideoItem::limitFrameRate() {
     return false;
 }
 
@@ -280,8 +275,9 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
 
     QSGSimpleTextureNode *textureNode = static_cast<QSGSimpleTextureNode *>( node );
 
-    if( !textureNode )
+    if( !textureNode ) {
         textureNode = new QSGSimpleTextureNode;
+    }
 
     // It's not time yet. Show a black rectangle.
     if( coreState != Core::STATEREADY ) {
@@ -297,7 +293,7 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
 
     static qint64 timeStamp = -1;
 
-    if ( timeStamp != -1 ) {
+    if( timeStamp != -1 ) {
 
         qreal calculatedFrameRate = ( 1 / ( timeStamp / 1000000.0 ) ) * 1000.0;
         int difference = calculatedFrameRate > coreFPS ?

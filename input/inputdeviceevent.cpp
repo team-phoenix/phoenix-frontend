@@ -1,7 +1,7 @@
 #include "inputdeviceevent.h"
 
 
-QString InputDeviceEvent::toString( const InputDeviceEvent::Event &event  ) {
+QString InputDeviceEvent::toString( const InputDeviceEvent::Event &event ) {
     switch( event ) {
         case B:
             return "b";

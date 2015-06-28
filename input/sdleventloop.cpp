@@ -61,7 +61,7 @@ void SDLEventLoop::pollEvents() {
             // polling and initialize the event handling.
 
             forceEventsHandling = joystick->editMode()
-                                | ( SDL_GameControllerGetAttached( sdlGamepad ) == SDL_FALSE );
+                                  | ( SDL_GameControllerGetAttached( sdlGamepad ) == SDL_FALSE );
 
             if( forceEventsHandling ) {
                 return;
@@ -104,7 +104,7 @@ void SDLEventLoop::pollEvents() {
 
             rightTrigger = joystick->getAxisState( SDL_CONTROLLER_AXIS_TRIGGERRIGHT );
 
-                    //gamecontroller->mapping.buttons[button]
+            //gamecontroller->mapping.buttons[button]
             // Read Analog Joystick Values
             leftXAxis = joystick->getAxisState( SDL_CONTROLLER_AXIS_LEFTX );
             leftYAxis = joystick->getAxisState( SDL_CONTROLLER_AXIS_LEFTY );
@@ -113,20 +113,20 @@ void SDLEventLoop::pollEvents() {
 
             // !analogMode means that the console being played doesn't support
             // analog sticks. We will then have the left analog stick mimic the D-PAD.
-            if ( !joystick->analogMode() ) {
-                if ( leftXAxis <= 0 ) {
+            if( !joystick->analogMode() ) {
+                if( leftXAxis <= 0 ) {
                     left |= ( leftXAxis < -joystick->deadZone() );
                 }
 
-                if ( leftXAxis > 0 ) {
+                if( leftXAxis > 0 ) {
                     right |= ( leftXAxis > joystick->deadZone() );
                 }
 
-                if (  leftYAxis <= 0 ) {
+                if( leftYAxis <= 0 ) {
                     up |= ( leftYAxis < -joystick->deadZone() );
                 }
 
-                if ( leftYAxis > 0 ) {
+                if( leftYAxis > 0 ) {
                     down |= ( leftYAxis > joystick->deadZone() );
                 }
             }
@@ -161,8 +161,8 @@ void SDLEventLoop::pollEvents() {
 
 
             //qDebug() << left << right << down << up << start << select <<
-              //         a << b << x << y << leftShoulder << rightShoulder << leftTrigger << rightTrigger
-                //     << leftStick << rightStick << leftXAxis << leftYAxis << rightYAxis << rightXAxis;
+            //         a << b << x << y << leftShoulder << rightShoulder << leftTrigger << rightTrigger
+            //     << leftStick << rightStick << leftXAxis << leftYAxis << rightYAxis << rightXAxis;
 
 
 

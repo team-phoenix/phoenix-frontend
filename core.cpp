@@ -773,10 +773,13 @@ int16_t Core::inputStateCallback( unsigned port, unsigned device, unsigned index
 
     auto event = static_cast<InputDeviceEvent::Event>( id );
 
-    if ( port == 0 ) {
+    if( port == 0 ) {
         auto keyState = core->inputManager->keyboard->value( event, 0 );
-        if ( !inputDevice )
+
+        if( !inputDevice ) {
             return keyState;
+        }
+
         auto deviceState = inputDevice->value( event, 0 );
         return deviceState | keyState;
     }
@@ -784,8 +787,9 @@ int16_t Core::inputStateCallback( unsigned port, unsigned device, unsigned index
     // make sure the InputDevice was configured
     // to map to the requested RETRO_DEVICE.
 
-    if ( !inputDevice || inputDevice->type() != static_cast<InputDevice::LibretroType>( device ) )
+    if( !inputDevice || inputDevice->type() != static_cast<InputDevice::LibretroType>( device ) ) {
         return 0;
+    }
 
     return inputDevice->value( event, 0 );
 
