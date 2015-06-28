@@ -27,7 +27,6 @@ InputDevice::InputDevice( const InputDevice::LibretroType type, const QString na
     { InputDeviceEvent::Select, false },
 } ),
 deviceType( type ),
-sharingStates( true ),
 deviceName( name ),
 qmlEditMode( false ),
 qmlResetMapping( false ) {
@@ -93,30 +92,6 @@ void InputDevice::setResetMapping( const bool reset ) {
 
 void InputDevice::setType( const InputDevice::LibretroType type ) {
     deviceType = type;
-}
-
-bool InputDevice::shareStates( InputDevice *device ) {
-    Q_ASSERT_X( this != device, "InputDevice::shareStates", "cannot share state with itself." );
-
-    if( device == nullptr ) {
-        if( sharingEnabled() ) {
-            resetStates();
-        }
-
-        return false;
-    }
-
-    deviceStates = device->states();
-    return true;
-
-}
-
-bool InputDevice::isSharingStates() const {
-    return sharingStates;
-}
-
-bool InputDevice::sharingEnabled() const {
-    return sharingStates;
 }
 
 void InputDevice::saveMapping() {

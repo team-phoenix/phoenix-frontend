@@ -21,6 +21,11 @@
 // In normal situations, you only need to
 // reimplement the insert function.
 
+// If an InputDevice was dynamically allocated, which it should be,
+// don't call 'delete inputDevice', instead do 'inputDevice->selfDestruct'.
+// This is because changes to the InputDevice's mapping are only written to a save file
+// when the application closes.
+
 // Use alias so we don't have to type this out every time. :/
 using InputStateMap = QHash<InputDeviceEvent::Event, int16_t>;
 
@@ -34,7 +39,7 @@ class InputDevice : public QObject {
     public:
 
         // This should be turned off when a game is running
-        // and set to true when the game stops.
+        // and set to true when the game stops. The setRun function of InputManager œtoggles this.
         static bool gamepadControlsFrontend;
 
         // Controller types from libretro's perspective
@@ -43,7 +48,9 @@ class InputDevice : public QObject {
             AnalogGamepad = RETRO_DEVICE_ANALOG,
         };
 
-        InputDevice( QObject *parent = 0 );
+        // For a normal InputDevice subclass, don't just call this constructor. This should
+        // only be used by the QMLInputDevice.
+        explicit InputDevice( QObject *parent = 0 );
 
         explicit InputDevice( const LibretroType type, QObject *parent = 0 );
 
@@ -71,19 +78,12 @@ class InputDevice : public QObject {
 
         void setType( const LibretroType type );
 
-        // Set the input device to mirror
-        bool shareStates( InputDevice *device );
-
-        // Currently sharing states?
-        bool isSharingStates() const;
-
-        // Is sharing enabled?
-        bool sharingEnabled() const;
-
         virtual void saveMapping();
 
         virtual bool loadMapping();
 
+        // This is the only you we should be deleting the InputDevice.
+        // This function calls saveMapping() before it deletes itself.
         void selfDestruct();
 
     public slots:
@@ -122,10 +122,6 @@ class InputDevice : public QObject {
 
         // Type of controller this input device is
         LibretroType deviceType;
-
-        // This is for having 2 input devices share the same port;
-        // indirectly of course.
-        bool sharingStates;
 
         // Controller states are read by a different thread, lock access with a mutex
         QMutex mutex;
