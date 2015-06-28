@@ -33,6 +33,11 @@ qmlResetMapping( false ) {
     setRetroButtonCount( 15 );
 }
 
+InputDevice::~InputDevice()
+{
+    delete deviceStates;
+}
+
 InputDevice::InputDevice( QObject *parent )
     : InputDevice( DigitalGamepad, parent ) {
 

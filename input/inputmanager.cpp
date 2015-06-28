@@ -29,8 +29,7 @@ InputManager::~InputManager() {
 
     for( auto device : deviceList ) {
         if( device ) {
-            auto *joystick = static_cast<Joystick *>( device );
-            joystick->selfDestruct();
+            device->selfDestruct();
         }
     }
 
