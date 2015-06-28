@@ -37,12 +37,9 @@ class QMLInputDevice : public InputDevice
 
 public:
 
-    QMLInputDevice( QObject *parent = 0 );
+    using InputDevice::insert;
 
-    // Just set all these virtual function to do nothing.
-    void setMapping( const QVariantMap mapping ) override;
-    void saveMapping() override;
-    bool loadMapping() override;
+    QMLInputDevice( QObject *parent = 0 );
 
     bool a() const;
     bool b() const;
@@ -64,7 +61,7 @@ public:
     bool rightTrigger() const;
 
 public slots:
-    void insert( const InputDeviceEvent::Event value, const int state );
+    void insert( const InputDeviceEvent::Event &value, const int &state );
 
 signals:
     void aChanged();

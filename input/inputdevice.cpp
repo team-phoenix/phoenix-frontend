@@ -26,11 +26,12 @@ InputDevice::InputDevice( const InputDevice::LibretroType type, const QString na
         { InputDeviceEvent::Start, false },
         { InputDeviceEvent::Select, false },
         } ),
-    qmlResetMapping( false ),
     deviceType( type ),
     sharingStates( true ),
     deviceName( name ),
-    qmlEditMode( false ) {
+    qmlEditMode( false ),
+    qmlResetMapping( false )
+{
     setRetroButtonCount( 15 );
 }
 
@@ -124,42 +125,12 @@ bool InputDevice::sharingEnabled() const {
 
 void InputDevice::saveMapping()
 {
-    /*
-    QSettings settings;
-    settings.beginGroup( name() );
-
-    for ( auto &key : mapping().keys() ) {
-        auto value = mapping().value( key );
-        settings.setValue( InputDeviceEvent::toString( value ), key );
-    }
-
-    qDebug() << settings.fileName();
-    */
+    return;
 }
 
 bool InputDevice::loadMapping()
 {
     return false;
-    /*
-    QSettings settings;
-
-    if ( !QFile::exists( settings.fileName() ) )
-        return false;
-
-    settings.beginGroup( name() );
-
-    for ( int i=0; i < InputDeviceEvent::Unknown; ++i ) {
-        auto event = static_cast<InputDeviceEvent::Event>( i );
-        auto eventString = InputDeviceEvent::toString( event );
-
-        auto key = settings.value( eventString );
-        if ( key.isValid() ) {
-            mapping().insert( key.toString(), event );
-        }
-    }
-
-    return !mapping().isEmpty();
-    */
 }
 
 void InputDevice::selfDestruct()
@@ -188,9 +159,10 @@ void InputDevice::insert( const InputDeviceEvent::Event &value, const int16_t &s
     mutex.unlock();
 }
 
-void InputDevice::setMapping(const QVariantMap mapping)
+void InputDevice::setMapping( const QVariantMap mapping )
 {
     Q_UNUSED( mapping );
+    return;
 }
 
 //

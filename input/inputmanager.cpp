@@ -2,8 +2,9 @@
 
 InputManager::InputManager( QObject *parent )
     : QObject( parent ),
-      sdlEventLoop( this ),
-      keyboard( new Keyboard() ) {
+      keyboard( new Keyboard() ),
+      sdlEventLoop( this )
+{
 
     keyboard->loadMapping();
 

@@ -5,7 +5,7 @@ QMLInputDevice::QMLInputDevice( QObject *parent )
 {
 }
 
-void QMLInputDevice::insert( const InputDeviceEvent::Event event, const int state )
+void QMLInputDevice::insert( const InputDeviceEvent::Event &event, const int &state )
 {
     // Process the incoming event and assign it to the correct button value.
     switch( event ) {
@@ -181,21 +181,6 @@ void QMLInputDevice::setRightTrigger(const bool &state)
         return;
     qmlRightTrigger = state;
     emit rightTriggerChanged();
-}
-
-void QMLInputDevice::setMapping( const QVariantMap mapping )
-{
-    Q_UNUSED( mapping );
-}
-
-void QMLInputDevice::saveMapping()
-{
-
-}
-
-bool QMLInputDevice::loadMapping()
-{
-
 }
 
 bool QMLInputDevice::a() const

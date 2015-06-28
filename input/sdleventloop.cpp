@@ -237,6 +237,7 @@ void SDLEventLoop::pollEvents() {
 
                     joystick->emitEditModeEvent( sdlEvent.cbutton.button, state );
 
+
                     break;
                 }
 

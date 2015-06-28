@@ -23,7 +23,8 @@ class Keyboard : public InputDevice {
 
         InputDeviceMapping &mapping();
 
-        bool loadMapping();
+        bool loadMapping() override;
+        void saveMapping() override;
 
     public slots:
 

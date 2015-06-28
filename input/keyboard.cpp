@@ -53,6 +53,7 @@ InputDeviceMapping &Keyboard::mapping() {
 
 void Keyboard::setMapping( const QVariantMap newMapping ) {
 
+    Q_UNUSED( newMapping );
     /*
     for ( auto &newKey : newMapping.keys() ) {
         auto newValue = newMapping.value( newKey ).toInt();
@@ -84,12 +85,36 @@ void Keyboard::setMapping( const QVariantMap newMapping ) {
 
 bool Keyboard::loadMapping() {
 
-    if ( !InputDevice::loadMapping() ) {
-        qCDebug( phxInput ) << name() << " is using the default mapping.";
-        loadDefaultMapping();
+    QSettings settings;
+
+    if ( !QFile::exists( settings.fileName() ) )
         return false;
+
+    settings.beginGroup( name() );
+
+    for ( int i=0; i < InputDeviceEvent::Unknown; ++i ) {
+        auto event = static_cast<InputDeviceEvent::Event>( i );
+        auto eventString = InputDeviceEvent::toString( event );
+
+        auto key = settings.value( eventString );
+        if ( key.isValid() ) {
+            mapping().insert( key.toInt(), event );
+        }
     }
 
-    return true;
+    return !mapping().isEmpty();
 
+}
+
+void Keyboard::saveMapping()
+{
+    QSettings settings;
+    settings.beginGroup( name() );
+
+    for ( auto &key : mapping().keys() ) {
+        auto value = mapping().value( key );
+        settings.setValue( InputDeviceEvent::toString( value ), key );
+    }
+
+    qDebug() << settings.fileName();
 }

@@ -147,6 +147,7 @@ void Joystick::close() {
 
 bool Joystick::loadMapping()
 {
+    return false;
 /*
     QSettings settings;
     settings.beginGroup( guid() );
@@ -201,15 +202,7 @@ bool Joystick::loadMapping()
 
 void Joystick::saveMapping()
 {
-    /*
-    QSettings settings;
-    settings.beginGroup( guid() );
 
-    for ( auto &sdlEvent : mapping().keys() ) {
-        auto value = sdlControllerMapping.value( sdlEvent );
-        settings.setValue( sdlEvent, value );
-    }
-    */
 }
 
 void Joystick::emitEditModeEvent(int event, int state)
@@ -230,6 +223,7 @@ bool Joystick::hasDigitalTriggers( const QString &guid )
 }
 
 void Joystick::setMapping( const QVariantMap newMapping ) {
+    Q_UNUSED( newMapping );
     /*
     for ( auto &newEvent : newMapping.keys() ) {
         auto newValue = newMapping.value( newEvent ).toInt();
@@ -262,6 +256,7 @@ void Joystick::setMapping( const QVariantMap newMapping ) {
 
 void Joystick::loadSDLMapping( SDL_GameController *device ) {
     // Handle populating our own mappings, because SDL2 often uses the incorrect mapping array.
+
     QString mappingString = SDL_GameControllerMapping( device );
 
     auto strList = mappingString.split( "," );

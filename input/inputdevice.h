@@ -81,6 +81,7 @@ class InputDevice : public QObject {
         bool sharingEnabled() const;
 
         virtual void saveMapping();
+
         virtual bool loadMapping();
 
         void selfDestruct();
