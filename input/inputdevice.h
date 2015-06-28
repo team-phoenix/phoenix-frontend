@@ -100,7 +100,7 @@ class InputDevice : public QObject {
     protected:
 
         // The device's current state (whether certain buttons are pressed)
-        InputStateMap *deviceStates;
+        std::unique_ptr<InputStateMap> deviceStates;
 
     signals:
 

@@ -8,34 +8,29 @@ bool InputDevice::gamepadControlsFrontend = true;
 
 InputDevice::InputDevice( const InputDevice::LibretroType type, const QString name, QObject *parent )
     : QObject( parent ),
-      deviceStates( new InputStateMap {
-    { InputDeviceEvent::B, false },
-    { InputDeviceEvent::A, false },
-    { InputDeviceEvent::X, false },
-    { InputDeviceEvent::Y, false },
-    { InputDeviceEvent::Up, false },
-    { InputDeviceEvent::Down, false },
-    { InputDeviceEvent::Right, false },
-    { InputDeviceEvent::Left, false },
-    { InputDeviceEvent::R, false },
-    { InputDeviceEvent::L, false },
-    { InputDeviceEvent::L2, false },
-    { InputDeviceEvent::R2, false },
-    { InputDeviceEvent::R3, false },
-    { InputDeviceEvent::L3, false },
-    { InputDeviceEvent::Start, false },
-    { InputDeviceEvent::Select, false },
-} ),
-deviceType( type ),
-deviceName( name ),
-qmlEditMode( false ),
-qmlResetMapping( false ) {
+      deviceStates( std::unique_ptr<InputStateMap> ( new InputStateMap {
+        { InputDeviceEvent::B, false },
+        { InputDeviceEvent::A, false },
+        { InputDeviceEvent::X, false },
+        { InputDeviceEvent::Y, false },
+        { InputDeviceEvent::Up, false },
+        { InputDeviceEvent::Down, false },
+        { InputDeviceEvent::Right, false },
+        { InputDeviceEvent::Left, false },
+        { InputDeviceEvent::R, false },
+        { InputDeviceEvent::L, false },
+        { InputDeviceEvent::L2, false },
+        { InputDeviceEvent::R2, false },
+        { InputDeviceEvent::R3, false },
+        { InputDeviceEvent::L3, false },
+        { InputDeviceEvent::Start, false },
+        { InputDeviceEvent::Select, false },
+    } ) ),
+    deviceType( type ),
+    deviceName( name ),
+    qmlEditMode( false ),
+    qmlResetMapping( false ) {
     setRetroButtonCount( 15 );
-}
-
-InputDevice::~InputDevice()
-{
-    delete deviceStates;
 }
 
 InputDevice::InputDevice( QObject *parent )
@@ -77,7 +72,7 @@ InputDevice::LibretroType InputDevice::type() const {
 }
 
 InputStateMap *InputDevice::states() {
-    return deviceStates;
+    return deviceStates.get();
 }
 
 void InputDevice::setName( const QString name ) {
