@@ -5,9 +5,10 @@ QMLInputDevice::QMLInputDevice( QObject *parent )
 {
 }
 
-void QMLInputDevice::insert( const InputDeviceEvent::Event value, const int state )
+void QMLInputDevice::insert( const InputDeviceEvent::Event event, const int state )
 {
-    switch( value ) {
+    // Process the incoming event and assign it to the correct button value.
+    switch( event ) {
         case InputDeviceEvent::B:
             setB( state );
             break;
@@ -20,9 +21,13 @@ void QMLInputDevice::insert( const InputDeviceEvent::Event value, const int stat
         case InputDeviceEvent::Y:
             setY( state );
             break;
+
+        // The Guide button is always recieving input, even when in game, unlike the other buttons.
+        // This is so the Frontend can expose menus whenever the user hits the Guide button.
         case InputDeviceEvent::Guide:
             setGuide( state );
             break;
+
         case InputDeviceEvent::Start:
             setStart( state );
             break;

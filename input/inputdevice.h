@@ -33,6 +33,8 @@ class InputDevice : public QObject {
 
     public:
 
+        // This should be turned off when a game is running
+        // and set to true when the game stops.
         static bool gamepadControlsFrontend;
 
         // Controller types from libretro's perspective
@@ -63,6 +65,7 @@ class InputDevice : public QObject {
 
         // Setters
         void setName( const QString name ); // QML
+        //
         void setEditMode( const bool edit ); // QML
         void setResetMapping( const bool reset ); // QML
 
@@ -104,8 +107,15 @@ class InputDevice : public QObject {
         void nameChanged(); // QML
         void retroButtonCountChanged(); // QML
         void resetMappingChanged(); // QML
-        void inputDeviceEvent( InputDeviceEvent::Event event, int state );
-        void editModeEvent( int event, int state );
+
+        // The inputDeviceEvent signal is used to connect to the QMLInputDevice and shouldn't
+        // be connected to anything else
+        void inputDeviceEvent( InputDeviceEvent::Event event, int state ); // QML
+
+        // The editModeEvent signal is used for changing the InputDevice's internal button map.
+        // This should be connected to any time the user wants to change the mapping.
+        // After this mapping has been edited, this signal can be disconnected.
+        void editModeEvent( int event, int state ); // QML
 
     private:
 

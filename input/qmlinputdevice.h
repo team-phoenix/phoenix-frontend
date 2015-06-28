@@ -3,6 +3,15 @@
 
 #include "inputdevice.h"
 
+// This QMLInputDevice is responsible for controlling the frontend, such as selecting games, and
+// editing settings while using any InputDevice. The main reason for this is so the a Joystick
+// instance can control the UI.
+
+// Currently, every single InputDevice stored in the InputManager, should connect their
+// InputDevice::inputDeviceEvent() signal to this classes insert() function.
+// The actual button presses can then be obtained by reading the Q_PROPERTY values.
+
+// There should only ever be one and only one QMLInputDevice every created.
 class QMLInputDevice : public InputDevice
 {
     Q_OBJECT
@@ -30,6 +39,7 @@ public:
 
     QMLInputDevice( QObject *parent = 0 );
 
+    // Just set all these virtual function to do nothing.
     void setMapping( const QVariantMap mapping ) override;
     void saveMapping() override;
     bool loadMapping() override;

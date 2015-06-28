@@ -296,7 +296,7 @@ ApplicationWindow {
 
             property int mapIndex: 0;
 
-            gamepadControlsFrontend: false;
+            gamepadControlsFrontend: true;
 
             onDeviceAdded: {
                 //device.resetMapping = true;
@@ -308,9 +308,7 @@ ApplicationWindow {
                 // Every device needs to forward its inputDeviceEvent signal
                 // to the qmlInputDevice. This allows every controller to
                 // control the UI.
-                device.inputDeviceEvent.connect( function( event, state )  {
-                    qmlInputDevice.insert( event, state );
-                });
+                device.inputDeviceEvent.connect( qmlInputDevice.insert );
             }
 
             Component.onCompleted: {

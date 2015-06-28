@@ -24,6 +24,7 @@ class InputManager : public QObject {
         explicit InputManager( QObject *parent = 0 );
         ~InputManager();
 
+        // One keyboard is reserved for being always active.
         Keyboard *keyboard;
 
         int size() const;
@@ -34,6 +35,7 @@ class InputManager : public QObject {
 
         bool gamepadControlsFrontend() const;
 
+        // This is just a wrapper around InputDevice::gamepadControlsFrontend.
         void setGamepadControlsFrontend( const bool control );
 
     public slots:
@@ -64,29 +66,7 @@ class InputManager : public QObject {
 
         QList<InputDevice *> deviceList;
 
-        // One keyboard is reserved for being always active.
-
-
         SDLEventLoop sdlEventLoop;
-
-        /*
-        bool eventFilter( QObject *object, QEvent *event ) {
-            switch( event->type() ) {
-                case QEvent::KeyPress:
-                case QEvent::KeyRelease: {
-                    auto *keyEvent = static_cast<QKeyEvent *>( event );
-                    keyboard->insert( ( Qt::Key )keyEvent->key() , event->type() == QEvent::KeyPress );
-                    event->accept();
-                    break;
-                }
-
-                default:
-                    return object->event( event );
-            }
-
-            return true;
-        }
-        */
 
 
 };

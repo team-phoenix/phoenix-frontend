@@ -96,6 +96,8 @@ void InputManager::removeAt( int index ) {
 void InputManager::setRun(bool run) {
     mutex.lock();
 
+    setGamepadControlsFrontend( !run );
+
     if( run ) {
         sdlEventLoop.stop();
         for( auto device : deviceList ) {

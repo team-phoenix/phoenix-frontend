@@ -4,7 +4,7 @@
 // Constructors
 //
 
-bool InputDevice::gamepadControlsFrontend = false;
+bool InputDevice::gamepadControlsFrontend = true;
 
 InputDevice::InputDevice( const InputDevice::LibretroType type, const QString name, QObject *parent )
     : QObject( parent ),
@@ -139,6 +139,7 @@ void InputDevice::saveMapping()
 
 bool InputDevice::loadMapping()
 {
+    return false;
     /*
     QSettings settings;
 
