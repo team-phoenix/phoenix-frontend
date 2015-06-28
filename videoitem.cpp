@@ -22,7 +22,7 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     connect( this, &VideoItem::signalShutdown, core, &Core::slotShutdown );
     connect( audioOutputThread, &QThread::finished, audioOutput, &AudioOutput::deleteLater );
 
-    // Catch the exit signal and clean up
+    // Catch the user exit signal and clean up
     connect( QCoreApplication::instance(), &QCoreApplication::aboutToQuit, [ = ]() {
 
         qCDebug( phxController ) << "===========QCoreApplication::aboutToQuit()===========";
@@ -86,7 +86,9 @@ InputManager *VideoItem::inputManager() const {
 }
 
 void VideoItem::setInputManager( InputManager *manager ) {
+
     if( manager != qmlInputManager ) {
+
         qmlInputManager = manager;
         core->inputManager = qmlInputManager;
 
@@ -95,14 +97,7 @@ void VideoItem::setInputManager( InputManager *manager ) {
         emit inputManagerChanged();
 
     }
-}
 
-void VideoItem::keyPressEvent( QKeyEvent *event ) {
-    qmlInputManager->keyboard->insert( event->key(), true );
-}
-
-void VideoItem::keyReleaseEvent( QKeyEvent *event ) {
-    qmlInputManager->keyboard->insert( event->key() , false );
 }
 
 void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) {
@@ -266,6 +261,14 @@ void VideoItem::handleWindowChanged( QQuickWindow *window ) {
 
 }
 
+void VideoItem::keyPressEvent( QKeyEvent *event ) {
+    qmlInputManager->keyboard->insert( event->key(), true );
+}
+
+void VideoItem::keyReleaseEvent( QKeyEvent *event ) {
+    qmlInputManager->keyboard->insert( event->key() , false );
+}
+
 bool VideoItem::limitFrameRate() {
     return false;
 }
@@ -325,9 +328,11 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
 QImage::Format VideoItem::retroToQImageFormat( retro_pixel_format fmt ) {
 
     static QImage::Format format_table[3] = {
+
         QImage::Format_RGB16,   // RETRO_PIXEL_FORMAT_0RGB1555
         QImage::Format_RGB32,   // RETRO_PIXEL_FORMAT_XRGB8888
         QImage::Format_RGB16    // RETRO_PIXEL_FORMAT_RGB565
+
     };
 
     if( fmt >= 0 && fmt < ( sizeof( format_table ) / sizeof( QImage::Format ) ) ) {

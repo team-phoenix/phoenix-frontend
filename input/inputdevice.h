@@ -16,14 +16,13 @@
 #include "logging.h"
 #include "inputdeviceevent.h"
 
-// InputDevice represents an abstract controller
+// InputDevice represents an abstract controller.
 
 // In normal situations, you only need to
 // reimplement the insert function.
 
-// If an InputDevice was dynamically allocated, which it should be,
-// don't call 'delete inputDevice', instead do 'inputDevice->selfDestruct'.
-// This is because changes to the InputDevice's mapping are only written to a save file
+// If an InputDevice was dynamically allocated, which it should be, don't call 'delete inputDevice', instead do
+// 'inputDevice->selfDestruct'. This is because changes to the InputDevice's mapping are only written to a save file
 // when the application closes.
 
 // Use alias so we don't have to type this out every time. :/
@@ -39,7 +38,7 @@ class InputDevice : public QObject {
     public:
 
         // This should be turned off when a game is running
-        // and set to true when the game stops. The setRun function of InputManager œtoggles this.
+        // and set to true when the game stops. The setRun function of InputManager toggles this.
         static bool gamepadControlsFrontend;
 
         // Controller types from libretro's perspective
@@ -57,13 +56,11 @@ class InputDevice : public QObject {
         explicit InputDevice( const LibretroType type, const QString name, QObject *parent );
 
         // Getters
-        const QString name() const; // QML
 
-        // editMode stops incoming button events, from being put into the
-        // deviceStates mapping. It causes the insert() function to emit
-        // inputDeviceEventChanged(), which allows the frontend to
-        // connect and react to.
+        // editMode stops incoming button events from being put into the deviceStates mapping. It causes the insert()
+        // function to emit inputDeviceEventChanged(), which allows the frontend to connect and react to.
         bool editMode() const; // QML
+        const QString name() const; // QML
         int retroButtonCount() const; // QML
         QString mappingString() const;
         bool resetMapping() const;// QML
@@ -72,7 +69,6 @@ class InputDevice : public QObject {
 
         // Setters
         void setName( const QString name ); // QML
-        //
         void setEditMode( const bool edit ); // QML
         void setResetMapping( const bool reset ); // QML
 
@@ -109,8 +105,8 @@ class InputDevice : public QObject {
         void retroButtonCountChanged(); // QML
         void resetMappingChanged(); // QML
 
-        // The inputDeviceEvent signal is used to connect to the QMLInputDevice and shouldn't
-        // be connected to anything else
+        // The inputDeviceEvent signal is used to connect to the QMLInputDevice
+        // and shouldn't be connected to anything else.
         void inputDeviceEvent( InputDeviceEvent::Event event, int state ); // QML
 
         // The editModeEvent signal is used for changing the InputDevice's internal button map.
@@ -136,7 +132,6 @@ class InputDevice : public QObject {
         int qmlRetroButtonCount;
         bool qmlEditMode;
         bool qmlResetMapping;
-
 
 };
 

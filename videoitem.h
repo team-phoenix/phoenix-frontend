@@ -76,6 +76,7 @@ class VideoItem : public QQuickItem {
 
         InputManager *qmlInputManager;
 
+        // Listen for keyboard events, pass them along to the keyboard controller object (Keyboard)
         void keyPressEvent( QKeyEvent *event );
         void keyReleaseEvent( QKeyEvent *event );
 

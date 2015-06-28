@@ -3,17 +3,19 @@
 Keyboard::Keyboard( QObject *parent )
     : InputDevice( LibretroType::DigitalGamepad, "Keyboard", parent ) {
 
-
     connect( this, &Keyboard::resetMappingChanged, this, [ this ] {
+
         if( resetMapping() ) {
             mapping().clear();
             loadDefaultMapping();
         }
+
     } );
 
 }
 
 void Keyboard::loadDefaultMapping() {
+
     mapping().insert( Qt::Key_A, InputDeviceEvent::A );
     mapping().insert( Qt::Key_D, InputDeviceEvent::B );
     mapping().insert( Qt::Key_W, InputDeviceEvent::Y );
@@ -30,6 +32,7 @@ void Keyboard::loadDefaultMapping() {
     mapping().insert( Qt::Key_Shift, InputDeviceEvent::R2 );
     mapping().insert( Qt::Key_N, InputDeviceEvent::L3 );
     mapping().insert( Qt::Key_M, InputDeviceEvent::R3 );
+
 }
 
 void Keyboard::insert( const int &event, int16_t pressed ) {
@@ -44,6 +47,7 @@ void Keyboard::insert( const int &event, int16_t pressed ) {
     if( newEvent != InputDeviceEvent::Unknown ) {
         InputDevice::insert( newEvent, pressed );
     }
+
 }
 
 InputDeviceMapping &Keyboard::mapping() {
@@ -51,8 +55,8 @@ InputDeviceMapping &Keyboard::mapping() {
 }
 
 void Keyboard::setMapping( const QVariantMap newMapping ) {
-
     Q_UNUSED( newMapping );
+
     /*
     for ( auto &newKey : newMapping.keys() ) {
         auto newValue = newMapping.value( newKey ).toInt();
@@ -80,6 +84,7 @@ void Keyboard::setMapping( const QVariantMap newMapping ) {
     }
     */
     // To do...
+
 }
 
 bool Keyboard::loadMapping() {
@@ -93,6 +98,7 @@ bool Keyboard::loadMapping() {
     settings.beginGroup( name() );
 
     for( int i = 0; i < InputDeviceEvent::Unknown; ++i ) {
+
         auto event = static_cast<InputDeviceEvent::Event>( i );
         auto eventString = InputDeviceEvent::toString( event );
 
@@ -101,6 +107,7 @@ bool Keyboard::loadMapping() {
         if( key.isValid() ) {
             mapping().insert( key.toInt(), event );
         }
+
     }
 
     return !mapping().isEmpty();
@@ -108,6 +115,7 @@ bool Keyboard::loadMapping() {
 }
 
 void Keyboard::saveMapping() {
+
     QSettings settings;
     settings.beginGroup( name() );
 
@@ -117,4 +125,5 @@ void Keyboard::saveMapping() {
     }
 
     qDebug() << settings.fileName();
+
 }

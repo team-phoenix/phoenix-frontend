@@ -22,6 +22,7 @@ InputManager::InputManager( QObject *parent )
 }
 
 InputManager::~InputManager() {
+
     sdlEventLoop.stop();
 
     // I can't guarantee that the device won't be deleted by the deviceRemoved() signal.
@@ -42,7 +43,6 @@ int InputManager::size() const {
 }
 
 InputDevice *InputManager::at( int index ) {
-
     QMutexLocker locker( &mutex );
     return deviceList.at( index );
 }
@@ -62,6 +62,7 @@ void InputManager::setGamepadControlsFrontend( const bool control ) {
 }
 
 void InputManager::insert( InputDevice *device ) {
+
     device->loadMapping();
     mutex.lock();
     auto *joystick = static_cast<Joystick *>( device );
@@ -74,6 +75,7 @@ void InputManager::insert( InputDevice *device ) {
 }
 
 void InputManager::removeAt( int index ) {
+
     mutex.lock();
 
     auto *device = static_cast<Joystick *>( deviceList.at( index ) );
@@ -90,6 +92,7 @@ void InputManager::removeAt( int index ) {
 }
 
 void InputManager::setRun( bool run ) {
+
     mutex.lock();
 
     setGamepadControlsFrontend( !run );
@@ -117,12 +120,16 @@ void InputManager::swap( const int index1, const int index2 ) {
 }
 
 void InputManager::emitConnectedDevices() {
+
     emit deviceAdded( keyboard );
 
     for( auto inputDevice : deviceList ) {
+
         if( inputDevice ) {
             emit deviceAdded( inputDevice );
         }
+
     }
+
 }
 

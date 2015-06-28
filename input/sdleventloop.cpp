@@ -11,25 +11,24 @@ SDLEventLoop::SDLEventLoop( QObject *parent )
       sdlPollTimer( this ),
       numOfDevices( 0 ),
       forceEventsHandling( true ) {
-    // To do the poll timer isn't in the sdlEventLoopThread. it needs to be.
+
+    // TODO: The poll timer isn't in the sdlEventLoopThread. It needs to be.
 
     // Ensures the resources at loaded at startup, even during
     // static compilation.
     Q_INIT_RESOURCE( controllerdb );
-    QFile file( ":/input/gamecontrollerdb.txt" );
-    Q_ASSERT( file.open( QIODevice::ReadOnly ) );
+    QFile gameControllerDBFile( ":/input/gamecontrollerdb.txt" );
+    Q_ASSERT( gameControllerDBFile.open( QIODevice::ReadOnly ) );
 
-    auto mappingData = file.readAll();
+    auto mappingData = gameControllerDBFile.readAll();
 
     SDL_SetHint( SDL_HINT_GAMECONTROLLERCONFIG, mappingData.constData() );
 
-    file.close();
-
+    gameControllerDBFile.close();
 
     for( int i = 0; i < Joystick::maxNumOfDevices; ++i ) {
         sdlDeviceList.append( nullptr );
     }
-
 
     sdlPollTimer.setInterval( 5 );
 
@@ -52,6 +51,7 @@ void SDLEventLoop::pollEvents() {
         // so cannot be used for indexing the deviceLocationMap. The value of the map
         // is the actual index that the sdlDeviceList uses.
         for( auto &key : deviceLocationMap.keys() ) {
+
             auto index = deviceLocationMap[ key ];
 
             auto *joystick = sdlDeviceList.at( index );
@@ -71,6 +71,8 @@ void SDLEventLoop::pollEvents() {
             bool guide, leftStick, rightStick;
 
             qint16 leftTrigger, rightTrigger, leftXAxis, leftYAxis, rightXAxis, rightYAxis;
+            Q_UNUSED( rightXAxis );
+            Q_UNUSED( rightYAxis );
 
             // Read D-PAD Button States
             left = joystick->getButtonState( SDL_CONTROLLER_BUTTON_DPAD_LEFT );
@@ -114,6 +116,7 @@ void SDLEventLoop::pollEvents() {
             // !analogMode means that the console being played doesn't support
             // analog sticks. We will then have the left analog stick mimic the D-PAD.
             if( !joystick->analogMode() ) {
+
                 if( leftXAxis <= 0 ) {
                     left |= ( leftXAxis < -joystick->deadZone() );
                 }
@@ -129,6 +132,7 @@ void SDLEventLoop::pollEvents() {
                 if( leftYAxis > 0 ) {
                     down |= ( leftYAxis > joystick->deadZone() );
                 }
+
             }
 
             joystick->insert( InputDeviceEvent::Left, left );
@@ -159,17 +163,16 @@ void SDLEventLoop::pollEvents() {
             joystick->insert( InputDeviceEvent::L2, leftTrigger );
             joystick->insert( InputDeviceEvent::R2, rightTrigger );
 
-
             //qDebug() << left << right << down << up << start << select <<
             //         a << b << x << y << leftShoulder << rightShoulder << leftTrigger << rightTrigger
             //     << leftStick << rightStick << leftXAxis << leftYAxis << rightYAxis << rightXAxis;
 
-
-
         }
+
     }
 
     else {
+
         SDL_Event sdlEvent;
 
         // The only events that should be handled here are, SDL_CONTROLLERDEVICEADDED
@@ -179,15 +182,18 @@ void SDLEventLoop::pollEvents() {
             switch( sdlEvent.type ) {
 
                 case SDL_CONTROLLERDEVICEADDED: {
+
                     forceEventsHandling = false;
 
                     // This needs to be checked for, because the first time a controller
                     // sdl starts up, it fires this signal twice, pretty annoying...
 
                     if( sdlDeviceList.at( sdlEvent.cdevice.which ) != nullptr ) {
+
                         qCDebug( phxInput ).nospace() << "Duplicate controller added at slot "
                                                       << sdlEvent.cdevice.which << ", ignored";
                         break;
+
                     }
 
                     auto *joystick = new Joystick( sdlEvent.cdevice.which );
@@ -199,6 +205,7 @@ void SDLEventLoop::pollEvents() {
                     emit deviceConnected( joystick );
 
                     break;
+
                 }
 
                 case SDL_CONTROLLERDEVICEREMOVED: {
@@ -212,20 +219,24 @@ void SDLEventLoop::pollEvents() {
                     Q_ASSERT( joystick != nullptr );
 
                     if( joystick->instanceID() == sdlEvent.cdevice.which ) {
+
                         emit deviceRemoved( joystick->sdlIndex() );
                         sdlDeviceList[ index ] = nullptr;
                         deviceLocationMap.remove( sdlEvent.cbutton.which );
                         forceEventsHandling = true;
                         break;
+
                     }
 
                     break;
+
                 }
 
                 case SDL_CONTROLLERBUTTONUP:
                 case SDL_CONTROLLERBUTTONDOWN:
                 case SDL_JOYBUTTONDOWN:
                 case SDL_JOYBUTTONUP: {
+
                     int index = deviceLocationMap.value( sdlEvent.cbutton.which, -1 );
                     Q_ASSERT( index != -1 );
 
@@ -237,15 +248,19 @@ void SDLEventLoop::pollEvents() {
 
                     joystick->emitEditModeEvent( sdlEvent.cbutton.button, state );
 
-
                     break;
+
                 }
 
                 default:
                     break;
+
             }
+
         }
+
     }
+
 }
 
 void SDLEventLoop::start() {
@@ -264,6 +279,7 @@ void SDLEventLoop::initSDL() {
 
     // Allow game controller event states to be automatically updated.
     SDL_GameControllerEventState( SDL_ENABLE );
+
 }
 
 void SDLEventLoop::quitSDL() {

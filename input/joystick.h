@@ -64,7 +64,8 @@ class Joystick : public InputDevice {
 
 
     private:
-        // QML Variables
+
+        // QML variables
         QString qmlGuid;
         QString qmlMappingString;
         int qmlInstanceID;
@@ -76,7 +77,7 @@ class Joystick : public InputDevice {
         qreal qmlDeadZone;
         bool qmlAnalogMode;
 
-        // Normal Variables
+        // Normal variables
         bool mDigitalTriggers;
 
         // Store button and axis values;

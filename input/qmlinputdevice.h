@@ -60,9 +60,11 @@ class QMLInputDevice : public InputDevice {
         bool rightTrigger() const;
 
     public slots:
+
         void insert( const InputDeviceEvent::Event &value, const int &state );
 
     signals:
+
         void aChanged();
         void bChanged();
         void xChanged();
@@ -83,6 +85,7 @@ class QMLInputDevice : public InputDevice {
         void rightTriggerChanged();
 
     private:
+
         bool qmlA;
         bool qmlB;
         bool qmlX;
@@ -121,8 +124,6 @@ class QMLInputDevice : public InputDevice {
         void setRightShoulder( const bool &state );
         void setLeftTrigger( const bool &state );
         void setRightTrigger( const bool &state );
-
-
 
 };
 

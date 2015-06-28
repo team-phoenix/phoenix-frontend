@@ -5,8 +5,10 @@ QMLInputDevice::QMLInputDevice( QObject *parent )
 }
 
 void QMLInputDevice::insert( const InputDeviceEvent::Event &event, const int &state ) {
+
     // Process the incoming event and assign it to the correct button value.
     switch( event ) {
+
         case InputDeviceEvent::B:
             setB( state );
             break;
@@ -71,142 +73,174 @@ void QMLInputDevice::insert( const InputDeviceEvent::Event &event, const int &st
 
         default:
             break;
+
     }
+
 }
 
 void QMLInputDevice::setA( const bool &state ) {
+
     if( state == qmlA ) {
         return;
     }
 
     qmlA = state;
     emit aChanged();
+
 }
 
 void QMLInputDevice::setB( const bool &state ) {
+
     if( state == qmlB ) {
         return;
     }
 
     qmlB = state;
     emit bChanged();
+
 }
 
 void QMLInputDevice::setX( const bool &state ) {
+
     if( state == qmlX ) {
         return;
     }
 
     qmlX = state;
     emit xChanged();
+
 }
 
 void QMLInputDevice::setY( const bool &state ) {
+
     if( state == qmlY ) {
         return;
     }
 
     qmlY = state;
     emit yChanged();
+
 }
 
 void QMLInputDevice::setLeft( const bool &state ) {
+
     if( state == qmlLeft ) {
         return;
     }
 
     qmlLeft = state;
     emit leftChanged();
+
 }
 
 void QMLInputDevice::setRight( const bool &state ) {
+
     if( state == qmlRight ) {
         return;
     }
 
     qmlRight = state;
     emit rightChanged();
+
 }
 
 void QMLInputDevice::setUp( const bool &state ) {
+
     if( state == qmlUp ) {
         return;
     }
 
     qmlUp = state;
     emit upChanged();
+
 }
 
 void QMLInputDevice::setDown( const bool &state ) {
+
     if( state == qmlDown ) {
         return;
     }
 
     qmlDown = state;
     emit downChanged();
+
 }
 
 void QMLInputDevice::setStart( const bool &state ) {
+
     if( state == qmlStart ) {
         return;
     }
 
     qmlStart = state;
     emit startChanged();
+
 }
 
 void QMLInputDevice::setSelect( const bool &state ) {
+
     if( state == qmlSelect ) {
         return;
     }
 
     qmlSelect = state;
     emit selectChanged();
+
 }
 
 void QMLInputDevice::setGuide( const bool &state ) {
+
     if( state == qmlGuide ) {
         return;
     }
 
     qmlGuide = state;
     emit guideChanged();
+
 }
 
 void QMLInputDevice::setLeftShoulder( const bool &state ) {
+
     if( state == qmlLeftShoulder ) {
         return;
     }
 
     qmlLeftShoulder = state;
     emit leftShoulderChanged();
+
 }
 
 void QMLInputDevice::setRightShoulder( const bool &state ) {
+
     if( state == qmlRightShoulder ) {
         return;
     }
 
     qmlRightShoulder = state;
     emit rightShoulderChanged();
+
 }
 
 void QMLInputDevice::setLeftTrigger( const bool &state ) {
+
     if( state == qmlLeftTrigger ) {
         return;
     }
 
     qmlLeftTrigger = state;
     emit leftTriggerChanged();
+
 }
 
 void QMLInputDevice::setRightTrigger( const bool &state ) {
+
     if( state == qmlRightTrigger ) {
         return;
     }
 
     qmlRightTrigger = state;
     emit rightTriggerChanged();
+
 }
 
 bool QMLInputDevice::a() const {

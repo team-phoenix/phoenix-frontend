@@ -4,7 +4,7 @@
 #include "inputdevice.h"
 #include "inputdeviceevent.h"
 
-// This class represents one qt keyboard.
+// This class represents one Qt keyboard.
 // This class connects to the the window's keyPressEvent()
 // and keyReleaseEvent() functions, to handle incoming key values
 // and turn the into valid RETRO_PAD button.
@@ -15,6 +15,7 @@ class Keyboard : public InputDevice {
         Q_OBJECT
 
     public:
+
         // This needs to be included for proper lookup during compliation.
         // Else the compiler will throw a warning.
         using InputDevice::insert;
@@ -32,6 +33,7 @@ class Keyboard : public InputDevice {
         void setMapping( const QVariantMap mapping ) override;
 
     private:
+
         void loadDefaultMapping();
 
         InputDeviceMapping deviceMapping;

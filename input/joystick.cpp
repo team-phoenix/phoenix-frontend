@@ -8,9 +8,7 @@ Joystick::Joystick( const int joystickIndex, QObject *parent )
       qmlDeadZone( 12000 ),
       qmlAnalogMode( false ),
       mSDLButtonVector( SDL_CONTROLLER_BUTTON_MAX, SDL_CONTROLLER_BUTTON_INVALID ),
-      mSDLAxisVector( SDL_CONTROLLER_BUTTON_MAX, SDL_CONTROLLER_BUTTON_INVALID )
-
-{
+      mSDLAxisVector( SDL_CONTROLLER_BUTTON_MAX, SDL_CONTROLLER_BUTTON_INVALID ) {
 
     device = SDL_GameControllerOpen( joystickIndex );
     setName( SDL_GameControllerName( device ) );
@@ -29,9 +27,7 @@ Joystick::Joystick( const int joystickIndex, QObject *parent )
 
     qmlGuid = guidStr;
 
-
     mDigitalTriggers = hasDigitalTriggers( qmlGuid );
-
 
     // This is really annoying, but for whatever reason, the SDL2 Game Controller API,
     // doesn't assign a proper mapping value certain controller buttons.
@@ -43,7 +39,6 @@ Joystick::Joystick( const int joystickIndex, QObject *parent )
     } );
 
     loadSDLMapping( sdlDevice() );
-
 
 }
 
@@ -88,6 +83,7 @@ bool Joystick::digitalTriggers() const {
 }
 
 quint8 Joystick::getButtonState( const SDL_GameControllerButton &button ) {
+
     if( button >= mSDLButtonVector.size() ) {
         return 0;
     }
@@ -95,9 +91,11 @@ quint8 Joystick::getButtonState( const SDL_GameControllerButton &button ) {
     auto buttonID = mSDLButtonVector.at( button );
 
     return SDL_JoystickGetButton( sdlJoystick(), buttonID );
+
 }
 
 qint16 Joystick::getAxisState( const SDL_GameControllerAxis &axis ) {
+
     if( axis >= mSDLAxisVector.size() ) {
         return 0;
     }
@@ -105,6 +103,7 @@ qint16 Joystick::getAxisState( const SDL_GameControllerAxis &axis ) {
     auto axisID = mSDLAxisVector.at( axis );
 
     switch( axis ) {
+
         case SDL_CONTROLLER_AXIS_TRIGGERLEFT:
         case SDL_CONTROLLER_AXIS_TRIGGERRIGHT:
             if( digitalTriggers() ) {
@@ -115,7 +114,9 @@ qint16 Joystick::getAxisState( const SDL_GameControllerAxis &axis ) {
 
         default:
             return SDL_JoystickGetAxis( sdlJoystick(),  axisID );
+
     }
+
 }
 
 QHash<QString, int> &Joystick::sdlMapping() {
@@ -148,7 +149,9 @@ void Joystick::close() {
 }
 
 bool Joystick::loadMapping() {
+
     return false;
+
     /*
         QSettings settings;
         settings.beginGroup( guid() );
@@ -214,15 +217,18 @@ void Joystick::emitInputDeviceEvent( InputDeviceEvent::Event event, int state ) 
 }
 
 bool Joystick::hasDigitalTriggers( const QString &guid ) {
+
     if( guid == "050000005769696d6f74652028313800" ) {
         return true;
     }
 
     return false;
+
 }
 
 void Joystick::setMapping( const QVariantMap newMapping ) {
     Q_UNUSED( newMapping );
+
     /*
     for ( auto &newEvent : newMapping.keys() ) {
         auto newValue = newMapping.value( newEvent ).toInt();
@@ -251,18 +257,18 @@ void Joystick::setMapping( const QVariantMap newMapping ) {
 
     }
     */
+
 }
 
 void Joystick::loadSDLMapping( SDL_GameController *device ) {
+
     // Handle populating our own mappings, because SDL2 often uses the incorrect mapping array.
 
     QString mappingString = SDL_GameControllerMapping( device );
 
     auto strList = mappingString.split( "," );
 
-
     for( QString &str : strList ) {
-
 
         auto keyValuePair = str.split( ":" );
 
@@ -292,23 +298,24 @@ void Joystick::loadSDLMapping( SDL_GameController *device ) {
             || key == "righty"
             || key == "lefttrigger"
             || key == "righttrigger" ) {
-
             mSDLAxisVector[ SDL_GameControllerGetAxisFromString( byteArray.constData() ) ] = numberValue;
         }
 
         else {
 
             if( prefix == 'a' ) {
+
                 qCWarning( phxInput ) << key
                                       << " has an unhandled axis value. Report this to the Phoenix "
                                       << " developers.";
                 continue;
+
             }
 
             mSDLButtonVector[ SDL_GameControllerGetButtonFromString( byteArray.constData() ) ] = numberValue;
 
         }
 
-
     }
+
 }

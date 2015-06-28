@@ -25,25 +25,29 @@ class SDLEventLoop : public QObject {
         // The InputManager gains access to these devices by the
         // deviceConnected( Joystick * ) signal.
 
-        // Also for this list, make use the 'which' index, for
-        // propery insertions and retrievals.
+        // Also for this list, make use of the 'which' index, for
+        // proper insertions and retrievals.
         QList<Joystick *> sdlDeviceList;
         QHash<int, int> deviceLocationMap;
 
     public:
+
         explicit SDLEventLoop( QObject *parent = 0 );
 
     public slots:
+
         void pollEvents();
 
         void start();
         void stop();
 
     signals:
+
         void deviceConnected( Joystick *joystick );
         void deviceRemoved( int which );
 
     private:
+
         void initSDL();
         void quitSDL();
 

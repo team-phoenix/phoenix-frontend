@@ -19,8 +19,8 @@ class InputManager : public QObject {
         Q_PROPERTY( bool gamepadControlsFrontend READ gamepadControlsFrontend
                     WRITE setGamepadControlsFrontend NOTIFY gamepadControlsFrontendChanged )
 
-
     public:
+
         explicit InputManager( QObject *parent = 0 );
         ~InputManager();
 
@@ -56,12 +56,14 @@ class InputManager : public QObject {
         void emitConnectedDevices();
 
     signals:
+
         void gamepadControlsFrontendChanged();
         void device( InputDevice *device );
         void deviceAdded( InputDevice *device );
         void incomingEvent( InputDeviceEvent *event );
 
     private:
+
         QMutex mutex;
 
         QList<InputDevice *> deviceList;
