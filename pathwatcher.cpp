@@ -28,8 +28,7 @@ PathWatcher::~PathWatcher() {
 }
 
 void PathWatcher::start() {
-    QFuture< void > future = QtConcurrent::run( this, &PathWatcher::slotHandleStarted );
-    Q_UNUSED( future )
+    slotHandleStarted();
 }
 
 void PathWatcher::slotSetCorePath( const QUrl path ) {

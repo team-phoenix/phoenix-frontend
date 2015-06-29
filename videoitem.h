@@ -1,7 +1,6 @@
 #ifndef VIDEOITEM_H
 #define VIDEOITEM_H
 
-#include <QDebug>
 #include <QQuickItem>
 #include <QQuickWindow>
 #include <QSGSimpleRectNode>
@@ -24,19 +23,29 @@
 #include "libretro.h"
 #include "core.h"
 #include "audiooutput.h"
+#include "logging.h"
+
+#include "input/keyboard.h"
+#include "input/inputmanager.h"
 
 class VideoItem : public QQuickItem {
         Q_OBJECT
         Q_PROPERTY( QString libretroCore MEMBER corePath WRITE setCore )
         Q_PROPERTY( QString game MEMBER gamePath WRITE setGame )
+        Q_PROPERTY( InputManager *inputManager READ inputManager WRITE setInputManager NOTIFY inputManagerChanged )
 
     public:
 
         VideoItem( QQuickItem *parent = 0 );
         ~VideoItem();
 
-    signals:
+        InputManager *inputManager() const;
 
+        void setInputManager( InputManager *manager );
+
+    signals:
+        void inputManagerChanged();
+        void signalDevice( InputDevice *device );
         // Controller
         void signalLoadCore( QString path );
         void signalLoadGame( QString path );
@@ -62,13 +71,20 @@ class VideoItem : public QQuickItem {
 
         // For future consumer use?
         void handleWindowChanged( QQuickWindow *window );
-        void handleOpenGLContextCreated( QOpenGLContext *GLContext );
 
     private:
+
+        InputManager *qmlInputManager;
+
+        // Listen for keyboard events, pass them along to the keyboard controller object (Keyboard)
+        void keyPressEvent( QKeyEvent *event );
+        void keyReleaseEvent( QKeyEvent *event );
 
         //
         // Controller
         //
+
+        bool limitFrameRate();
 
         // NOTE: All consumers must be declared before Core
 
@@ -86,6 +102,7 @@ class VideoItem : public QQuickItem {
 
         // Thread that keeps the emulation from blocking this UI thread
         QThread *coreThread;
+        QTimer coreTimer;
 
         // Core's 'current' state (since core lives on another thread, it could be in a different state)
         Core::State coreState;
@@ -118,18 +135,12 @@ class VideoItem : public QQuickItem {
         // approximately the refresh rate of the monitor. Thus, we'll emit the render signal to core here
         QSGNode *updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintData );
 
-        // QML item has finished loading, ready to start displaying frames
-        void componentComplete();
-
         // Timer used to measure FPS of core
         QElapsedTimer frameTimer;
 
         //
         // Consumer helpers
         //
-
-        // Create a single-color texture
-        void generateSimpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTextureNode *textureNode );
 
         // Small helper method to convert Libretro image format types to their Qt equivalent
         inline QImage::Format retroToQImageFormat( enum retro_pixel_format fmt );

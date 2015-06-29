@@ -2,6 +2,7 @@
 
 VideoItem::VideoItem( QQuickItem *parent ) :
     QQuickItem( parent ),
+    qmlInputManager( nullptr ),
     audioOutput( new AudioOutput() ), audioOutputThread( new QThread( this ) ),
     core( new Core() ), // coreTimer( new QTimer() ),
     coreThread( nullptr ), coreState( Core::STATEUNINITIALIZED ),
@@ -11,6 +12,8 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     texture( nullptr ),
     frameTimer() {
 
+    setFlag( QQuickItem::ItemHasContents, true );
+
     // Place the objects under VideoItem's control into their own threads
     audioOutput->moveToThread( audioOutputThread );
 
@@ -19,7 +22,7 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     connect( this, &VideoItem::signalShutdown, core, &Core::slotShutdown );
     connect( audioOutputThread, &QThread::finished, audioOutput, &AudioOutput::deleteLater );
 
-    // Catch the exit signal and clean up
+    // Catch the user exit signal and clean up
     connect( QCoreApplication::instance(), &QCoreApplication::aboutToQuit, [ = ]() {
 
         qCDebug( phxController ) << "===========QCoreApplication::aboutToQuit()===========";
@@ -78,6 +81,25 @@ VideoItem::~VideoItem() {
 // Controller methods
 //
 
+InputManager *VideoItem::inputManager() const {
+    return qmlInputManager;
+}
+
+void VideoItem::setInputManager( InputManager *manager ) {
+
+    if( manager != qmlInputManager ) {
+
+        qmlInputManager = manager;
+        core->inputManager = qmlInputManager;
+
+        connect( this, &VideoItem::signalRunChanged, qmlInputManager, &InputManager::setRun, Qt::DirectConnection );
+
+        emit inputManagerChanged();
+
+    }
+
+}
+
 void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) {
 
     qCDebug( phxController ) << "slotStateChanged(" << Core::stateToText( newState ) << "," << error << ")";
@@ -95,37 +117,42 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             // This is mixing control (coreThread) and consumer (render thread) members...
             coreThread = window()->openglContext()->thread();
 
+
             // Run a timer to make core produce a frame at regular intervals
             // Disabled at the moment due to the granulatiry being 1ms (not good enough)
 
-//            // Set up and start the frame timer
-//            qCDebug( phxController ) << "coreTimer.start("
-//                                     << ( double )1 / ( avInfo.timing.fps / 1000 )
-//                                     << "ms (core) =" << ( int )( 1 / ( avInfo.timing.fps / 1000 ) )
-//                                     << "ms (actual) )";
+            //            // Set up and start the frame timer
+            //            qCDebug( phxController ) << "coreTimer.start("
+            //                                     << ( double )1 / ( avInfo.timing.fps / 1000 )
+            //                                     << "ms (core) =" << ( int )( 1 / ( avInfo.timing.fps / 1000 ) )
+            //                                     << "ms (actual) )";
 
-//            // Stop when the program stops
-//            connect( this, &VideoItem::signalShutdown, coreTimer, &QTimer::stop );
+            //            // Stop when the program stops
+            //            connect( this, &VideoItem::signalShutdown, coreTimer, &QTimer::stop );
 
-//            // Millisecond accuracy on Unix (OS X/Linux)
-//            // Multimedia timer accuracy on Windows (better?)
-//            coreTimer->setTimerType( Qt::PreciseTimer );
+            //            // Millisecond accuracy on Unix (OS X/Linux)
+            //            // Multimedia timer accuracy on Windows (better?)
+            //            coreTimer->setTimerType( Qt::PreciseTimer );
 
-//            // Granulatiry is in the integer range :(
-//            coreTimer->start( ( int )( 1 / ( avInfo.timing.fps / 1000 ) ) );
+            //            // Granulatiry is in the integer range :(
+            //            coreTimer->start( ( int )( 1 / ( avInfo.timing.fps / 1000 ) ) );
 
-//            // Have the timer run in the same thread as Core
-//            // This will mean timeouts are blocking, preventing them from piling up if Core runs too slow
-//            coreTimer->moveToThread( coreThread );
-//            connect( coreThread, &QThread::finished, coreTimer, &QTimer::deleteLater );
+            //            // Have the timer run in the same thread as Core
+            //            // This will mean timeouts are blocking, preventing them from piling up if Core runs too slow
+            //            coreTimer->moveToThread( coreThread );
+            //            connect( coreThread, &QThread::finished, coreTimer, &QTimer::deleteLater );
 
             // Place Core into the render thread
             // Mandatory for OpenGL cores
             // Also prevents massive overhead/performance loss caused by QML effects (like FastBlur)
+
             core->moveToThread( coreThread );
             connect( coreThread, &QThread::finished, core, &Core::deleteLater );
 
             qCDebug( phxController ) << "Begin emulation.";
+
+            // Let all the consumers know emulation began
+            emit signalRunChanged( true );
 
             // Get core to immediately (sorta) produce the first frame
             emit signalFrame();
@@ -133,8 +160,7 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             // Force an update to keep the render thread from pausing
             update();
 
-            // Let all the consumers know emulation began
-            emit signalRunChanged( true );
+
 
             break;
 
@@ -233,44 +259,18 @@ void VideoItem::handleWindowChanged( QQuickWindow *window ) {
     }
 
 
-    /* #################################
-     *
-     * DO NOT DELETE THIS COMMENTED CODE!!!
-     *
-     * #################################
-     */
-
-    //parentWindow = window;
-
-    //qDebug() << "handle: " << window->renderTarget()->handle();
-    //fbo_t = window->renderTarget()->handle();
-
-    setFlag( QQuickItem::ItemHasContents, true );
-
-    connect( window, &QQuickWindow::openglContextCreated, this, &VideoItem::handleOpenGLContextCreated );
-
-    connect( window, &QQuickWindow::frameSwapped, this, &QQuickItem::update );
-
 }
 
-void VideoItem::handleOpenGLContextCreated( QOpenGLContext *GLContext ) {
+void VideoItem::keyPressEvent( QKeyEvent *event ) {
+    qmlInputManager->keyboard->insert( event->key(), true );
+}
 
-    if( !GLContext ) {
-        return;
-    }
+void VideoItem::keyReleaseEvent( QKeyEvent *event ) {
+    qmlInputManager->keyboard->insert( event->key() , false );
+}
 
-    /* #################################
-     *
-     * DO NOT DELETE THIS COMMENTED CODE!!!
-     *
-     * #################################
-     */
-
-    //fbo_t = GLContext->defaultFramebufferObject();
-
-
-    //connect( &fps_timer, &QTimer::timeout, this, &VideoItem::updateFps );
-
+bool VideoItem::limitFrameRate() {
+    return false;
 }
 
 QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintData ) {
@@ -279,27 +279,19 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
     QSGSimpleTextureNode *textureNode = static_cast<QSGSimpleTextureNode *>( node );
 
     if( !textureNode ) {
-
         textureNode = new QSGSimpleTextureNode;
-
     }
 
     // It's not time yet. Show a black rectangle.
     if( coreState != Core::STATEREADY ) {
-
-        generateSimpleTextureNode( Qt::black, textureNode );
-        return textureNode;
-
+        return QQuickItem::updatePaintNode( textureNode, paintData );
     }
 
     // First frame, no video data yet. Tell core to render a frame
     // then display it next time.
     if( !texture ) {
-
         emit signalFrame();
-        generateSimpleTextureNode( Qt::black, textureNode );
-        return textureNode;
-
+        return QQuickItem::updatePaintNode( textureNode, paintData );
     }
 
     static qint64 timeStamp = -1;
@@ -333,35 +325,14 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
 
 }
 
-void VideoItem::componentComplete() {
-
-    QQuickItem::componentComplete();
-
-    setFlag( QQuickItem::ItemHasContents, true );
-
-    update();
-
-}
-
-void VideoItem::generateSimpleTextureNode( Qt::GlobalColor globalColor, QSGSimpleTextureNode *textureNode ) {
-
-    QImage image( boundingRect().size().toSize(), QImage::Format_ARGB32 );
-    image.fill( globalColor );
-
-    QSGTexture *texture = window()->createTextureFromImage( image );
-    textureNode->setTexture( texture );
-    textureNode->setTextureCoordinatesTransform( QSGSimpleTextureNode::MirrorVertically );
-    textureNode->setRect( boundingRect() );
-    textureNode->setFiltering( QSGTexture::Nearest );
-
-}
-
 QImage::Format VideoItem::retroToQImageFormat( retro_pixel_format fmt ) {
 
     static QImage::Format format_table[3] = {
+
         QImage::Format_RGB16,   // RETRO_PIXEL_FORMAT_0RGB1555
         QImage::Format_RGB32,   // RETRO_PIXEL_FORMAT_XRGB8888
         QImage::Format_RGB16    // RETRO_PIXEL_FORMAT_RGB565
+
     };
 
     if( fmt >= 0 && fmt < ( sizeof( format_table ) / sizeof( QImage::Format ) ) ) {
