@@ -19,7 +19,8 @@ HEADERS += \
     input/inputdeviceevent.h \
     input/joystick.h \
     input/sdleventloop.h \
-    input/qmlinputdevice.h
+    input/qmlinputdevice.h \
+    looper.h
 
 SOURCES += main.cpp \
     videoitem.cpp \
@@ -35,7 +36,8 @@ SOURCES += main.cpp \
     input/sdleventloop.cpp \
     input/inputdevice.cpp \
     input/inputdeviceevent.cpp \
-    input/qmlinputdevice.cpp
+    input/qmlinputdevice.cpp \
+    looper.cpp
 
 RESOURCES += qml.qrc
 

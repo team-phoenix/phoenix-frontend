@@ -24,6 +24,7 @@
 #include "core.h"
 #include "audiooutput.h"
 #include "logging.h"
+#include "looper.h"
 
 #include "input/keyboard.h"
 #include "input/inputmanager.h"
@@ -55,6 +56,7 @@ class VideoItem : public QQuickItem {
         void signalFrame();
         void signalShutdown();
         void signalRunChanged( bool run );
+        void signalBeginLooper( double interval );
 
     public slots:
 
@@ -119,6 +121,9 @@ class VideoItem : public QQuickItem {
         QString gamePath;
         void setGame( QString game );
         void setCore( QString libretroCore );
+
+        Looper *looper;
+        QThread *looperThread;
 
         //
         // Consumer

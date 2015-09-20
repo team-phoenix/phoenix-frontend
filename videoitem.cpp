@@ -5,17 +5,18 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     qmlInputManager( nullptr ),
     audioOutput( new AudioOutput() ), audioOutputThread( new QThread( this ) ),
     core( new Core() ), // coreTimer( new QTimer() ),
-    coreThread( nullptr ), coreState( Core::STATEUNINITIALIZED ),
+    coreThread( new QThread(this) ), coreState( Core::STATEUNINITIALIZED ),
     avInfo(), pixelFormat(),
     corePath( "" ), gamePath( "" ),
     width( 0 ), height( 0 ), pitch( 0 ), coreFPS( 0.0 ), hostFPS( 0.0 ),
     texture( nullptr ),
-    frameTimer() {
+    frameTimer(), looper( new Looper() ), looperThread( new QThread( this ) ) {
 
     setFlag( QQuickItem::ItemHasContents, true );
 
     // Place the objects under VideoItem's control into their own threads
     audioOutput->moveToThread( audioOutputThread );
+    looper->moveToThread( looperThread );
 
     // Ensure the objects are cleaned up when it's time to quit and destroyed once their thread is done
     connect( this, &VideoItem::signalShutdown, audioOutput, &AudioOutput::slotShutdown );
@@ -44,7 +45,8 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     // Run a timer to make core produce a frame at regular intervals, or at vsync
     // coreTimer disabled at the moment due to the granulatiry being 1ms (not good enough)
     // connect( &coreTimer, &QTimer::timeout, &core, &Core::slotFrame );
-    connect( this, &VideoItem::signalFrame, core, &Core::slotFrame );
+    connect( looper, &Looper::signalFrame, core, &Core::slotFrame, Qt::BlockingQueuedConnection );
+    connect( this, &VideoItem::signalBeginLooper, looper, &Looper::beginLoop );
 
     // Do the next item in the core lifecycle when the state has changed
     connect( core, &Core::signalCoreStateChanged, this, &VideoItem::slotCoreStateChanged );
@@ -70,6 +72,8 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     // Start threads
 
     audioOutputThread->start();
+    looperThread->start( QThread::TimeCriticalPriority );
+    coreThread->start();
 
 }
 
@@ -115,7 +119,7 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
         case Core::STATEREADY:
 
             // This is mixing control (coreThread) and consumer (render thread) members...
-            coreThread = window()->openglContext()->thread();
+            // coreThread = window()->openglContext()->thread();
 
 
             // Run a timer to make core produce a frame at regular intervals
@@ -155,7 +159,7 @@ void VideoItem::slotCoreStateChanged( Core::State newState, Core::Error error ) 
             emit signalRunChanged( true );
 
             // Get core to immediately (sorta) produce the first frame
-            emit signalFrame();
+            emit signalBeginLooper( ( 1.0 / coreFPS ) * 1000.0 );
 
             // Force an update to keep the render thread from pausing
             update();
@@ -184,7 +188,7 @@ void VideoItem::slotCoreAVFormat( retro_system_av_info avInfo, retro_pixel_forma
     this->pixelFormat = pixelFormat;
 
     // TODO: Set this properly, either with testing and averages (RA style) or via EDID (proposed)
-    double monitorRefreshRate = QGuiApplication::primaryScreen()->refreshRate();
+    double monitorRefreshRate = avInfo.timing.fps;
 
     emit signalAudioFormat( avInfo.timing.sample_rate, avInfo.timing.fps, monitorRefreshRate );
     emit signalVideoFormat( pixelFormat,
@@ -246,8 +250,7 @@ void VideoItem::slotVideoData( uchar *data, unsigned width, unsigned height, int
 
     texture->moveToThread( window()->openglContext()->thread() );
 
-    // One half of the vsync render loop
-    // Invoke a window redraw now that the texture has changed
+    // Update the frame
     update();
 
 }
@@ -318,7 +321,7 @@ QSGNode *VideoItem::updatePaintNode( QSGNode *node, UpdatePaintNodeData *paintDa
     // One half of the vsync loop
     // Now that the texture is sent out to be drawn, tell core to make a new frame
     if( coreState == Core::STATEREADY ) {
-        emit signalFrame();
+        // emit signalFrame();
     }
 
     return textureNode;
