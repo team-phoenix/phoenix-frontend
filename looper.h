@@ -6,6 +6,10 @@
 #include <QDebug>
 #include <QThread>
 
+#if defined(Q_OS_WIN32) || defined(Q_OS_WIN64)
+#include <Windows.h>
+#endif
+
 class Looper : public QObject {
         Q_OBJECT
     public:
@@ -20,6 +24,10 @@ class Looper : public QObject {
     private:
         // Rate the signal should be emitted at
         double interval;
+
+#if defined(Q_OS_WIN32) || defined(Q_OS_WIN64)
+        TIMECAPS timecaps;
+#endif
 };
 
 #endif // LOOPER_H

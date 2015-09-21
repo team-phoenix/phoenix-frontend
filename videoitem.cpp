@@ -5,7 +5,7 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     qmlInputManager( nullptr ),
     audioOutput( new AudioOutput() ), audioOutputThread( new QThread( this ) ),
     core( new Core() ), // coreTimer( new QTimer() ),
-    coreThread( new QThread(this) ), coreState( Core::STATEUNINITIALIZED ),
+    coreThread( new QThread( this ) ), coreState( Core::STATEUNINITIALIZED ),
     avInfo(), pixelFormat(),
     corePath( "" ), gamePath( "" ),
     width( 0 ), height( 0 ), pitch( 0 ), coreFPS( 0.0 ), hostFPS( 0.0 ),
@@ -16,7 +16,7 @@ VideoItem::VideoItem( QQuickItem *parent ) :
 
     // Place the objects under VideoItem's control into their own threads
     audioOutput->moveToThread( audioOutputThread );
-    looper->moveToThread( looperThread );
+    looper->moveToThread( coreThread );
 
     // Ensure the objects are cleaned up when it's time to quit and destroyed once their thread is done
     connect( this, &VideoItem::signalShutdown, audioOutput, &AudioOutput::slotShutdown );
@@ -45,7 +45,7 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     // Run a timer to make core produce a frame at regular intervals, or at vsync
     // coreTimer disabled at the moment due to the granulatiry being 1ms (not good enough)
     // connect( &coreTimer, &QTimer::timeout, &core, &Core::slotFrame );
-    connect( looper, &Looper::signalFrame, core, &Core::slotFrame, Qt::BlockingQueuedConnection );
+    connect( looper, &Looper::signalFrame, core, &Core::slotFrame );
     connect( this, &VideoItem::signalBeginLooper, looper, &Looper::beginLoop );
 
     // Do the next item in the core lifecycle when the state has changed
@@ -72,8 +72,8 @@ VideoItem::VideoItem( QQuickItem *parent ) :
     // Start threads
 
     audioOutputThread->start();
-    looperThread->start( QThread::TimeCriticalPriority );
-    coreThread->start();
+    // looperThread->start( );
+    coreThread->start( QThread::TimeCriticalPriority );
 
 }
 
