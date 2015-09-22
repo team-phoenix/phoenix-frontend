@@ -5,6 +5,7 @@
 #include <QElapsedTimer>
 #include <QDebug>
 #include <QThread>
+#include <QCoreApplication>
 
 class Looper : public QObject {
         Q_OBJECT
@@ -15,11 +16,12 @@ class Looper : public QObject {
         void signalFrame();
 
     public slots:
+        // Start the loop. 'interval' is in ms
         void beginLoop( double interval );
+        void endLoop();
 
     private:
-        // Rate the signal should be emitted at
-        double interval;
+        bool running;
 
 };
 
