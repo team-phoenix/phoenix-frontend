@@ -5,16 +5,16 @@ import QtQuick.Dialogs 1.2
 import QtQuick.Window 2.0
 import QtQuick.Layouts 1.1
 
-import phoenix.video 1.0
-import phoenix.input 1.0
+import vg.phoenix.backend 1.0
+import vg.phoenix.backend 1.0
 import paths 1.0
 
 
 ApplicationWindow {
     id: phoenixWindow
-    title: qsTr("Phoenix");
-    width: 1000 * ratio
-    height: 1000
+    title: qsTr("Coatl");
+    width: 500 * ratio
+    height: 500
     visible: true
 
     property real ratio: 4/3
@@ -22,18 +22,6 @@ ApplicationWindow {
     function qstr(str)
     {
         return qsTr(str);
-    }
-
-    QMLInputDevice {
-        id: qmlInputDevice;
-
-
-        onGuideChanged: {
-            if ( guide )
-            console.log("guide " + guide );
-        }
-
-        onAChanged: console.log("a: " + a)
     }
 
     SystemPalette {
@@ -56,6 +44,7 @@ ApplicationWindow {
                     fileDialog.open();
                 }
             }
+
             MenuItem { text: "Close"; onTriggered: Qt.quit();}
         }
 
@@ -80,7 +69,7 @@ ApplicationWindow {
                     onObjectRemoved: coresAvailable.removeItem(object);
                 }
 
-                MenuSeparator { }
+                MenuSeparator {}
 
                 MenuItem {
                     text: "Clear";
@@ -91,8 +80,6 @@ ApplicationWindow {
                         pathWatcher.clear();
                     }
                 }
-
-
             }
 
             MenuItem {
@@ -102,7 +89,6 @@ ApplicationWindow {
 
                     coreFolderDialog.open();
                 }
-
             }
 
             MenuItem {
@@ -112,8 +98,20 @@ ApplicationWindow {
                     fileDialog.open();
                 }
             }
+        }
 
+        Menu {
+            title: "Playback";
 
+            MenuItem {
+                enabled: videoItem.coreState !== Core.STATEUNINITIALIZED
+                text: !enabled ? "Uninitialized" : "Running";
+            }
+
+            MenuItem {
+                visible: false;
+                text: "Frame Rate: ";
+            }
         }
 
     }
@@ -128,7 +126,6 @@ ApplicationWindow {
                         input.currentIndexChanged.connect( inputDialog.open() );
                     else
                         inputDialog.open();
-
                 }
             }
         }
@@ -143,7 +140,6 @@ ApplicationWindow {
 
         standardButtons: StandardButton.Ok | StandardButton.Cancel;
 
-        modality: Qt.NonModal;
         function handleEvent( value, state ) {
             console.log( value, state );
         }
@@ -249,10 +245,11 @@ ApplicationWindow {
         selectFolder: false;
         selectMultiple: false;
         onAccepted: {
+            var localFile = fileUrl.toLocaleString().replace( "file://", "");
             if (type === "core")
-                videoItem.libretroCore = fileUrl;
+                videoItem.libretroCore = localFile;
             else if (type === "game")
-                videoItem.game = fileUrl;
+                videoItem.game = localFile;
         }
     }
 
@@ -261,14 +258,6 @@ ApplicationWindow {
         id: videoOutput
         anchors.fill: parent
         color: "black"
-
-        FastBlur {
-            height: parent.height
-            width: parent.width
-            source: videoItem
-            radius: 64
-            rotation: 180
-        }
 
         MouseArea {
 
@@ -296,29 +285,13 @@ ApplicationWindow {
 
             property int mapIndex: 0;
 
-            onDeviceAdded: {
-                //device.resetMapping = true;
-                //if ( device.name === "Keyboard" )
-                  //  device.setMapping( {"a": Qt.Key_C, "b": Qt.Key_Z, "x": Qt.Key_Y } );
-                console.log( device.name );
-                //device.editMode = true;
-
-                // Every device needs to forward its inputDeviceEvent signal
-                // to the qmlInputDevice. This allows every controller to
-                // control the UI.
-                device.inputDeviceEvent.connect( qmlInputDevice.insert );
-            }
-
-            Component.onCompleted: {
-                input.emitConnectedDevices();
-            }
         }
 
         VideoItem {
 
             id: videoItem
             rotation: 180
-            inputManager: input;
+            //inputManager: input;
             anchors {
                 top: parent.top
                 bottom: parent.bottom

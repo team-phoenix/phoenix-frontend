@@ -5,16 +5,7 @@
 #include <QQmlContext>
 
 #include "videoitem.h"
-#include "core.h"
 #include "pathwatcher.h"
-#include "libretro.h"
-#include "input/inputmanager.h"
-#include "input/qmlinputdevice.h"
-
-Q_DECLARE_METATYPE( retro_system_av_info )
-Q_DECLARE_METATYPE( retro_pixel_format )
-Q_DECLARE_METATYPE( Core::State )
-Q_DECLARE_METATYPE( Core::Error )
 
 void phoenixDebugMessageHandler( QtMsgType type, const QMessageLogContext &context, const QString &msg ) {
 
@@ -48,6 +39,10 @@ void phoenixDebugMessageHandler( QtMsgType type, const QMessageLogContext &conte
             fprintf( stderr, "Fatal: %s (%s:%u, %s)\n",
                      localMsg.constData(), context.file, context.line, context.function );
             abort();
+            break;
+        default:
+            Q_UNREACHABLE();
+            break;
     }
 
 }
@@ -58,35 +53,23 @@ int main( int argc, char *argv[] ) {
 
     QApplication app( argc, argv );
 
-    QApplication::setApplicationDisplayName( "Phoenix" );
-    QApplication::setApplicationName( "Phoenix" );
+    QApplication::setApplicationDisplayName( "Coatl" );
+    QApplication::setApplicationName( "Coatal" );
     QApplication::setApplicationVersion( "1.0" );
     QApplication::setOrganizationDomain( "http://phoenix.vg/" );
 
     QQmlApplicationEngine engine;
 
-
     // Necessary to quit properly
-    QObject::connect( &engine, &QQmlApplicationEngine::quit, &app, &QApplication::quit );
+    //QObject::connect( &engine, &QQmlApplicationEngine::quit, &app, &QApplication::quit );
 
     // Make C++ classes visible to QML
-    qmlRegisterType<VideoItem>( "phoenix.video", 1, 0, "VideoItem" );
+    VideoItem::registerTypes();
+    InputManager::registerTypes();
     qmlRegisterType<PathWatcher>( "paths", 1, 0, "PathWatcher" );
-    qmlRegisterType<InputManager>( "phoenix.input", 1, 0, "InputManager" );
-    qmlRegisterType<InputDeviceEvent>( "phoenix.input", 1, 0, "InputDeviceEvent" );
-    qmlRegisterType<QMLInputDevice>( "phoenix.input", 1, 0, "QMLInputDevice" );
 
 
-    // Don't let the Qt police find out we're declaring these structs as metatypes
-    // without proper constructors/destructors declared/written
-    qRegisterMetaType<retro_system_av_info>();
-    qRegisterMetaType<retro_pixel_format>();
-    qRegisterMetaType<Core::State>();
-    qRegisterMetaType<Core::Error>();
-    qRegisterMetaType<InputDevice *>( "InputDevice *" );
-
-
-    engine.load( QUrl( QString( "qrc:/main.qml" ) ) );
+    engine.load( QUrl( QStringLiteral( "qrc:/main.qml" ) ) );
 
     return app.exec();
 

@@ -49,7 +49,7 @@ void PathWatcher::slotHandleStarted() {
 
     while( dirIter.hasNext() ) {
 
-        QString file = QUrl::fromLocalFile( dirIter.next() ).toString();
+        QString file = QUrl::fromLocalFile( dirIter.next() ).toString().remove( "file://" );
 
         if( !coreList.contains( file ) ) {
             emit fileAdded( file, QFileInfo( file ).baseName() );
